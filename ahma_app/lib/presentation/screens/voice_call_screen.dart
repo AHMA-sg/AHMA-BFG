@@ -16,7 +16,14 @@ class _VoiceCallScreenState extends ConsumerState<VoiceCallScreen> {
     super.initState();
     // Start call when screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(callProvider.notifier).startCall();
+      // TODO: Get user info from auth provider
+      // final user = ref.read(authProvider);
+
+      ref.read(callProvider.notifier).startCall(
+        userName: 'Maria',  // Example: Pass actual user name from auth
+        careRecipientName: 'Mother',  // Example: Get from user profile
+        caregiverType: 'family',  // Example: family, professional, volunteer
+      );
     });
   }
 

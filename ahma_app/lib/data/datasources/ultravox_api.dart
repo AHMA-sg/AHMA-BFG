@@ -13,14 +13,17 @@ class UltravoxApi {
         'X-API-Key': EnvConfig.ultravoxApiKey,
         'Content-Type': 'application/json',
       },
-      connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(seconds: 30),
+      // Optimized timeouts for real-time voice (faster failure detection)
+      connectTimeout: const Duration(seconds: 5),
+      receiveTimeout: const Duration(seconds: 10),
+      sendTimeout: const Duration(seconds: 5),
     ));
 
-    // Add logging interceptor for debugging
+    // Add minimal logging (full logging causes lag on WSL2)
     _dio.interceptors.add(LogInterceptor(
-      requestBody: true,
-      responseBody: true,
+      requestBody: false,  // Disable body logging for performance
+      responseBody: false, // Disable body logging for performance
+      error: true,         // Only log errors
       logPrint: (obj) => print('[Ultravox API] $obj'),
     ));
   }
@@ -31,23 +34,38 @@ class UltravoxApi {
     String? systemPrompt,
     Map<String, dynamic>? metadata,
     List<Map<String, dynamic>>? tools,
+    List<Map<String, dynamic>>? initialMessages,
+    Map<String, dynamic>? firstSpeakerSettings,
   }) async {
     try {
+      // Use agent endpoint if agentId is provided
+      final endpoint = agentId != null
+          ? '${ApiConstants.agents}/$agentId/calls'
+          : ApiConstants.calls;
+
       final data = {
-        if (agentId != null) 'agentId': agentId,
+        // Don't include agentId in body - it's in the URL path
         if (systemPrompt != null) 'systemPrompt': systemPrompt,
-        'voice': 'Jessica', // Warm female voice
-        'temperature': 0.4, // Consistent responses
-        'model': 'ultravox-v0.7',
+        if (metadata != null) 'metadata': metadata,
+        if (initialMessages != null) 'initialMessages': initialMessages,
+        if (firstSpeakerSettings != null) 'firstSpeakerSettings': firstSpeakerSettings,
+
+        // Only include these for direct calls (no agentId)
+        if (agentId == null) ...{
+          'voice': 'Jessica',
+          'temperature': 0.4,
+          'model': 'ultravox-v0.7',
+          if (tools != null) 'selectedTools': tools,
+        },
+
+        // Medium is required for all calls
         'medium': {
           'webRtc': {}
         },
-        if (tools != null) 'selectedTools': tools,
-        if (metadata != null) 'metadata': metadata,
       };
 
       final response = await _dio.post(
-        ApiConstants.calls,
+        endpoint,
         data: data,
       );
 

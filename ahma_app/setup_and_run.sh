@@ -46,4 +46,4 @@ echo "  ✓ Started backend server (in another terminal)"
 echo ""
 
 # Step 6: Run the app
-$FLUTTER_PATH run -d linux
+$FLUTTER_PATH run -d linux --release
