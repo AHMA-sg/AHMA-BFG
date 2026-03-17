@@ -16,14 +16,7 @@ class _VoiceCallScreenState extends ConsumerState<VoiceCallScreen> {
     super.initState();
     // Start call when screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // TODO: Get user info from auth provider
-      // final user = ref.read(authProvider);
-
-      ref.read(callProvider.notifier).startCall(
-        userName: 'Maria',  // Example: Pass actual user name from auth
-        careRecipientName: 'Mother',  // Example: Get from user profile
-        caregiverType: 'family',  // Example: family, professional, volunteer
-      );
+      ref.read(callProvider.notifier).startCall();
     });
   }
 
@@ -33,7 +26,7 @@ class _VoiceCallScreenState extends ConsumerState<VoiceCallScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('AHMA Voice Call'),
+        title: const Text('Dyson Voice Call'),
         backgroundColor: _getStageColor(callState.call?.stage),
         foregroundColor: Colors.white,
       ),
@@ -119,7 +112,7 @@ class _VoiceCallScreenState extends ConsumerState<VoiceCallScreen> {
 
   Widget _buildStageIndicator(CallStage stage) {
     final stages = [
-      ('Assess', CallStage.assess, Colors.blue),
+      ('Assess', CallStage.assess, Colors.black),
       ('Support', CallStage.support, Colors.green),
       ('Evaluate', CallStage.evaluate, Colors.purple),
     ];
@@ -187,7 +180,6 @@ class _VoiceCallScreenState extends ConsumerState<VoiceCallScreen> {
             margin: const EdgeInsets.symmetric(vertical: 4),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: isUser ? Colors.teal[100] : Colors.grey[200],
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(message.text),
@@ -244,13 +236,13 @@ class _VoiceCallScreenState extends ConsumerState<VoiceCallScreen> {
   Color _getStageColor(CallStage? stage) {
     switch (stage) {
       case CallStage.assess:
-        return Colors.blue;
+        return Colors.black;
       case CallStage.support:
         return Colors.green;
       case CallStage.evaluate:
         return Colors.purple;
       default:
-        return Colors.teal;
+        return Colors.black;
     }
   }
 }

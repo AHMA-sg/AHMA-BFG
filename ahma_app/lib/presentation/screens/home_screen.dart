@@ -10,8 +10,8 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('AHMA'),
-        backgroundColor: Colors.teal,
+        title: const Text('Dyson Support'),
+        backgroundColor: Colors.black,
         foregroundColor: Colors.white,
       ),
       body: SafeArea(
@@ -22,24 +22,14 @@ class HomeScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Logo/Header
-              const Icon(
-                Icons.favorite,
-                size: 80,
-                color: Colors.teal,
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'AHMA',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.teal,
-                ),
-                textAlign: TextAlign.center,
+              Image.asset(
+                'resources/dyson-seeklogo.png',
+                height: 80,
+                fit: BoxFit.contain,
               ),
               const SizedBox(height: 8),
               const Text(
-                'Assistive Health & Medicine Assistant',
+                'Sales & Customer Engagement',
                 style: TextStyle(
                   fontSize: 16,
                   color: Colors.grey,
@@ -70,7 +60,7 @@ class HomeScreen extends ConsumerWidget {
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.teal,
+                  backgroundColor: Colors.black,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 20),
                   shape: RoundedRectangleBorder(
@@ -111,12 +101,12 @@ class HomeScreen extends ConsumerWidget {
                       const SizedBox(height: 8),
                       _buildInfoItem(
                         '1. Assess',
-                        'AHMA will ask how you\'re doing',
+                        'Dyson will ask how you\'re doing',
                         Colors.blue,
                       ),
                       _buildInfoItem(
                         '2. Support',
-                        'Get emotional support and resources',
+                        'Get customer support and resources',
                         Colors.green,
                       ),
                       _buildInfoItem(

@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:livekit_client/livekit_client.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
-import '../../core/config/audio_config.dart';
 
 /// WebRTC manager for Ultravox using LiveKit
 class UltravoxRtcManager {
@@ -44,17 +43,13 @@ class UltravoxRtcManager {
 
       _signalingChannel = WebSocketChannel.connect(Uri.parse(wsUrl));
 
-      // Listen for signaling messages (non-blocking to prevent queue buildup)
+      // Listen for signaling messages
       _signalingChannel!.stream.listen(
-        (message) {  // Removed async to avoid blocking stream
+        (message) async {
           print('[WebRTC] 📨 Received signaling message: $message');
           final data = jsonDecode(message);
           print('[WebRTC] 📨 Parsed message type: ${data['type']}');
-
-          // Handle asynchronously without blocking stream
-          _handleSignalingMessage(data).catchError((e) {
-            print('[WebRTC] Error handling message: $e');
-          });
+          await _handleSignalingMessage(data);
         },
         onError: (error) {
           print('[WebRTC] Signaling error: $error');
@@ -102,13 +97,11 @@ class UltravoxRtcManager {
     try {
       print('[LiveKit] Connecting to room: $roomUrl');
 
-      // Create room with WSL2-compatible options
+      // Create room with options (disable network monitoring for WSL2 compatibility)
       _room = Room(
         roomOptions: const RoomOptions(
-          // Disabled for WSL2 compatibility (requires network monitoring)
-          adaptiveStream: false,
-          dynacast: false,
-          // Note: Audio options are applied when creating LocalAudioTrack below
+          adaptiveStream: false, // Disable adaptive stream (requires network monitoring)
+          dynacast: false,       // Disable dynacast (requires network monitoring)
         ),
       );
 
@@ -134,13 +127,12 @@ class UltravoxRtcManager {
     try {
       print('[LiveKit] Enabling microphone...');
 
-      // Create local audio track with optimized settings
+      // Create local audio track
       _localAudioTrack = await LocalAudioTrack.create(
         AudioCaptureOptions(
-          echoCancellation: AudioConfig.echoCancellation,
-          noiseSuppression: AudioConfig.noiseSuppression,
-          autoGainControl: AudioConfig.autoGainControl,
-          // Note: LiveKit handles sample rate internally based on device capabilities
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
         ),
       );
 

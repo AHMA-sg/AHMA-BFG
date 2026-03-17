@@ -4,7 +4,7 @@ class AudioConfig {
   static const int sampleRate = 16000; // Default: 48000, Lower: 16000 for less lag
 
   // Audio buffer settings
-  static const int bufferSize = 2000; // Smaller buffer = less latency
+  static const int bufferSize = 480; // Smaller buffer = less latency
 
   // Echo cancellation settings
   static const bool echoCancellation = true;

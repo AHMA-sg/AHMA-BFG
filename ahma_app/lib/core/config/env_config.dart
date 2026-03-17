@@ -17,12 +17,10 @@ class EnvConfig {
 
   // Pre-created AHMA Agent ID
   static String get ahmaAgentId =>
-      dotenv.env['AHMA_AGENT_ID'] ?? '';
+      dotenv.env['DYSON_AGENT_ID'] ?? '';
 
   // Validate configuration
   static bool get isConfigured {
-    return ultravoxApiKey.isNotEmpty &&
-           corpusIdCaregiverGuides.isNotEmpty &&
-           ahmaAgentId.isNotEmpty;
+    return ultravoxApiKey.isNotEmpty && corpusIdCaregiverGuides.isNotEmpty;
   }
 }

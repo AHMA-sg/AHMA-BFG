@@ -51,26 +51,23 @@ class CallNotifier extends StateNotifier<CallState> {
   CallNotifier(this._api, this._rtc, this._backend) : super(const CallState());
 
   /// Start a voice call
-  Future<void> startCall({
-    String? userName,
-    String? careRecipientName,
-    String? caregiverType,
-  }) async {
+  Future<void> startCall() async {
     try {
       state = state.copyWith(status: CallStatus.connecting);
 
       // Use pre-created AHMA agent (faster call setup)
       final agentId = EnvConfig.ahmaAgentId;
 
-      // Build personalized greeting with context embedded
+      /*Build personalized greeting with context embedded
       final greeting = _buildPersonalizedGreeting(
         userName,
         careRecipientName,
         caregiverType,
-      );
+      );*/
 
       final call = await _api.createCall(
-        agentId: agentId,
+        systemPrompt: systemPrompt,
+        tools: tools,
         metadata: {
           'app': 'ahma_flutter',
           'stage': 'assess',
@@ -78,9 +75,9 @@ class CallNotifier extends StateNotifier<CallState> {
           if (careRecipientName != null) 'careRecipientName': careRecipientName,
           if (caregiverType != null) 'caregiverType': caregiverType,
         },
-        firstSpeakerSettings: {
+        /* firstSpeakerSettings: {
           'agent': {'text': greeting}
-        },
+        }, */
         // Note: initialMessages is for conversation history (USER/AGENT messages)
         // Context is passed via greeting and metadata instead
       );
@@ -94,9 +91,6 @@ class CallNotifier extends StateNotifier<CallState> {
       );
 
       print('[Call] Started call: ${call.callId}');
-      if (userName != null) {
-        print('[Call] 👤 User: $userName');
-      }
     } catch (e) {
       state = state.copyWith(
         status: CallStatus.error,
@@ -114,13 +108,13 @@ class CallNotifier extends StateNotifier<CallState> {
   ) {
     if (userName != null && careRecipientName != null) {
       // Full context greeting
-      return 'Hello $userName, this is AHMA. I understand you\'re caring for your $careRecipientName. How are you doing today?';
+      return 'Hello $userName, this is aama. I understand you\'re caring for your $careRecipientName. How are you doing today?';
     } else if (userName != null) {
       // Name only
-      return 'Hello $userName, this is AHMA. How are you doing today?';
+      return 'Hello $userName, this is aama. How are you doing today?';
     } else {
       // Generic greeting
-      return 'Hello, this is AHMA. How are you doing today?';
+      return 'Hello, this is aama. How are you doing today?';
     }
   }
 
@@ -165,8 +159,61 @@ class CallNotifier extends StateNotifier<CallState> {
     state = state.copyWith(isMuted: newMuted);
   }
 
-  // Note: Tools are now configured in the pre-created agent (AHMA_AGENT_ID)
-  // No need to build tools on every call - saves latency!
+  /// Build AHMA system prompt with stages
+  String _buildAhmaSystemPrompt() {
+    return '''
+You are AHMA, a compassionate voice assistant for caregivers in Singapore.
+
+Your conversation follows three stages:
+
+STAGE 1 - ASSESS (Start here):
+- Warmly greet the caregiver
+- Ask how they're doing today
+- Listen for signs of stress, exhaustion, or overwhelm
+- Understand their current emotional state
+- Classify stress level: REGULAR or ELEVATED
+
+STAGE 2 - SUPPORT:
+- Provide emotional support with empathy
+- For ELEVATED stress: offer coping strategies, breathing exercises
+- For REGULAR stress: provide information and guidance
+- Use the queryCorpus tool to find relevant resources from Singapore caregiver guides
+- IMPORTANT: When using queryCorpus, pass specific, focused queries like:
+  - "respite care services for elderly caregivers"
+  - "financial assistance for caregivers in Singapore"
+  - "mental health support for family caregivers"
+  - "caregiver stress management techniques"
+- Keep responses concise and conversational
+
+STAGE 3 - EVALUATE:
+- Summarize the conversation
+- Confirm resources provided
+- End with encouragement
+- Let them know they can reach out anytime
+
+Important:
+- Be warm, empathetic, and concise
+- Focus on emotional support first, practical guidance second
+- Don't overwhelm with too much information
+- Keep responses short (2-3 sentences)
+- Always use queryCorpus when caregiver needs specific information or resources
+''';
+  }
+
+  /// Build AHMA tools (RAG corpus query)
+  List<Map<String, dynamic>> _buildAhmaTools() {
+    final corpusId = EnvConfig.corpusIdCaregiverGuides;
+
+    return [
+      {
+        'toolName': 'queryCorpus',
+        'parameterOverrides': {
+          'corpus_id': corpusId,
+          'max_results': 3,
+        },
+      },
+    ];
+  }
 
   /// Send transcript to Flask backend
   Future<void> _sendTranscriptToBackend(CallModel call) async {
