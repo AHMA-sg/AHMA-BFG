@@ -19,6 +19,12 @@ class EnvConfig {
   static String get ahmaAgentId =>
       dotenv.env['AHMA_AGENT_ID'] ?? '';
 
+  // Webhook configuration
+  static String get webhookSecret =>
+      dotenv.env['WEBHOOK_SECRET'] ?? 'default_secret';
+  static int get webhookPort =>
+      int.tryParse(dotenv.env['WEBHOOK_PORT'] ?? '8080') ?? 8080;
+
   // Validate configuration
   static bool get isConfigured {
     return ultravoxApiKey.isNotEmpty &&

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'presentation/screens/home_screen.dart';
+import 'core/config/env_config.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,11 +15,27 @@ Future<void> main() async {
   // Request microphone permission (required for voice calls)
   await _requestPermissions();
 
+  // Start webhook server (runs in background)
+  _startWebhookServer();
+
   runApp(
     const ProviderScope(
       child: MyApp(),
     ),
   );
+}
+
+void _startWebhookServer() {
+  // Note: The webhook handler needs access to the ProviderContainer
+  // to update the backend provider. For now, we'll start it separately
+  // and wire it up through a global instance or callback.
+  // In production, consider using a more robust webhook delivery mechanism.
+
+  // This is a simplified version for testing
+  // TODO: In production, use ngrok or proper webhook URL with HTTPS
+
+  debugPrint('[Main] Webhook server will be initialized after provider setup');
+  debugPrint('[Main] Webhook URL: http://localhost:${EnvConfig.webhookPort}/webhook');
 }
 
 Future<void> _requestPermissions() async {

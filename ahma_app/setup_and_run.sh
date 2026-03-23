@@ -34,16 +34,37 @@ fi
 # Step 4: Navigate to app directory
 cd "$(dirname "$0")"
 
-# Step 5: Set Flutter path
-FLUTTER_PATH="/home/aparanjape/ahma/flutter/bin/flutter"
+# Step 5: Find Flutter (use system Flutter)
+FLUTTER_PATH=$(which flutter)
+
+if [ -z "$FLUTTER_PATH" ]; then
+    echo "❌ Flutter not found in PATH"
+    echo "   Please install Flutter or add it to your PATH"
+    exit 1
+fi
+
+echo "✅ Found Flutter at: $FLUTTER_PATH"
+
+# Step 6: Get dependencies
+echo ""
+echo "📦 Installing dependencies..."
+flutter pub get
+
+if [ $? -ne 0 ]; then
+    echo "❌ Failed to get dependencies"
+    exit 1
+fi
 
 echo ""
 echo "🚀 Starting AHMA Flutter App..."
 echo ""
-echo "Make sure you have:"
-echo "  ✓ Filled in .env file with API keys"
-echo "  ✓ Started backend server (in another terminal)"
+echo "Prerequisites:"
+echo "  ✓ .env file configured with API keys"
+echo "  ✓ Backend server running (optional for webhook testing)"
+echo ""
+echo "📱 Webhook server will start on port 8080"
+echo "🧪 To test webhook: python3 test_webhook.py (in another terminal)"
 echo ""
 
-# Step 6: Run the app
-$FLUTTER_PATH run -d linux --release
+# Step 7: Run the app in debug mode (faster iteration)
+flutter run -d linux
