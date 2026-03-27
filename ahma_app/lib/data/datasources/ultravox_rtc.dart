@@ -120,7 +120,7 @@ class UltravoxRtcManager {
 
       print('[LiveKit] Connected to room');
 
-      // Enable microphone and publish local audio
+      // Enable microphone and publish local audio (starts muted for PTT)
       await _enableMicrophone();
 
     } catch (e) {
@@ -149,6 +149,10 @@ class UltravoxRtcManager {
       // Publish to room
       await _room!.localParticipant?.publishAudioTrack(_localAudioTrack!);
       print('[LiveKit] Published local audio track');
+
+      // Start muted for Push-to-Talk mode
+      await _localAudioTrack!.disable();
+      print('[LiveKit] Started in muted state (PTT mode)');
 
     } catch (e) {
       print('[LiveKit] Error enabling microphone: $e');
@@ -229,6 +233,22 @@ class UltravoxRtcManager {
         await _localAudioTrack!.enable();
       }
       print('[WebRTC] Muted: $muted');
+    }
+  }
+
+  /// Enable microphone (for Push-to-Talk)
+  Future<void> enableMicrophone() async {
+    if (_localAudioTrack != null) {
+      await _localAudioTrack!.enable();
+      print('[WebRTC] Microphone enabled (PTT pressed)');
+    }
+  }
+
+  /// Disable microphone (for Push-to-Talk)
+  Future<void> disableMicrophone() async {
+    if (_localAudioTrack != null) {
+      await _localAudioTrack!.disable();
+      print('[WebRTC] Microphone disabled (PTT released)');
     }
   }
 

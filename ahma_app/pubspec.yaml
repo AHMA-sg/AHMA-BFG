@@ -66,8 +66,12 @@ dependencies:
   # Enhanced animations
   animate_do: ^3.3.0                # Pre-built animation helpers
 
-  # Local storage for transcripts
-  shared_preferences: ^2.2.2        # Persist call transcripts
+  # Local storage
+  shared_preferences: ^2.2.2        # Key-value storage
+  sqflite: ^2.3.0                   # SQLite database for action plans
+  sqflite_common_ffi: ^2.3.0        # SQLite FFI for desktop platforms
+  path_provider: ^2.1.1             # Database path resolution
+  path: ^1.8.3                      # Path manipulation
 
 dev_dependencies:
   flutter_test:

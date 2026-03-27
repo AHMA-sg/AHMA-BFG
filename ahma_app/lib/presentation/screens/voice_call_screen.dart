@@ -11,6 +11,8 @@ class VoiceCallScreen extends ConsumerStatefulWidget {
 }
 
 class _VoiceCallScreenState extends ConsumerState<VoiceCallScreen> {
+  bool _isPressing = false;
+
   @override
   void initState() {
     super.initState();
@@ -25,6 +27,16 @@ class _VoiceCallScreenState extends ConsumerState<VoiceCallScreen> {
         caregiverType: 'family',  // Example: family, professional, volunteer
       );
     });
+  }
+
+  void _startTalking() {
+    setState(() => _isPressing = true);
+    ref.read(callProvider.notifier).startAudioCapture();
+  }
+
+  void _stopTalking() {
+    setState(() => _isPressing = false);
+    ref.read(callProvider.notifier).stopAudioCapture();
   }
 
   @override
@@ -200,43 +212,81 @@ class _VoiceCallScreenState extends ConsumerState<VoiceCallScreen> {
   Widget _buildControls(CallState state) {
     final isActive = state.status == CallStatus.active;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+    if (!isActive) {
+      // Go back button if call ended
+      if (state.status == CallStatus.ended || state.status == CallStatus.error) {
+        return ElevatedButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+          child: const Text('Back to Home'),
+        );
+      }
+      return const SizedBox.shrink();
+    }
+
+    // Push-to-Talk UI for active calls
+    return Column(
       children: [
-        // Mute button
-        if (isActive)
-          FloatingActionButton(
-            onPressed: () {
-              ref.read(callProvider.notifier).toggleMute();
-            },
-            backgroundColor: state.isMuted ? Colors.red : Colors.grey,
-            child: Icon(
-              state.isMuted ? Icons.mic_off : Icons.mic,
-              color: Colors.white,
-            ),
+        // Instruction text
+        Text(
+          _isPressing ? 'Release to send' : 'Hold to speak',
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 16,
+            color: Colors.grey,
+            fontWeight: FontWeight.w500,
           ),
+        ),
+        const SizedBox(height: 24),
 
-        // End call button
-        if (isActive)
-          FloatingActionButton(
-            onPressed: () async {
-              await ref.read(callProvider.notifier).endCall();
-            },
-            backgroundColor: Colors.red,
-            child: const Icon(
-              Icons.call_end,
-              color: Colors.white,
+        // PTT Button
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            GestureDetector(
+              onTapDown: (_) => _startTalking(),
+              onTapUp: (_) => _stopTalking(),
+              onTapCancel: () => _stopTalking(),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: _isPressing ? 120 : 100,
+                height: _isPressing ? 120 : 100,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _isPressing ? Colors.red : Colors.blue,
+                  boxShadow: _isPressing
+                      ? [
+                          BoxShadow(
+                            color: Colors.red.withOpacity(0.5),
+                            blurRadius: 20,
+                            spreadRadius: 5,
+                          ),
+                        ]
+                      : [],
+                ),
+                child: Icon(
+                  _isPressing ? Icons.mic : Icons.mic_none,
+                  size: 50,
+                  color: Colors.white,
+                ),
+              ),
             ),
-          ),
+            const SizedBox(width: 40),
 
-        // Go back button if call ended
-        if (state.status == CallStatus.ended || state.status == CallStatus.error)
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: const Text('Back to Home'),
-          ),
+            // End call button
+            FloatingActionButton(
+              onPressed: () async {
+                await ref.read(callProvider.notifier).endCall();
+              },
+              backgroundColor: Colors.grey[700],
+              child: const Icon(
+                Icons.call_end,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }

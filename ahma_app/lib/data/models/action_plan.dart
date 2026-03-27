@@ -30,6 +30,15 @@ class ActionPlan {
     );
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      'calendar_events': calendarEvents.map((e) => e.toJson()).toList(),
+      'todoist_tasks': todoistTasks.map((e) => e.toJson()).toList(),
+      'resources': resources.map((e) => e.toJson()).toList(),
+      'reasoning': reasoning,
+    };
+  }
+
   int get totalActions =>
       calendarEvents.length + todoistTasks.length + resources.length;
 
@@ -64,6 +73,17 @@ class CalendarEvent {
       recurrence: json['recurrence'] as String?,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'summary': summary,
+      'start_time': startTime,
+      'end_time': endTime,
+      'location': location,
+      'description': description,
+      'recurrence': recurrence,
+    };
+  }
 }
 
 /// Todoist Task
@@ -94,6 +114,16 @@ class TodoistTask {
       description: json['description'] as String? ?? '',
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'task_name': taskName,
+      'task_due': taskDue,
+      'priority': priority,
+      'labels': labels,
+      'description': description,
+    };
+  }
 }
 
 /// Resource
@@ -117,6 +147,15 @@ class Resource {
       description: json['description'] as String? ?? '',
       category: json['category'] as String? ?? 'general',
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'title': title,
+      'url': url,
+      'description': description,
+      'category': category,
+    };
   }
 }
 
@@ -176,6 +215,14 @@ class Classification {
       stressLevel: json['stress_level'] as String? ?? 'regular',
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'primary_need': primaryNeed,
+      'confidence': confidence,
+      'stress_level': stressLevel,
+    };
+  }
 }
 
 /// Statistics from workflow
@@ -202,5 +249,15 @@ class UpdateStats {
       totalActionsAvailable: json['total_actions_available'] as int? ?? 0,
       actionsInWebhook: json['actions_in_webhook'] as int? ?? 0,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'new_actions': newActions,
+      'duplicates_skipped': duplicatesSkipped,
+      'kb_queried': kbQueried,
+      'total_actions_available': totalActionsAvailable,
+      'actions_in_webhook': actionsInWebhook,
+    };
   }
 }

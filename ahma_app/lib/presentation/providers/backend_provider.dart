@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/action_plan.dart';
+import '../../data/datasources/local_db.dart';
 
 /// Backend update state
 class BackendState {
@@ -32,27 +33,106 @@ class BackendState {
 
 /// Backend provider - manages action plans and updates from backend
 class BackendNotifier extends StateNotifier<BackendState> {
-  BackendNotifier() : super(const BackendState());
+  final LocalDatabase _localDb;
+
+  BackendNotifier(this._localDb) : super(const BackendState()) {
+    _loadFromLocalStorage();
+  }
+
+  /// Load action plans from local storage on initialization
+  Future<void> _loadFromLocalStorage() async {
+    try {
+      state = state.copyWith(isLoading: true);
+
+      final updates = await _localDb.getActionPlans();
+
+      state = state.copyWith(
+        updates: updates,
+        latestUpdate: updates.isNotEmpty ? updates.first : null,
+        isLoading: false,
+      );
+
+      print('[Backend] Loaded ${updates.length} action plans from local storage');
+    } catch (e) {
+      print('[Backend] Error loading from local storage: $e');
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Failed to load action plans',
+      );
+    }
+  }
 
   /// Process a new backend update from webhook
-  void processUpdate(BackendUpdate update) {
+  Future<void> processUpdate(BackendUpdate update) async {
     print('[Backend] Processing update: ${update.type}');
     print('[Backend] Total actions: ${update.stats.actionsInWebhook}');
     print('[Backend] New actions: ${update.stats.newActions}');
     print('[Backend] Duplicates skipped: ${update.stats.duplicatesSkipped}');
 
-    // Add to updates list
-    final updatedList = [update, ...state.updates];
+    try {
+      // Save to local database
+      await _localDb.saveActionPlan(update);
+      print('[Backend] Saved action plan to local storage (call: ${update.callId})');
 
-    state = state.copyWith(
-      updates: updatedList,
-      latestUpdate: update,
-    );
+      // Add to state
+      final updatedList = [update, ...state.updates];
+
+      state = state.copyWith(
+        updates: updatedList,
+        latestUpdate: update,
+      );
+    } catch (e) {
+      print('[Backend] Error saving action plan: $e');
+      state = state.copyWith(error: 'Failed to save action plan');
+    }
   }
 
-  /// Clear all updates
-  void clearUpdates() {
-    state = const BackendState();
+  /// Get action plans grouped by date
+  Future<Map<String, List<BackendUpdate>>> getGroupedByDate() async {
+    try {
+      return await _localDb.getActionPlansGroupedByDate();
+    } catch (e) {
+      print('[Backend] Error getting grouped action plans: $e');
+      return {};
+    }
+  }
+
+  /// Get action plans for a specific date range
+  Future<List<BackendUpdate>> getActionPlansInRange({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    try {
+      return await _localDb.getActionPlans(
+        startDate: startDate,
+        endDate: endDate,
+      );
+    } catch (e) {
+      print('[Backend] Error getting action plans in range: $e');
+      return [];
+    }
+  }
+
+  /// Get action plan by call ID
+  Future<BackendUpdate?> getActionPlanByCallId(String callId) async {
+    try {
+      return await _localDb.getActionPlanByCallId(callId);
+    } catch (e) {
+      print('[Backend] Error getting action plan by call ID: $e');
+      return null;
+    }
+  }
+
+  /// Clear all updates (from memory and database)
+  Future<void> clearUpdates() async {
+    try {
+      await _localDb.deleteAllActionPlans();
+      state = const BackendState();
+      print('[Backend] Cleared all action plans');
+    } catch (e) {
+      print('[Backend] Error clearing action plans: $e');
+      state = state.copyWith(error: 'Failed to clear action plans');
+    }
   }
 
   /// Mark update as viewed
@@ -67,9 +147,20 @@ class BackendNotifier extends StateNotifier<BackendState> {
 
     state = state.copyWith(updates: updatedList);
   }
+
+  /// Reload from database (useful after external changes)
+  Future<void> reload() async {
+    await _loadFromLocalStorage();
+  }
 }
+
+/// Local database provider
+final localDatabaseProvider = Provider<LocalDatabase>((ref) {
+  return LocalDatabase.instance;
+});
 
 /// Provider
 final backendProvider = StateNotifierProvider<BackendNotifier, BackendState>((ref) {
-  return BackendNotifier();
+  final localDb = ref.watch(localDatabaseProvider);
+  return BackendNotifier(localDb);
 });

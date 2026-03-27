@@ -9,11 +9,13 @@ class WebhookHandler {
   final int port;
   final String webhookSecret;
   final Function(BackendUpdate) onUpdate;
+  final Function()? onServerReady;
 
   WebhookHandler({
     this.port = 8080,
     required this.webhookSecret,
     required this.onUpdate,
+    this.onServerReady,
   });
 
   /// Start the webhook server
@@ -21,6 +23,11 @@ class WebhookHandler {
     try {
       _server = await HttpServer.bind(InternetAddress.anyIPv4, port);
       print('[Webhook] Server listening on port $port');
+
+      // Notify that server is ready
+      if (onServerReady != null) {
+        onServerReady!();
+      }
 
       await for (HttpRequest request in _server!) {
         await _handleRequest(request);
@@ -139,12 +146,27 @@ class WebhookHandler {
   /// Check if timestamp is recent (within 5 minutes)
   bool _isRecentTimestamp(String timestamp) {
     try {
-      final requestTime = DateTime.parse(timestamp);
-      final now = DateTime.now();
+      // Parse as UTC if no timezone indicator (backend sends UTC without 'Z')
+      DateTime requestTime;
+      if (timestamp.endsWith('Z') || timestamp.contains('+')) {
+        requestTime = DateTime.parse(timestamp);
+      } else {
+        // No timezone indicator, assume UTC
+        requestTime = DateTime.parse(timestamp + 'Z');
+      }
+
+      final now = DateTime.now().toUtc();
       final diff = now.difference(requestTime).abs();
+
+      print('[Webhook] ⏰ Timestamp check:');
+      print('[Webhook]    Request time (UTC): $requestTime');
+      print('[Webhook]    Current time (UTC): $now');
+      print('[Webhook]    Difference: ${diff.inSeconds} seconds');
+      print('[Webhook]    Valid: ${diff.inMinutes <= 5}');
 
       return diff.inMinutes <= 5;
     } catch (e) {
+      print('[Webhook] ❌ Timestamp parse error: $e');
       return false;
     }
   }

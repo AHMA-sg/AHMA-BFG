@@ -165,6 +165,30 @@ class CallNotifier extends StateNotifier<CallState> {
     state = state.copyWith(isMuted: newMuted);
   }
 
+  /// Start audio capture (PTT pressed)
+  void startAudioCapture() {
+    try {
+      // Use muting instead of enable/disable for better performance
+      _rtc.setMuted(false);
+      state = state.copyWith(isMuted: false);
+      print('[Call] 🎤 Audio unmuted (PTT pressed)');
+    } catch (e) {
+      print('[Call] Error starting audio capture: $e');
+    }
+  }
+
+  /// Stop audio capture (PTT released)
+  void stopAudioCapture() {
+    try {
+      // Use muting instead of enable/disable for better performance
+      _rtc.setMuted(true);
+      state = state.copyWith(isMuted: true);
+      print('[Call] 🎤 Audio muted (PTT released)');
+    } catch (e) {
+      print('[Call] Error stopping audio capture: $e');
+    }
+  }
+
   // Note: Tools are now configured in the pre-created agent (AHMA_AGENT_ID)
   // No need to build tools on every call - saves latency!
 
