@@ -43,4 +43,101 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Environment files
 .env
+.env.local
+.env.production
+.env.development
+
+# IDE and editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# OS files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Temporary and cache files
+*.tmp
+*.temp
+**/tmp/
+**/temp/
+**/.cache/
+**/.dart_tool/
+**/.pub/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+
+# Build outputs
+**/build/
+**/out/
+**/bin/
+**/obj/
+**/target/
+
+# Logs
+*.log
+**/logs/
+**/*.log.*
+
+# Test results
+**/test-results/
+**/.test_results/
+**/coverage/
+**/.nyc_output/
+**/lcov.info
+
+# Package manager files
+**/node_modules/
+**/bower_components/
+**/vendor/
+**/.npm/
+**/.yarn/
+**/.yarnrc.yml
+**/package-lock.json
+**/yarn.lock
+**/pnpm-lock.yaml
+
+# Documentation build
+**/docs/_build/
+**/docs/build/
+
+# Platform-specific build files
+**/ios/build/
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/Runner/GeneratedPluginRegistrant.*
+**/android/.gradle/
+**/android/.idea/
+**/android/build/
+**/android/app/build/
+**/android/app/src/main/java/
+**/macos/build/
+**/macos/Flutter/ephemeral/
+**/macos/Flutter/Flutter-*.xcconfig
+**/macos/Pods/
+**/windows/build/
+**/windows/runner/Debug/
+**/windows/runner/Release/
+**/windows/flutter/
+**/linux/build/
+**/web/build/
+
+# Unity build files (if using Unity integration)
+**/Unity/
+**/Build/
+**/Library/
+**/Temp/
+**/Obj/
+**/Logs/
+**/UserSettings/

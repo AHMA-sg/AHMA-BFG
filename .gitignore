@@ -5,25 +5,112 @@ AHMA-Strands-Agent/
 # Environment files
 .env
 **/.env
+.env.local
+.env.production
+.env.development
 
 # IDE
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
 
 # OS
 .DS_Store
 Thumbs.db
+ehthumbs.db
+Desktop.ini
 
 # Python virtual environments
 **/.venv/
 **/venv/
 **/__pycache__/
 **/*.pyc
+**/*.pyo
+**/*.pyd
+**/.python-version
 
 # Build artifacts
 **/build/
 **/dist/
+**/out/
+**/target/
+**/bin/
+**/obj/
 
 # Logs
 *.log
-**/macos/Flutter/**
+**/logs/
+**/*.log.*
+
+# Temporary files
+*.tmp
+*.temp
+**/tmp/
+**/temp/
+
+# macOS specific
+**/.DS_Store
+**/.AppleDouble
+**/.LSOverride
+
+# Windows specific
+**/Thumbs.db
+**/ehthumbs.db
+**/Desktop.ini
+**/$RECYCLE.BIN/
+
+# Linux specific
+**/.*.swp
+**/.*.swo
+**/*~
+
+# Package manager files
+**/node_modules/
+**/bower_components/
+**/vendor/
+**/.npm/
+**/.yarn/
+**/.yarnrc.yml
+**/package-lock.json
+**/yarn.lock
+**/pnpm-lock.yaml
+
+# Coverage reports
+**/coverage/
+**/.nyc_output/
+**/lcov.info
+
+# Test artifacts
+**/.dart_tool/
+**/.pub/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/test-results/
+**/.test_results/
+
+# Documentation build
+**/doc/api/
+**/docs/_build/
+**/docs/build/
+
+# Cache directories
+**/.cache/
+**/.vscode-test/
+**/.vscode-insiders-test/
+**/.idea/
+**/.settings/
+**/.project
+**/.classpath
+**/.factorypath
+**/.externalToolBuilders/
+**/.launches/
+**/.metadata/
+**/.gradle/
+**/.idea/
+**/.vs/
+**/.vscode/
+**/.vscode-test/
+**/.vscode-insiders-test/
+**/macos/Runner.xcworkspace/contents.xcworkspacedata
