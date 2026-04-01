@@ -1,0 +1,75 @@
+PODS:
+  - connectivity_plus (0.0.1):
+    - Flutter
+  - device_info_plus (0.0.1):
+    - Flutter
+  - Flutter (1.0.0)
+  - flutter_embed_unity_2022_3_ios (0.0.1):
+    - Flutter
+  - flutter_webrtc (1.2.0):
+    - Flutter
+    - WebRTC-SDK (= 137.7151.04)
+  - livekit_client (2.6.4):
+    - Flutter
+    - flutter_webrtc
+    - WebRTC-SDK (= 137.7151.04)
+  - permission_handler_apple (9.3.0):
+    - Flutter
+  - shared_preferences_foundation (0.0.1):
+    - Flutter
+    - FlutterMacOS
+  - sqflite_darwin (0.0.4):
+    - Flutter
+    - FlutterMacOS
+  - WebRTC-SDK (137.7151.04)
+
+DEPENDENCIES:
+  - connectivity_plus (from `.symlinks/plugins/connectivity_plus/ios`)
+  - device_info_plus (from `.symlinks/plugins/device_info_plus/ios`)
+  - Flutter (from `Flutter`)
+  - flutter_embed_unity_2022_3_ios (from `.symlinks/plugins/flutter_embed_unity_2022_3_ios/ios`)
+  - flutter_webrtc (from `.symlinks/plugins/flutter_webrtc/ios`)
+  - livekit_client (from `.symlinks/plugins/livekit_client/ios`)
+  - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
+  - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
+  - sqflite_darwin (from `.symlinks/plugins/sqflite_darwin/darwin`)
+
+SPEC REPOS:
+  trunk:
+    - WebRTC-SDK
+
+EXTERNAL SOURCES:
+  connectivity_plus:
+    :path: ".symlinks/plugins/connectivity_plus/ios"
+  device_info_plus:
+    :path: ".symlinks/plugins/device_info_plus/ios"
+  Flutter:
+    :path: Flutter
+  flutter_embed_unity_2022_3_ios:
+    :path: ".symlinks/plugins/flutter_embed_unity_2022_3_ios/ios"
+  flutter_webrtc:
+    :path: ".symlinks/plugins/flutter_webrtc/ios"
+  livekit_client:
+    :path: ".symlinks/plugins/livekit_client/ios"
+  permission_handler_apple:
+    :path: ".symlinks/plugins/permission_handler_apple/ios"
+  shared_preferences_foundation:
+    :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
+  sqflite_darwin:
+    :path: ".symlinks/plugins/sqflite_darwin/darwin"
+
+SPEC CHECKSUMS:
+  connectivity_plus: cb623214f4e1f6ef8fe7403d580fdad517d2f7dd
+  device_info_plus: 21fcca2080fbcd348be798aa36c3e5ed849eefbe
+  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  flutter_embed_unity_2022_3_ios: 84034b9464e0d3037978f7a35420097d8a348ca3
+  flutter_webrtc: c3e21fc0dcd9d8eb246ae4d5256fcbeb2f5ecd22
+  livekit_client: 05903af3b321aa2703c661edcac1abfb4fc7e80c
+  permission_handler_apple: 4ed2196e43d0651e8ff7ca3483a069d469701f2d
+  shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb
+  sqflite_darwin: 20b2a3a3b70e43edae938624ce550a3cbf66a3d0
+  WebRTC-SDK: 40d4f5ba05cadff14e4db5614aec402a633f007e
+
+PODFILE CHECKSUM: 05b9c1f415997b895c0ad8a560bd3a84e6432b81
+
+COCOAPODS: 1.16.2

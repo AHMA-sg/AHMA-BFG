@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:livekit_client/livekit_client.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../core/config/audio_config.dart';
 
 /// WebRTC manager for Ultravox using LiveKit
@@ -134,6 +135,24 @@ class UltravoxRtcManager {
     try {
       print('[LiveKit] Enabling microphone...');
 
+      // Check if microphone permission is granted
+      try {
+        final permissionStatus = await Permission.microphone.status;
+        print('[LiveKit] Microphone permission status: $permissionStatus');
+        
+        if (permissionStatus.isDenied) {
+          final status = await Permission.microphone.request();
+          print('[LiveKit] Microphone permission requested: $status');
+          if (status.isDenied) {
+            throw Exception('Microphone permission denied');
+          }
+        }
+      } catch (e) {
+        print('[LiveKit] Permission handler not available: $e');
+        print('[LiveKit] Note: LiveKit will handle permissions internally');
+        // Continue without permission_handler - LiveKit will handle permissions
+      }
+
       // Create local audio track with optimized settings
       _localAudioTrack = await LocalAudioTrack.create(
         AudioCaptureOptions(
@@ -146,6 +165,11 @@ class UltravoxRtcManager {
 
       print('[LiveKit] Local audio track created');
 
+      // Check if track is properly created
+      if (_localAudioTrack == null) {
+        throw Exception('Failed to create local audio track');
+      }
+
       // Publish to room
       await _room!.localParticipant?.publishAudioTrack(_localAudioTrack!);
       print('[LiveKit] Published local audio track');
@@ -154,8 +178,12 @@ class UltravoxRtcManager {
       await _localAudioTrack!.disable();
       print('[LiveKit] Started in muted state (PTT mode)');
 
+      // Verify track is published
+      print('[LiveKit] Local audio track published successfully');
+
     } catch (e) {
       print('[LiveKit] Error enabling microphone: $e');
+      rethrow;
     }
   }
 

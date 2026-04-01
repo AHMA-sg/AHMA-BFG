@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'presentation/screens/home_screen.dart';
+import 'presentation/screens/unity_home_screen.dart';
 import 'core/config/env_config.dart';
 
 Future<void> main() async {
@@ -39,15 +39,27 @@ void _startWebhookServer() {
 }
 
 Future<void> _requestPermissions() async {
-  // Only request permissions on mobile platforms
-  // Linux/Desktop: Browser/OS handles permissions automatically
-  if (Platform.isAndroid || Platform.isIOS) {
-    final status = await Permission.microphone.request();
-    if (status.isDenied) {
-      debugPrint('Microphone permission denied');
+  try {
+    // Request microphone permission on all platforms
+    if (Platform.isAndroid || Platform.isIOS) {
+      final status = await Permission.microphone.request();
+      if (status.isDenied) {
+        debugPrint('Microphone permission denied');
+      }
+    } else if (Platform.isMacOS) {
+      // macOS also needs explicit microphone permission
+      final status = await Permission.microphone.request();
+      if (status.isDenied) {
+        debugPrint('Microphone permission denied on macOS');
+      } else if (status.isGranted) {
+        debugPrint('Microphone permission granted on macOS');
+      }
+    } else {
+      debugPrint('Running on other platform - microphone permissions handled by OS');
     }
-  } else {
-    debugPrint('Running on desktop - microphone permissions handled by OS');
+  } catch (e) {
+    debugPrint('Permission request failed: $e');
+    // Continue without permissions - will request later when needed
   }
 }
 
@@ -63,7 +75,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
         useMaterial3: true,
       ),
-      home: const HomeScreen(),
+      home: const UnityHomeScreen(),
     );
   }
 }

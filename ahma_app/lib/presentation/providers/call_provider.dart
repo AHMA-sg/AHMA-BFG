@@ -168,24 +168,34 @@ class CallNotifier extends StateNotifier<CallState> {
   /// Start audio capture (PTT pressed)
   void startAudioCapture() {
     try {
+      print('[Call] 🎤 Starting audio capture (PTT pressed)');
+      
+      // Check if WebRTC is connected
+      if (!_rtc.isConnected) {
+        print('[Call] ⚠️  WebRTC not connected, cannot start audio capture');
+        return;
+      }
+
       // Use muting instead of enable/disable for better performance
       _rtc.setMuted(false);
       state = state.copyWith(isMuted: false);
-      print('[Call] 🎤 Audio unmuted (PTT pressed)');
+      print('[Call] ✅ Audio unmuted (PTT pressed)');
     } catch (e) {
-      print('[Call] Error starting audio capture: $e');
+      print('[Call] ❌ Error starting audio capture: $e');
     }
   }
 
   /// Stop audio capture (PTT released)
   void stopAudioCapture() {
     try {
+      print('[Call] 🎤 Stopping audio capture (PTT released)');
+      
       // Use muting instead of enable/disable for better performance
       _rtc.setMuted(true);
       state = state.copyWith(isMuted: true);
-      print('[Call] 🎤 Audio muted (PTT released)');
+      print('[Call] ✅ Audio muted (PTT released)');
     } catch (e) {
-      print('[Call] Error stopping audio capture: $e');
+      print('[Call] ❌ Error stopping audio capture: $e');
     }
   }
 

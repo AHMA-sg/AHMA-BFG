@@ -60,8 +60,8 @@ dependencies:
   lottie: ^3.1.0                    # Lottie animations for watercolor backgrounds
   # rive_common: ^0.4.0               # Rive animation with Linux support - DISABLED: C compilation error
 
-  # Unity integration for endless runner
-  # flutter_unity_widget: ^2022.2.1   # Embed Unity game in Flutter - DISABLED: Not needed for POC
+  # Unity integration for home page
+  flutter_embed_unity: ^1.5.0   # Embed Unity game in Flutter
 
   # Enhanced animations
   animate_do: ^3.3.0                # Pre-built animation helpers
