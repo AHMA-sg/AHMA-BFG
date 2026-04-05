@@ -114,3 +114,19 @@ Desktop.ini
 **/.vscode-test/
 **/.vscode-insiders-test/
 **/macos/Runner.xcworkspace/contents.xcworkspacedata
+ahma_app/resources/ahma-frontend example/lib/main.dart
+ahma_app/resources/ahma-frontend example/lib/models/data.dart
+ahma_app/resources/ahma-frontend example/lib/screens/call_screen.dart
+ahma_app/resources/ahma-frontend example/lib/screens/kopi_screen.dart
+ahma_app/resources/ahma-frontend example/lib/screens/profile_screen.dart
+ahma_app/resources/ahma-frontend example/lib/theme/app_theme.dart
+ahma_app/resources/ahma-frontend example/lib/widgets/bottom_nav.dart
+ahma_app/resources/ahma-frontend example/lib/widgets/shared_widgets.dart
+ahma_app/test/audio_test.dart
+ahma_app/resources/ahma_revised_screens.html
+ahma_app/lib/utils/audio_tester.dart
+ahma_app/resources/L0.png
+ahma_app/resources/L1.png
+ahma_app/resources/L2.png
+ahma_app/resources/L3.png
+ahma_app/resources/ahma-frontend example/README.md

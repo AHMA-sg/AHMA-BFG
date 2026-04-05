@@ -4,7 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'presentation/screens/unity_home_screen.dart';
+import 'presentation/screens/home_screen_example_blended.dart';
 import 'core/config/env_config.dart';
+import 'core/theme/ahma_theme.dart';
+
+// Toggle between Unity and example blended home screens
+// Set to true for Unity, false for example blended
+const bool USE_UNITY_HOME_SCREEN = true;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -71,11 +77,10 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'AHMA',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
-        useMaterial3: true,
-      ),
-      home: const UnityHomeScreen(),
+      theme: AhmaTheme.lightTheme,
+      home: USE_UNITY_HOME_SCREEN 
+        ? const UnityHomeScreen() 
+        : const HomeScreenBlendedExample(),
     );
   }
 }

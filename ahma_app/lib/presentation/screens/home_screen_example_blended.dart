@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../widgets/blended_background.dart';
 import '../widgets/house_animation.dart';
 import '../widgets/hold_to_walk_button.dart';
+import 'ahma_main_screen.dart';
 
 /// Example of using BlendedBackground in HomeScreen
 ///
@@ -62,7 +63,7 @@ class _HomeScreenBlendedExampleState
               layers: [
                 // Base watercolor texture
                 BackgroundLayer(
-                  imagePath: 'resources/bg-watercolor-base.png',
+                  imagePath: 'resources/Sh1.png',
                   opacity: 1.0,
                   blendMode: BlendMode.srcOver,
                 ),
@@ -112,7 +113,12 @@ class _HomeScreenBlendedExampleState
             child: HouseAnimationCinematic(
               height: houseHeight,
               onTap: () {
-                // Navigate to house interior
+                // Navigate to AHMA main screen
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const AhmaMainScreen(),
+                  ),
+                );
               },
             ),
           ),
@@ -125,20 +131,6 @@ class _HomeScreenBlendedExampleState
             child: FadeTransition(
               opacity: _logoOpacity,
               child: _buildMinimalLogo(context),
-            ),
-          ),
-
-          // Button on right edge
-          Positioned(
-            right: 24,
-            top: screenSize.height / 2 - 60,
-            child: HoldToWalkButton(
-              label: "Let's go\nfor a walk",
-              color: Colors.teal.shade700,
-              onComplete: () {
-                // Start voice call
-              },
-              size: 120,
             ),
           ),
         ],

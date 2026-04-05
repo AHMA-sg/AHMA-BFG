@@ -15,7 +15,7 @@ class HouseAnimation extends StatelessWidget {
   const HouseAnimation({
     super.key,
     this.onTap,
-    this.imagePath = 'resources/home-art-bg.png',
+    this.imagePath = 'resources/Sh1.png',
     this.height = 200,
   });
 
@@ -53,7 +53,7 @@ class HouseAnimationCinematic extends StatefulWidget {
   const HouseAnimationCinematic({
     super.key,
     this.onTap,
-    this.imagePath = 'resources/home-art-bg.png',
+    this.imagePath = 'resources/Sh1.png',
     this.height = 200,
   });
 
@@ -143,7 +143,7 @@ class HouseAnimationCustom extends StatefulWidget {
   const HouseAnimationCustom({
     super.key,
     this.onTap,
-    this.imagePath = 'resources/home-art-bg.png',
+    this.imagePath = 'resources/Sh1.png',
     this.height = 200,
   });
 

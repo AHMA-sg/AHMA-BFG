@@ -1,0 +1,55 @@
+name: ahma
+description: AHMA - companion call app with kopitiam warmth
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+
+  # ── Fonts ──────────────────────────────────────────────────────────────────
+  # Download from Google Fonts and place in assets/fonts/
+  #
+  # Caprasimo      → https://fonts.google.com/specimen/Caprasimo
+  # Fraunces       → https://fonts.google.com/specimen/Fraunces
+  # League Spartan → https://fonts.google.com/specimen/League+Spartan
+  # Share Tech Mono→ https://fonts.google.com/specimen/Share+Tech+Mono
+
+  fonts:
+    - family: Caprasimo
+      fonts:
+        - asset: assets/fonts/Caprasimo-Regular.ttf
+
+    - family: Fraunces
+      fonts:
+        - asset: assets/fonts/Fraunces-Light.ttf
+          weight: 300
+        - asset: assets/fonts/Fraunces-Regular.ttf
+          weight: 400
+
+    - family: LeagueSpartan
+      fonts:
+        - asset: assets/fonts/LeagueSpartan-ExtraLight.ttf
+          weight: 200
+        - asset: assets/fonts/LeagueSpartan-Light.ttf
+          weight: 300
+        - asset: assets/fonts/LeagueSpartan-Regular.ttf
+          weight: 400
+
+    - family: ShareTechMono
+      fonts:
+        - asset: assets/fonts/ShareTechMono-Regular.ttf
+
+  assets:
+    - assets/fonts/

@@ -83,6 +83,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.13.1
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -100,6 +101,10 @@ flutter:
     - .env
     # Images
     - resources/home-art-bg.png
+    - resources/full-cup.png
+    - resources/Kopi.png
+    - resources/Phone-on.png
+    - resources/Phone-off.png
 
     # Sky backgrounds (8 times of day) - CREATE THESE PNGS
     # See SKY_BACKGROUNDS_GUIDE.md for color palettes and creation tips
@@ -126,6 +131,29 @@ flutter:
     # Lottie/Rive animations
     # - resources/animations/watercolor-bg.json
 
+  # Custom fonts for AHMA design language
+  fonts:
+    - family: Caprasimo
+      fonts:
+        - asset: fonts/Caprasimo-Regular.ttf
+    - family: Fraunces
+      fonts:
+        - asset: fonts/Fraunces-Light.ttf
+          weight: 300
+        - asset: fonts/Fraunces-Regular.ttf
+          weight: 400
+    - family: LeagueSpartan
+      fonts:
+        - asset: fonts/LeagueSpartan-ExtraLight.ttf
+          weight: 200
+        - asset: fonts/LeagueSpartan-Light.ttf
+          weight: 300
+        - asset: fonts/LeagueSpartan-Regular.ttf
+          weight: 400
+    - family: ShareTechMono
+      fonts:
+        - asset: fonts/ShareTechMono-Regular.ttf
+
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 
@@ -151,3 +179,10 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "resources/app_icon.png"
+  remove_alpha_ios: true
+  min_sdk_android: 21 # Android 5.0+

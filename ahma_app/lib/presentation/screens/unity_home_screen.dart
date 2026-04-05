@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_embed_unity/flutter_embed_unity.dart';
-import 'house_interior_screen.dart';
 import 'next_steps_screen.dart';
+import 'ahma_main_screen.dart';
 import '../providers/backend_provider.dart';
 import '../providers/webhook_provider.dart';
 import '../../core/config/env_config.dart';
@@ -32,10 +32,10 @@ class _UnityHomeScreenState extends ConsumerState<UnityHomeScreen> {
     print("Unity says: $message");
 
     if (message == "touch_released") {
-      // When the Unity button is released, navigate to house interior
+      // When the Unity button is released, navigate to AHMA main screen
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) => const HouseInteriorScreen(),
+          builder: (_) => const AhmaMainScreen(),
         ),
       );
     }

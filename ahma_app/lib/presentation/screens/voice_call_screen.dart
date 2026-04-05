@@ -22,8 +22,8 @@ class _VoiceCallScreenState extends ConsumerState<VoiceCallScreen> {
       // final user = ref.read(authProvider);
 
       ref.read(callProvider.notifier).startCall(
-        userName: 'Maria',  // Example: Pass actual user name from auth
-        careRecipientName: 'Mother',  // Example: Get from user profile
+        userName: 'Abhi',  // Example: Pass actual user name from auth
+        careRecipientName: 'Grandpa',  // Example: Get from user profile
         caregiverType: 'family',  // Example: family, professional, volunteer
       );
     });
