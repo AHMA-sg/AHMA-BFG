@@ -16,7 +16,7 @@ class AhmaBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 64,
+      height: 80, // 25% larger: 64 * 1.25 = 80
       decoration: BoxDecoration(
         color: AhmaTheme.background.withOpacity(0.96),
         border: Border(
@@ -27,22 +27,33 @@ class AhmaBottomNav extends StatelessWidget {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 6, left: 6, right: 6),
+        padding: const EdgeInsets.only(bottom: 7.5, left: 7.5, right: 7.5), // 25% larger padding
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildNavItem(
-              context,
-              AhmaNavTab.profile,
-              _buildProfileIcon(),
-              'me',
+            Expanded(
+              child: Center(
+                child: _buildNavItem(
+                  context,
+                  AhmaNavTab.profile,
+                  _buildProfileIcon(),
+                  'me',
+                ),
+              ),
             ),
-            _buildCallButton(context),
-            _buildNavItem(
-              context,
-              AhmaNavTab.kopi,
-              _buildKopiIcon(),
-              'kopi',
+            Expanded(
+              child: Center(
+                child: _buildCallButton(context),
+              ),
+            ),
+            Expanded(
+              child: Center(
+                child: _buildNavItem(
+                  context,
+                  AhmaNavTab.kopi,
+                  _buildKopiIcon(),
+                  'journey',
+                ),
+              ),
             ),
           ],
         ),
@@ -61,7 +72,7 @@ class AhmaBottomNav extends StatelessWidget {
     return GestureDetector(
       onTap: () => onTabChanged(tab),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+        padding: const EdgeInsets.symmetric(horizontal: 8.75, vertical: 3.75), // 25% larger padding
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -69,11 +80,12 @@ class AhmaBottomNav extends StatelessWidget {
               opacity: isActive ? 1.0 : 0.45,
               child: icon,
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 2.5), // 25% larger spacing
             Text(
               label,
               style: AhmaTheme.navLabelStyle.copyWith(
                 color: isActive ? AhmaTheme.sageGreen : AhmaTheme.mocha.withOpacity(0.35),
+                fontSize: (AhmaTheme.navLabelStyle.fontSize ?? 10) * 1.25, // 25% larger font
               ),
             ),
           ],
@@ -83,16 +95,14 @@ class AhmaBottomNav extends StatelessWidget {
   }
 
   Widget _buildCallButton(BuildContext context) {
-    final isActive = currentTab == AhmaNavTab.call;
-    
     return GestureDetector(
       onTap: () => onTabChanged(AhmaNavTab.call),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 42,
-            height: 42,
+            width: 58, // 10% larger: 52.5 * 1.1
+            height: 58, // 10% larger: 52.5 * 1.1
             decoration: BoxDecoration(
               color: AhmaTheme.sageGreen,
               shape: BoxShape.circle,
@@ -101,31 +111,25 @@ class AhmaBottomNav extends StatelessWidget {
               alignment: Alignment.center,
               children: [
                 Container(
-                  width: 50,
-                  height: 50,
+                  width: 68, // 10% larger: 62.5 * 1.1
+                  height: 68, // 10% larger: 62.5 * 1.1
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: AhmaTheme.sageGreen.withOpacity(0.25),
-                      width: 1,
+                      width: 1.4, // 10% larger: 1.25 * 1.1
                     ),
                   ),
                 ),
-                Icon(
-                  Icons.mic,
-                  size: 18,
-                  color: Colors.white.withOpacity(0.9),
+                Image.asset(
+                  'resources/ahma-logo-white.png', // Changed from mic icon
+                  width: 28.75, // 15% larger: 25 * 1.15
+                  height: 28.75, // 15% larger: 25 * 1.15
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 2),
-          Text(
-            'ahma',
-            style: AhmaTheme.navLabelStyle.copyWith(
-              color: isActive ? AhmaTheme.sageGreen : AhmaTheme.mocha.withOpacity(0.35),
-            ),
-          ),
+          // Removed 'ahma' text
         ],
       ),
     );
@@ -133,8 +137,8 @@ class AhmaBottomNav extends StatelessWidget {
 
   Widget _buildProfileIcon() {
     return SizedBox(
-      width: 22,
-      height: 22,
+      width: 30, // 10% larger: 27.5 * 1.1
+      height: 30, // 10% larger: 27.5 * 1.1
       child: CustomPaint(
         painter: _ProfileIconPainter(),
       ),
@@ -144,8 +148,8 @@ class AhmaBottomNav extends StatelessWidget {
   Widget _buildKopiIcon() {
     return Image.asset(
       'resources/Kopi.png',
-      width: 22,
-      height: 22,
+      width: 30, // 10% larger: 27.5 * 1.1
+      height: 30, // 10% larger: 27.5 * 1.1
     );
   }
 }

@@ -35,9 +35,33 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
   bool _showPhoneOn = false;
   Timer? _callStartTimer;
 
+  // Random phrases for tea card
+  final List<String> _teaPhrases = [
+    'walking & talking..',
+    'cooking..',
+    'brewing kopi..',
+    'knitting..',
+    'looking at the flowers..',
+    'stargazing..',
+    'sitting..',
+    'sipping teh..',
+  ];
+  
+  // Current phrase for tea card
+  String _currentPhrase = 'walking & talking..';
+
+  // Method to change the current phrase
+  void _changePhrase() {
+    final random = DateTime.now().millisecondsSinceEpoch;
+    _currentPhrase = _teaPhrases[random % _teaPhrases.length];
+  }
+
   @override
   void initState() {
     super.initState();
+    
+    // Change phrase when screen becomes visible
+    _changePhrase();
     
     // Breathing animation (4s cycle)
     _breathingController = AnimationController(
@@ -127,6 +151,7 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
               // Disconnect the call if it's active
               if (_callStarted && ref.read(callProvider).status != CallStatus.ended) {
                 await ref.read(callProvider.notifier).endCall();
+                _changePhrase(); // Change phrase when ending a call
               }
               
               // Navigate back to appropriate home screen based on manual toggle
@@ -190,12 +215,12 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
           // Breathing ring with tea card
           _buildBreathingRing(callState),
           
-          const SizedBox(height: 14),
+          const SizedBox(height: 24),
           
           // Exercise pills
           _buildExercisePills(),
           
-          const Spacer(),
+          const SizedBox(height: 20),
           
           // Push-to-talk area
           _buildPushToTalkArea(callState),
@@ -256,7 +281,7 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
     Color statusColor;
     
     if (!_callStarted) {
-      statusText = 'press & hold to call';
+      statusText = _currentPhrase;
       statusColor = AhmaTheme.mocha.withOpacity(0.6);
     } else {
       switch (callState.status) {
@@ -265,7 +290,8 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
           statusColor = AhmaTheme.ahmaRed.withOpacity(0.8);
           break;
         case CallStatus.active:
-          statusText = 'listening...';
+          // Use stored phrase
+          statusText = _currentPhrase;
           statusColor = AhmaTheme.sageGreen.withOpacity(0.8);
           break;
         case CallStatus.ended:
@@ -292,13 +318,14 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
           // Tea cup SVG
           _buildTeaCupIcon(),
           
-          const SizedBox(height: 7),
+          const SizedBox(height: 12),
           
           // Status label
           Text(
             statusText,
             style: AhmaTheme.cardLabelStyle.copyWith(
               color: statusColor,
+              fontSize: 12.0, // Much smaller text
             ),
           ),
         ],
@@ -316,8 +343,8 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
 
   Widget _buildExercisePills() {
     return Wrap(
-      spacing: 5,
-      runSpacing: 5,
+      spacing: 8,
+      runSpacing: 8,
       alignment: WrapAlignment.center,
       children: [
         _buildPill('grounding'),
@@ -334,7 +361,7 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
       child: Text(
         text,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          fontSize: 10,
+          fontSize: 15.0, // 50% larger: 10 * 1.5
           color: AhmaTheme.mocha.withOpacity(0.8),
           letterSpacing: 0.2,
         ),
@@ -353,33 +380,25 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
           onTapDown: (!_callStarted || isActive) ? (_) => _startRecording() : null,
           onTapUp: (!_callStarted || isActive) ? (_) => _stopRecording() : null,
           onTapCancel: (!_callStarted || isActive) ? () => _stopRecording() : null,
-          child: Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: _getButtonColor(callState),
-              shape: BoxShape.circle,
-            ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Outer ring
-                Container(
-                  width: 66,
-                  height: 66,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: _getRingColor(callState),
-                      width: 1,
-                    ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Outer ring (40% larger)
+              Container(
+                width: 92.4, // 40% larger: 66 * 1.4
+                height: 92.4, // 40% larger: 66 * 1.4
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: _getRingColor(callState),
+                    width: 1.4, // 40% larger: 1 * 1.4
                   ),
                 ),
-                
-                // Phone or Mic icon
-                _buildButtonIcon(callState),
-              ],
-            ),
+              ),
+              
+              // Phone or Mic icon
+              _buildButtonIcon(callState),
+            ],
           ),
         ),
         
@@ -389,7 +408,7 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
         Text(
           _getHintText(callState),
           style: AhmaTheme.labelTextStyle.copyWith(
-            fontSize: 8,
+            fontSize: 12.0, // 50% larger: 8 * 1.5
             color: _getTextColor(callState),
             letterSpacing: 0.7,
           ),
@@ -431,6 +450,7 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
         if (mounted && _isPressing) {
           setState(() {
             _callStarted = true;
+            _changePhrase(); // Change phrase when starting a call
           });
           _connectionBarController.forward();
           
@@ -466,21 +486,7 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
     }
   }
 
-  Color _getButtonColor(CallState callState) {
-    if (!_callStarted) {
-      return _isPressing ? AhmaTheme.sageGreen : AhmaTheme.mocha.withOpacity(0.5);
-    }
-    
-    switch (callState.status) {
-      case CallStatus.connecting:
-        return AhmaTheme.sageGreen;
-      case CallStatus.active:
-        return _isPressing ? AhmaTheme.ahmaRed : AhmaTheme.sageGreen;
-      default:
-        return AhmaTheme.mocha.withOpacity(0.3);
-    }
-  }
-
+  
   Color _getRingColor(CallState callState) {
     if (!_callStarted) {
       return _isPressing ? AhmaTheme.sageGreen.withOpacity(0.25) : AhmaTheme.mocha.withOpacity(0.1);
@@ -501,14 +507,14 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
       if (_showPhoneOn) {
         return Image.asset(
           'resources/Phone-on.png',
-          width: 33,
-          height: 33,
+          width: 52.8, // 60% larger: 33 * 1.6
+          height: 52.8, // 60% larger: 33 * 1.6
         );
       } else {
         return Image.asset(
           'resources/Phone-off.png',
-          width: 31.2,
-          height: 31.2,
+          width: 49.92, // 60% larger: 31.2 * 1.6
+          height: 49.92, // 60% larger: 31.2 * 1.6
         );
       }
     }
@@ -518,16 +524,24 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
         // Show phone-on icon while connecting
         return Image.asset(
           'resources/Phone-on.png',
-          width: 31.2,
-          height: 31.2,
+          width: 49.92, // 60% larger: 31.2 * 1.6
+          height: 49.92, // 60% larger: 31.2 * 1.6
         );
       case CallStatus.active:
-        // Show mic icon during call
-        return Icon(
-          _isRecording ? Icons.stop : Icons.mic,
-          size: 20,
-          color: Colors.white.withOpacity(0.9),
-        );
+        // Show phone-off icon when not pressing, phone-on when pressing
+        if (_isPressing) {
+          return Image.asset(
+            'resources/Phone-on.png',
+            width: 49.92, // 60% larger: 31.2 * 1.6
+            height: 49.92, // 60% larger: 31.2 * 1.6
+          );
+        } else {
+          return Image.asset(
+            'resources/Phone-off.png',
+            width: 49.92, // 60% larger: 31.2 * 1.6
+            height: 49.92, // 60% larger: 31.2 * 1.6
+          );
+        }
       default:
         return Icon(
           Icons.phone_disabled,

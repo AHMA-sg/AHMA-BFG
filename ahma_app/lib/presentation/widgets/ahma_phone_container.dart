@@ -10,32 +10,49 @@ class AhmaPhoneContainer extends StatelessWidget {
   final Widget child;
   final double? width;
   final double? height;
+  final double scaleFactor;
 
   const AhmaPhoneContainer({
     super.key,
     required this.child,
-    this.width = 272,
-    this.height = 570,
+    this.width = 272,  // Original size - scaling will handle the rest
+    this.height = 570, // Original size - scaling will handle the rest
+    this.scaleFactor = 1.2, // 20% larger by default
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        color: AhmaTheme.background,
-        borderRadius: BorderRadius.circular(34),
-        border: Border.all(
-          color: AhmaTheme.mocha.withOpacity(0.12),
-          width: 1.5,
+    final screenHeight = MediaQuery.of(context).size.height;
+    
+    // More conservative scaling to prevent overflow
+    double scaleFactor;
+    if (screenHeight < 650) {
+      scaleFactor = 0.9; // Even smaller for very compact phones
+    } else if (screenHeight < 750) {
+      scaleFactor = 1.0; // Normal for compact phones
+    } else {
+      scaleFactor = 1.15; // 15% larger for larger phones (not 20%)
+    }
+    
+    return Transform.scale(
+      scale: scaleFactor,
+      child: Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          color: AhmaTheme.background,
+          borderRadius: BorderRadius.circular(34),
+          border: Border.all(
+            color: AhmaTheme.mocha.withOpacity(0.12),
+            width: 1.5,
+          ),
         ),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(34),
-        child: WatercolorBackground(
-          opacity: 0.55,
-          child: child,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(34),
+          child: WatercolorBackground(
+            opacity: 0.55,
+            child: child,
+          ),
         ),
       ),
     );

@@ -45,19 +45,19 @@ class AhmaTheme {
         // Loud font - Caprasimo
         displayLarge: TextStyle(
           fontFamily: caprasimoFont,
-          fontSize: 32,
+          fontSize: 48.0, // 50% larger: 32 * 1.5 = 48.0
           color: mocha,
           letterSpacing: 1.2,
         ),
         displayMedium: TextStyle(
           fontFamily: caprasimoFont,
-          fontSize: 24,
+          fontSize: 36.0, // 50% larger: 24 * 1.5 = 36.0
           color: mocha,
           letterSpacing: 0.8,
         ),
         displaySmall: TextStyle(
           fontFamily: caprasimoFont,
-          fontSize: 20,
+          fontSize: 20.0, // Smaller size for AHMA text
           color: mocha,
           letterSpacing: 0.6,
         ),
@@ -65,28 +65,28 @@ class AhmaTheme {
         // Serif font - Fraunces
         headlineLarge: TextStyle(
           fontFamily: frauncesFont,
-          fontSize: 18,
+          fontSize: 27.0, // 50% larger: 18 * 1.5 = 27.0
           fontWeight: FontWeight.w300,
           color: mocha,
           letterSpacing: 0.2,
         ),
         headlineMedium: TextStyle(
           fontFamily: frauncesFont,
-          fontSize: 16,
+          fontSize: 24.0, // 50% larger: 16 * 1.5 = 24.0
           fontWeight: FontWeight.w300,
           color: mocha,
           letterSpacing: 0.1,
         ),
         bodyLarge: TextStyle(
           fontFamily: frauncesFont,
-          fontSize: 14,
+          fontSize: 21.0, // 50% larger: 14 * 1.5 = 21.0
           fontWeight: FontWeight.w300,
           color: mocha,
           height: 1.55,
         ),
         bodyMedium: TextStyle(
           fontFamily: frauncesFont,
-          fontSize: 12,
+          fontSize: 18.0, // 50% larger: 12 * 1.5 = 18.0
           fontWeight: FontWeight.w300,
           color: mocha,
           height: 1.45,
@@ -95,21 +95,21 @@ class AhmaTheme {
         // Calm font - League Spartan
         titleLarge: TextStyle(
           fontFamily: leagueSpartanFont,
-          fontSize: 16,
+          fontSize: 24.0, // 50% larger: 16 * 1.5 = 24.0
           fontWeight: FontWeight.w300,
           color: mocha,
           letterSpacing: 0.5,
         ),
         titleMedium: TextStyle(
           fontFamily: leagueSpartanFont,
-          fontSize: 14,
+          fontSize: 21.0, // 50% larger: 14 * 1.5 = 21.0
           fontWeight: FontWeight.w300,
           color: mocha,
           letterSpacing: 0.3,
         ),
         bodySmall: TextStyle(
           fontFamily: leagueSpartanFont,
-          fontSize: 10,
+          fontSize: 15.0, // 50% larger: 10 * 1.5 = 15.0
           fontWeight: FontWeight.w200,
           color: sageGreen,
           letterSpacing: 0.7,
@@ -118,13 +118,13 @@ class AhmaTheme {
         // Mono font - Share Tech Mono
         labelSmall: TextStyle(
           fontFamily: shareTechMonoFont,
-          fontSize: 8,
+          fontSize: 12.0, // 50% larger: 8 * 1.5 = 12.0
           color: mocha,
           letterSpacing: 0.8,
         ),
         labelMedium: TextStyle(
           fontFamily: shareTechMonoFont,
-          fontSize: 10,
+          fontSize: 15.0, // 50% larger: 10 * 1.5 = 15.0
           color: mocha,
           letterSpacing: 0.6,
         ),
@@ -194,7 +194,7 @@ class AhmaTheme {
         centerTitle: true,
         titleTextStyle: TextStyle(
           fontFamily: caprasimoFont,
-          fontSize: 21,
+          fontSize: 20, // 50% larger: 21 * 1.5 = 31.5
           color: ahmaRed,
           letterSpacing: 0.8,
         ),
@@ -223,21 +223,21 @@ class AhmaTheme {
 
   static TextStyle get labelTextStyle => const TextStyle(
     fontFamily: shareTechMonoFont,
-    fontSize: 8,
+    fontSize: 12.0, // 50% larger: 8 * 1.5 = 12.0
     color: mocha,
     letterSpacing: 0.8,
   );
 
   static TextStyle get navLabelStyle => const TextStyle(
     fontFamily: shareTechMonoFont,
-    fontSize: 8,
+    fontSize: 12.0, // 50% larger: 8 * 1.5 = 12.0
     color: mocha,
     letterSpacing: 0.5,
   );
 
   static TextStyle get cardLabelStyle => const TextStyle(
     fontFamily: frauncesFont,
-    fontSize: 11,
+    fontSize: 16.5, // 50% larger: 11 * 1.5 = 16.5
     color: sageGreen,
     fontWeight: FontWeight.w300,
     letterSpacing: 0.2,

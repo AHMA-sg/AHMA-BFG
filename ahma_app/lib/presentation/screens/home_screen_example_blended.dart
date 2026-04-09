@@ -63,7 +63,7 @@ class _HomeScreenBlendedExampleState
               layers: [
                 // Base watercolor texture
                 BackgroundLayer(
-                  imagePath: 'resources/Sh1.png',
+                  imagePath: 'resources/bg-watercolor-base.png',
                   opacity: 1.0,
                   blendMode: BlendMode.srcOver,
                 ),

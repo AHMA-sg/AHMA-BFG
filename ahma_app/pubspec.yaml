@@ -102,9 +102,21 @@ flutter:
     # Images
     - resources/home-art-bg.png
     - resources/full-cup.png
+    - resources/empty-cup.png
     - resources/Kopi.png
+    - resources/Kopi-pour.png
     - resources/Phone-on.png
     - resources/Phone-off.png
+    - resources/Sh1.png
+    - resources/Sh2.png
+    - resources/Sh3.png
+    - resources/L0.png
+    - resources/L1.png
+    - resources/L2.png
+    - resources/L3.png
+    - resources/ahma-logo.png
+    - resources/ahma-logo-white.png
+    - resources/L3.png
 
     # Sky backgrounds (8 times of day) - CREATE THESE PNGS
     # See SKY_BACKGROUNDS_GUIDE.md for color palettes and creation tips

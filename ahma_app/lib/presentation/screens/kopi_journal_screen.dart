@@ -4,7 +4,7 @@ import '../../core/theme/ahma_theme.dart';
 import '../../data/models/action_plan.dart';
 import '../providers/backend_provider.dart';
 
-class BrewEntry {
+class WalkEntry {
   final String title;
   final String subtitle;
   final String? collectible;
@@ -12,7 +12,7 @@ class BrewEntry {
   final bool isPink;
   final bool isFuture;
 
-  const BrewEntry({
+  const WalkEntry({
     required this.title,
     required this.subtitle,
     this.collectible,
@@ -27,7 +27,7 @@ class BrewEntry {
 /// Features:
 /// - Spiral timeline with nodes
 /// - Collectible items (☕, ✦, ?)
-/// - Brew count in top bar
+/// - walk count in top bar
 /// - Walking turtle theme
 class KopiJournalScreen extends ConsumerStatefulWidget {
   const KopiJournalScreen({super.key});
@@ -37,38 +37,38 @@ class KopiJournalScreen extends ConsumerStatefulWidget {
 }
 
 class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
-  late List<BrewEntry> _brews;
+  late List<WalkEntry> _walks;
   final Set<int> _expandedPlans = <int>{};
 
   @override
   void initState() {
     super.initState();
-    _brews = [
-      const BrewEntry(
+    _walks = [
+      const WalkEntry(
         title: 'Tuesday evening',
         subtitle: 'breathing · 8 min',
         collectible: 'kopi',
         isActive: true,
       ),
-    const BrewEntry(
-      title: 'Sunday, heavy heart',
-      subtitle: 'just talking · 22 min',
-      isPink: true,
-    ),
-    const BrewEntry(
-      title: 'Thursday morning',
-      subtitle: 'grounding · 5 min',
-      collectible: '✦',
-    ),
-    const BrewEntry(
-      title: 'first brew',
-      subtitle: 'introduced · hello',
-    ),
-    const BrewEntry(
-      title: 'more to come',
-      subtitle: '',
-      isFuture: true,
-    ),
+      const WalkEntry(
+        title: 'Sunday, heavy heart',
+        subtitle: 'just talking · 22 min',
+        isPink: true,
+      ),
+      const WalkEntry(
+        title: 'Thursday morning',
+        subtitle: 'grounding · 5 min',
+        collectible: '✦',
+      ),
+      const WalkEntry(
+        title: 'first walk',
+        subtitle: 'introduced · hello',
+      ),
+      const WalkEntry(
+        title: 'more to come',
+        subtitle: '',
+        isFuture: true,
+      ),
     ];
   }
 
@@ -80,7 +80,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Top bar with logo and brew count
+            // Top bar with logo and walk count
             _buildTopBar(),
             
             // Main content
@@ -94,7 +94,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
   }
 
   Widget _buildTopBar() {
-    final brewCount = _brews.where((brew) => !brew.isFuture).length;
+    final walkCount = _walks.where((walk) => !walk.isFuture).length;
     
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
@@ -110,11 +110,11 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
             ),
           ),
           
-          // Brew count
+          // Walk count
           Text(
-            '${brewCount} brews',
+            '${walkCount} walks',
             style: AhmaTheme.labelTextStyle.copyWith(
-              fontSize: 8,
+              fontSize: 12.0, // 50% larger: 8 * 1.5
               color: AhmaTheme.mocha.withOpacity(0.35),
               letterSpacing: 0.6,
             ),
@@ -134,9 +134,9 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: Text(
-              'your kopi trail',
+              'Your Journey',
               style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                fontSize: 15,
+                fontSize: 15, // 50% larger: 15 * 1.5
                 color: AhmaTheme.mocha.withOpacity(0.8),
               ),
             ),
@@ -154,14 +154,14 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      /*Text(
                         'Action Plans',
                         style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                          fontSize: 18,
+                          fontSize: 27.0, // 50% larger: 18 * 1.5
                           fontWeight: FontWeight.w300,
                           color: AhmaTheme.mocha.withOpacity(0.5),
                         ),
-                      ),
+                      ), */
                       const SizedBox(height: 10),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -174,9 +174,9 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
                           ),
                         ),
                         child: Text(
-                          'No action plans yet. Complete a voice call to generate your first brew!',
+                          'No action plans yet. Complete a voice call to generate your first walk!',
                           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            fontSize: 11,
+                            fontSize: 16.5, // 50% larger: 11 * 1.5
                             color: AhmaTheme.mocha.withOpacity(0.6),
                             fontStyle: FontStyle.italic,
                           ),
@@ -195,7 +195,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
                     Text(
                       'Action Plans',
                       style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                        fontSize: 18,
+                        fontSize: 27.0, // 50% larger: 18 * 1.5
                         fontWeight: FontWeight.w300,
                         color: AhmaTheme.mocha,
                       ),
@@ -265,11 +265,11 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
               children: [
                 Expanded(
                   child: GestureDetector(
-                    onTap: () => _addBrewFromActionPlan(update),
+                    onTap: () => _addWalkFromActionPlan(update),
                     child: Text(
                       _formatNeed(update.classification.primaryNeed),
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontSize: 16,
+                        fontSize: 24.0, // 50% larger: 16 * 1.5
                         fontWeight: FontWeight.w300,
                         color: AhmaTheme.mocha,
                         decoration: TextDecoration.underline,
@@ -381,12 +381,12 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
     );
   }
 
-  void _addBrewFromActionPlan(BackendUpdate update) {
+  void _addWalkFromActionPlan(BackendUpdate update) {
     final timestamp = DateTime.now();
     final timeStr = '${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}';
     
-    // Create a new brew entry based on the action plan
-    final newBrew = BrewEntry(
+    // Create a new walk entry based on the action plan
+    final newWalk = WalkEntry(
       title: '${_formatNeed(update.classification.primaryNeed)} · $timeStr',
       subtitle: '${update.actionPlan.totalActions} action${update.actionPlan.totalActions == 1 ? '' : 's'} · ${update.stats.newActions} new',
       collectible: 'kopi',
@@ -395,11 +395,11 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
     
     setState(() {
       // Remove the 'more to come' future entry if it exists
-      _brews = _brews.where((brew) => !brew.isFuture).toList();
-      // Add the new brew at the top
-      _brews.insert(0, newBrew);
+      _walks = _walks.where((walk) => !walk.isFuture).toList();
+      // Add the new walk at the top
+      _walks.insert(0, newWalk);
       // Add back the 'more to come' entry
-      _brews.add(const BrewEntry(
+      _walks.add(const WalkEntry(
         title: 'more to come',
         subtitle: '',
         isFuture: true,
@@ -409,7 +409,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
     // Show a snackbar to confirm
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Added ${_formatNeed(update.classification.primaryNeed)} to your kopi trail!'),
+        content: Text('Added ${_formatNeed(update.classification.primaryNeed)} to your journey!'),
         backgroundColor: AhmaTheme.sageGreen,
         duration: const Duration(seconds: 2),
       ),
@@ -461,16 +461,16 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
           ),
           
           // Nodes
-          ..._brews.asMap().entries.map((entry) {
+          ..._walks.asMap().entries.map((entry) {
             final index = entry.key;
-            final brew = entry.value;
+            final walk = entry.value;
             final topPosition = index * 55.0;
             final leftOffset = index % 2 == 0 ? 0.0 : (index % 3 == 1 ? 12.0 : 16.0);
             
             return Positioned(
               top: topPosition,
               left: leftOffset,
-              child: _buildNodeItem(brew),
+              child: _buildNodeItem(walk),
             );
           }).toList(),
         ],
@@ -478,23 +478,23 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
     );
   }
 
-  Widget _buildNodeItem(BrewEntry brew) {
+  Widget _buildNodeItem(WalkEntry walk) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         // Node dot
-        _buildNodeDot(brew),
+        _buildNodeDot(walk),
         
         const SizedBox(width: 7),
         
         // Node card
-        _buildNodeCard(brew),
+        _buildNodeCard(walk),
         
         // Collectible (if any)
-        if (brew.collectible != null) ...[
+        if (walk.collectible != null) ...[
           const SizedBox(width: 7),
-          _buildCollectible(brew.collectible!),
+          _buildCollectible(walk.collectible!),
         ],
       ],
     );
@@ -537,7 +537,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
     Color dotColor = AhmaTheme.mid;
     Color borderColor = AhmaTheme.mocha.withOpacity(0.18);
     
-    if (item is BrewEntry) {
+    if (item is WalkEntry) {
       if (item.isActive) {
         dotColor = AhmaTheme.sageGreen;
         borderColor = AhmaTheme.sageGreen;
@@ -576,13 +576,13 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
     );
   }
 
-  Widget _buildNodeCard(BrewEntry brew) {
+  Widget _buildNodeCard(WalkEntry walk) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
         color: AhmaTheme.cardColor,
         borderRadius: BorderRadius.circular(10),
-        border: brew.isFuture 
+        border: walk.isFuture 
           ? Border.all(
               color: AhmaTheme.mocha.withOpacity(0.06),
               width: 1,
@@ -599,22 +599,22 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
         children: [
           // Title
           Text(
-            brew.title,
+            walk.title,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               fontSize: 10,
               color: AhmaTheme.mocha.withOpacity(0.8),
               fontWeight: FontWeight.w300,
-              letterSpacing: brew.isFuture ? 0.04 : 0.0,
+              letterSpacing: walk.isFuture ? 0.04 : 0.0,
             ),
           ),
           
           // Subtitle
-          if (brew.subtitle.isNotEmpty) ...[
+          if (walk.subtitle.isNotEmpty) ...[
             const SizedBox(height: 1),
             Text(
-              brew.subtitle,
+              walk.subtitle,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                fontSize: 9,
+                fontSize: 13.5, // 50% larger: 9 * 1.5
                 color: AhmaTheme.sageGreen,
                 fontWeight: FontWeight.w300,
               ),

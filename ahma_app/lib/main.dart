@@ -10,7 +10,7 @@ import 'core/theme/ahma_theme.dart';
 
 // Toggle between Unity and example blended home screens
 // Set to true for Unity, false for example blended
-const bool USE_UNITY_HOME_SCREEN = true;
+const bool USE_UNITY_HOME_SCREEN = false;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

@@ -21,7 +21,7 @@ class Affirmation {
 /// - Today's affirmation card
 /// - This week's mood pills
 /// - Collectibles display
-/// - Past brews with affirmations
+/// - Past walks with affirmations
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
@@ -120,8 +120,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           
           const SizedBox(height: 7),
           
-          // Past brews section
-          _buildPastBrews(),
+          // Past walks section
+          _buildPastWalks(),
         ],
       ),
     );
@@ -135,17 +135,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Hui Lin',
+              'Abhi',
               style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                fontSize: 17,
+                fontSize: 25.5, // 50% larger: 17 * 1.5
                 color: AhmaTheme.mocha.withOpacity(0.82),
               ),
             ),
             const SizedBox(height: 1),
             Text(
-              '12 brews collected',
+              "You've been on 4 walks.",
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontSize: 8,
+                fontSize: 12.0, // 50% larger: 8 * 1.5
                 color: AhmaTheme.sageGreen,
                 letterSpacing: 0.8,
                 fontWeight: FontWeight.w200,
@@ -158,16 +158,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         Column(
           children: [
             Text(
-              '7',
+              '3',
               style: AhmaTheme.labelTextStyle.copyWith(
-                fontSize: 14,
+                fontSize: 21.0, // 50% larger: 14 * 1.5
                 color: AhmaTheme.ahmaRed,
               ),
             ),
             Text(
               'streak',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontSize: 7,
+                fontSize: 10.5, // 50% larger: 7 * 1.5
                 color: AhmaTheme.mocha.withOpacity(0.38),
                 letterSpacing: 0.7,
                 fontWeight: FontWeight.w200,
@@ -191,7 +191,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           Text(
             'today\'s affirmation',
             style: AhmaTheme.labelTextStyle.copyWith(
-              fontSize: 7,
+              fontSize: 10.5, // 50% larger: 7 * 1.5
               color: AhmaTheme.sageGreen.withOpacity(0.65),
               letterSpacing: 0.8,
             ),
@@ -203,7 +203,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           Text(
             'You don\'t have to have it all figured out. Resting is also moving forward.',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              fontSize: 12,
+              fontSize: 18.0, // 50% larger: 12 * 1.5
               color: AhmaTheme.mocha.withOpacity(0.82),
               height: 1.55,
             ),
@@ -213,9 +213,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           
           // From
           Text(
-            '— from your 3rd brew',
+            '— from your 3rd journey',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              fontSize: 8,
+              fontSize: 12.0, // 50% larger: 8 * 1.5
               color: AhmaTheme.sageGreen,
               letterSpacing: 0.7,
               fontWeight: FontWeight.w200,
@@ -241,7 +241,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 Text(
                   'this week',
                   style: AhmaTheme.labelTextStyle.copyWith(
-                    fontSize: 7,
+                    fontSize: 10.5, // 50% larger: 7 * 1.5
                     color: AhmaTheme.sageGreen.withOpacity(0.65),
                     letterSpacing: 0.8,
                   ),
@@ -274,7 +274,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 Text(
                   'collectibles',
                   style: AhmaTheme.labelTextStyle.copyWith(
-                    fontSize: 7,
+                    fontSize: 10.5, // 50% larger: 7 * 1.5
                     color: AhmaTheme.sageGreen.withOpacity(0.65),
                     letterSpacing: 0.8,
                   ),
@@ -319,7 +319,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       child: Text(
         mood,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          fontSize: 9,
+          fontSize: 13.5, // 50% larger: 9 * 1.5
           color: AhmaTheme.mocha.withOpacity(0.8),
           letterSpacing: 0.2,
         ),
@@ -354,7 +354,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         child: Text(
           collectible,
           style: AhmaTheme.labelTextStyle.copyWith(
-            fontSize: 8,
+            fontSize: 12.0, // 50% larger: 8 * 1.5
             color: AhmaTheme.mocha.withOpacity(0.6),
           ),
         ),
@@ -362,15 +362,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _buildPastBrews() {
+  Widget _buildPastWalks() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Section label
         Text(
-          'past brews',
+          'past walks',
           style: AhmaTheme.labelTextStyle.copyWith(
-            fontSize: 7,
+            fontSize: 10.5, // 50% larger: 7 * 1.5
             color: AhmaTheme.mocha.withOpacity(0.32),
             letterSpacing: 0.8,
           ),
@@ -420,7 +420,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             child: Text(
               affirmation.text,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontSize: 10,
+                fontSize: 15.0, // 50% larger: 10 * 1.5
                 color: AhmaTheme.mocha,
                 height: 1.45,
               ),
