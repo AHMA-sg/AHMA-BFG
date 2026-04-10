@@ -15,7 +15,7 @@ import '../models/action_plan.dart';
 class LocalDatabase {
   static Database? _database;
   static const String _dbName = 'ahma.db';
-  static const int _dbVersion = 1;
+  static const int _dbVersion = 2;
 
   /// Table names
   static const String _actionPlansTable = 'action_plans';
@@ -58,7 +58,7 @@ class LocalDatabase {
     await db.execute('''
       CREATE TABLE $_actionPlansTable (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        call_id TEXT NOT NULL,
+        call_id TEXT NOT NULL UNIQUE,
         call_type TEXT NOT NULL,
         user_id TEXT NOT NULL,
         timestamp TEXT NOT NULL,
@@ -70,10 +70,6 @@ class LocalDatabase {
     ''');
 
     // Indexes for faster queries
-    await db.execute('''
-      CREATE INDEX idx_call_id ON $_actionPlansTable(call_id)
-    ''');
-
     await db.execute('''
       CREATE INDEX idx_timestamp ON $_actionPlansTable(timestamp DESC)
     ''');
@@ -87,7 +83,42 @@ class LocalDatabase {
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     // Migration logic for future schema changes
     if (oldVersion < 2) {
-      // Example: await db.execute('ALTER TABLE ...');
+      // Add UNIQUE constraint to call_id column
+      // SQLite doesn't support ALTER TABLE ADD CONSTRAINT, so we need to recreate the table
+      await db.execute('''
+        CREATE TABLE $_actionPlansTable\_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          call_id TEXT NOT NULL UNIQUE,
+          call_type TEXT NOT NULL,
+          user_id TEXT NOT NULL,
+          timestamp TEXT NOT NULL,
+          classification TEXT NOT NULL,
+          action_plan TEXT NOT NULL,
+          stats TEXT NOT NULL,
+          created_at TEXT NOT NULL
+        )
+      ''');
+      
+      // Copy data from old table to new table (removing duplicates)
+      await db.execute('''
+        INSERT INTO $_actionPlansTable\_new (call_id, call_type, user_id, timestamp, classification, action_plan, stats, created_at)
+        SELECT call_id, call_type, user_id, timestamp, classification, action_plan, stats, created_at
+        FROM $_actionPlansTable
+        GROUP BY call_id
+      ''');
+      
+      // Drop old table and rename new table
+      await db.execute('DROP TABLE $_actionPlansTable');
+      await db.execute('ALTER TABLE $_actionPlansTable\_new RENAME TO $_actionPlansTable');
+      
+      // Recreate indexes
+      await db.execute('''
+        CREATE INDEX idx_timestamp ON $_actionPlansTable(timestamp DESC)
+      ''');
+      
+      await db.execute('''
+        CREATE INDEX idx_user_id ON $_actionPlansTable(user_id)
+      ''');
     }
   }
 
@@ -106,11 +137,19 @@ class LocalDatabase {
       'created_at': DateTime.now().toIso8601String(),
     };
 
-    return await db.insert(
+    print('[DB] Saving action plan for call: ${update.callId}');
+    print('[DB]   Calendar events: ${update.actionPlan.calendarEvents.length}');
+    print('[DB]   Todoist tasks: ${update.actionPlan.todoistTasks.length}');
+    print('[DB]   Resources: ${update.actionPlan.resources.length}');
+
+    final result = await db.insert(
       _actionPlansTable,
       data,
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+
+    print('[DB] Insert result: $result');
+    return result;
   }
 
   /// Get action plans with optional filters
@@ -154,8 +193,10 @@ class LocalDatabase {
       limit: limit,
     );
 
-    return results.map((row) {
-      return BackendUpdate.fromJson({
+    print('[DB] Query returned ${results.length} results');
+    
+    final updates = results.map((row) {
+      final update = BackendUpdate.fromJson({
         'type': row['call_type'],
         'userId': row['user_id'],
         'callId': row['call_id'],
@@ -164,7 +205,12 @@ class LocalDatabase {
         'action_plan': jsonDecode(row['action_plan'] as String),
         'stats': jsonDecode(row['stats'] as String),
       });
+      
+      print('[DB]   Call: ${update.callId}, Tasks: ${update.actionPlan.todoistTasks.length}');
+      return update;
     }).toList();
+
+    return updates;
   }
 
   /// Get action plans grouped by date

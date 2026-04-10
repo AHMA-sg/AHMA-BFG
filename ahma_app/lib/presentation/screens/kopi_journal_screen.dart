@@ -11,6 +11,7 @@ class WalkEntry {
   final bool isActive;
   final bool isPink;
   final bool isFuture;
+  final BackendUpdate? backendUpdate;
 
   const WalkEntry({
     required this.title,
@@ -19,6 +20,7 @@ class WalkEntry {
     this.isActive = false,
     this.isPink = false,
     this.isFuture = false,
+    this.backendUpdate,
   });
 }
 
@@ -142,72 +144,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
             ),
           ),
           
-          // Action plans section
-          Consumer(
-            builder: (context, ref, child) {
-              final backendState = ref.watch(backendProvider);
-              final actionPlans = backendState.updates;
-              
-              if (actionPlans.isEmpty) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 15),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      /*Text(
-                        'Action Plans',
-                        style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                          fontSize: 27.0, // 50% larger: 18 * 1.5
-                          fontWeight: FontWeight.w300,
-                          color: AhmaTheme.mocha.withOpacity(0.5),
-                        ),
-                      ), */
-                      const SizedBox(height: 10),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: AhmaTheme.cardColor,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: AhmaTheme.mocha.withOpacity(0.05),
-                            width: 1,
-                          ),
-                        ),
-                        child: Text(
-                          'No action plans yet. Complete a voice call to generate your first walk!',
-                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            fontSize: 16.5, // 50% larger: 11 * 1.5
-                            color: AhmaTheme.mocha.withOpacity(0.6),
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }
-              
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 15),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Action Plans',
-                      style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                        fontSize: 27.0, // 50% larger: 18 * 1.5
-                        fontWeight: FontWeight.w300,
-                        color: AhmaTheme.mocha,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    // Display action plans as trail items
-                    ...actionPlans.take(3).map((update) => _buildActionPlanItem(update)).toList(),
-                  ],
-                ),
-              );
-            },
-          ),
+          // Action plans are now integrated directly into the spiral trail
           
           // Spiral nodes
           Expanded(
@@ -434,51 +371,136 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
     });
   }
 
+  void _toggleActionPlanExpansion(String callId) {
+    setState(() {
+      final planId = callId.hashCode;
+      if (_expandedPlans.contains(planId)) {
+        _expandedPlans.remove(planId);
+      } else {
+        _expandedPlans.add(planId);
+      }
+    });
+  }
+
   Widget _buildSpiralNodes() {
-    return SizedBox(
-      height: 255,
-      child: Stack(
-        children: [
-          // Spiral line
-          Positioned(
-            left: 4,
-            top: 10,
-            bottom: 10,
-            child: Container(
-              width: 1,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    AhmaTheme.sageGreen,
-                    AhmaTheme.palePink,
-                    AhmaTheme.mid,
-                  ],
+    return Consumer(
+      builder: (context, ref, child) {
+        final backendState = ref.watch(backendProvider);
+        final actionPlans = backendState.updates;
+        
+        // Combine existing walks with action plans
+        // Action plans should appear at the top (after stubs) in chronological order
+        final allTrailItems = <dynamic>[];
+        
+        // Add action plans first (newest at top)
+        final sortedActionPlans = List.from(actionPlans.take(3));
+        sortedActionPlans.sort((a, b) => b.timestamp.compareTo(a.timestamp)); // Newest first
+        
+        for (final update in sortedActionPlans) {
+          final timestamp = update.timestamp;
+          final dateStr = '${timestamp.day}/${timestamp.month}';
+          
+          // Calculate call duration (placeholder - you might need to store actual duration)
+          final callDuration = '5 min'; // TODO: Get actual call duration from data
+          
+          final topic = _formatNeed(update.classification.primaryNeed);
+          final actionPlanWalk = WalkEntry(
+            title: dateStr, // Title is now the date
+            subtitle: '$topic · $callDuration', // Topic with duration
+            collectible: 'kopi',
+            isActive: true,
+            backendUpdate: update, // Store the update for expansion
+          );
+          
+          allTrailItems.add(actionPlanWalk);
+        }
+        
+        // Add existing walks after action plans
+        allTrailItems.addAll(_walks);
+        
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: 255,
+              maxHeight: MediaQuery.of(context).size.height * 0.6,
+            ),
+            child: Stack(
+              children: [
+                // Spiral line
+                Positioned(
+                  left: 4,
+                  top: 10,
+                  bottom: 10,
+                  child: Container(
+                    width: 1,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          AhmaTheme.sageGreen,
+                          AhmaTheme.palePink,
+                          AhmaTheme.mid,
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+                
+                // Nodes (walks + action plans) with dynamic positioning
+                ..._buildDynamicTrailItems(allTrailItems),
+              ],
             ),
           ),
-          
-          // Nodes
-          ..._walks.asMap().entries.map((entry) {
-            final index = entry.key;
-            final walk = entry.value;
-            final topPosition = index * 55.0;
-            final leftOffset = index % 2 == 0 ? 0.0 : (index % 3 == 1 ? 12.0 : 16.0);
-            
-            return Positioned(
-              top: topPosition,
-              left: leftOffset,
-              child: _buildNodeItem(walk),
-            );
-          }).toList(),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildNodeItem(WalkEntry walk) {
+  List<Widget> _buildDynamicTrailItems(List<dynamic> allTrailItems) {
+    final items = <Widget>[];
+    double currentTop = 10.0;
+    
+    for (int index = 0; index < allTrailItems.length; index++) {
+      final item = allTrailItems[index];
+      final walk = item as WalkEntry;
+      final isActionPlan = walk.backendUpdate != null;
+      final isExpanded = isActionPlan && _expandedPlans.contains(walk.backendUpdate!.callId.hashCode);
+      
+      // Calculate height for this item based on expansion state
+      double itemHeight = 55.0; // Default height
+      if (isExpanded && isActionPlan) {
+        // Calculate expanded height based on content
+        final update = walk.backendUpdate!;
+        final plan = update.actionPlan;
+        int contentCount = plan.todoistTasks.length + plan.resources.length;
+        itemHeight = 55.0 + (contentCount * 15.0) + 40.0; // Base + content + padding
+      }
+      
+      final leftOffset = index % 2 == 0 ? 0.0 : (index % 3 == 1 ? 12.0 : 16.0);
+      
+      items.add(
+        AnimatedPositioned(
+          duration: const Duration(milliseconds: 800),
+          curve: Curves.easeOutCubic,
+          top: currentTop,
+          left: leftOffset,
+          child: _buildTrailItem(item),
+        ),
+      );
+      
+      // Move to next position
+      currentTop += itemHeight + 10.0;
+    }
+    
+    return items;
+  }
+
+  Widget _buildTrailItem(dynamic item) {
+    final walk = item as WalkEntry;
+    final isActionPlan = walk.backendUpdate != null;
+    final isExpanded = isActionPlan && _expandedPlans.contains(walk.backendUpdate!.callId.hashCode);
+    
     return Row(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -488,8 +510,40 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
         
         const SizedBox(width: 7),
         
-        // Node card
-        _buildNodeCard(walk),
+        // Expandable node card
+        GestureDetector(
+          onTap: isActionPlan ? () => _toggleActionPlanExpansion(walk.backendUpdate!.callId) : null,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 800),
+            curve: Curves.easeInOutCubic,
+            constraints: BoxConstraints(
+              minWidth: isExpanded ? 200 : 120,
+              maxWidth: isExpanded ? 280 : 150,
+            ),
+            padding: EdgeInsets.symmetric(
+              horizontal: isExpanded ? 12 : 8,
+              vertical: isExpanded ? 10 : 6,
+            ),
+            decoration: BoxDecoration(
+              color: isExpanded && isActionPlan 
+                ? AhmaTheme.cardColor.withOpacity(0.1) // Subtle cream card fade in
+                : Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: isExpanded && isActionPlan
+                  ? AhmaTheme.mocha.withOpacity(0.05) // Subtle border fade in
+                  : Colors.transparent,
+                width: 1,
+              ),
+            ),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 400),
+              child: isExpanded && isActionPlan
+                ? _buildExpandedActionPlan(walk.backendUpdate!)
+                : _buildNodeCard(walk, isActionPlan),
+            ),
+          ),
+        ),
         
         // Collectible (if any)
         if (walk.collectible != null) ...[
@@ -576,7 +630,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
     );
   }
 
-  Widget _buildNodeCard(WalkEntry walk) {
+  Widget _buildNodeCard(WalkEntry walk, [bool isActionPlan = false]) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
@@ -597,18 +651,32 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Title
-          Text(
-            walk.title,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontSize: 10,
-              color: AhmaTheme.mocha.withOpacity(0.8),
-              fontWeight: FontWeight.w300,
-              letterSpacing: walk.isFuture ? 0.04 : 0.0,
-            ),
+          // Title with expand icon if action plan
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  walk.title,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontSize: 10,
+                    color: AhmaTheme.mocha.withOpacity(0.8),
+                    fontWeight: FontWeight.w300,
+                    letterSpacing: walk.isFuture ? 0.04 : 0.0,
+                  ),
+                ),
+              ),
+              if (isActionPlan) ...[
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.expand_more,
+                  size: 12,
+                  color: AhmaTheme.mocha.withOpacity(0.4),
+                ),
+              ],
+            ],
           ),
           
-          // Subtitle
+          // Subtitle - prevent wrapping
           if (walk.subtitle.isNotEmpty) ...[
             const SizedBox(height: 1),
             Text(
@@ -618,6 +686,8 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
                 color: AhmaTheme.sageGreen,
                 fontWeight: FontWeight.w300,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ],
@@ -663,6 +733,129 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
               ),
             ),
       ),
+    );
+  }
+
+  Widget _buildExpandedActionPlan(BackendUpdate update) {
+    final plan = update.actionPlan;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Header with collapse icon - showing date as title (exact match to collapsed)
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                '${update.timestamp.day}/${update.timestamp.month}', // Date as title
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w300,
+                  color: AhmaTheme.mocha.withOpacity(0.8),
+                  letterSpacing: 0.0,
+                ),
+              ),
+            ),
+            Icon(
+              Icons.expand_less,
+              size: 12,
+              color: AhmaTheme.mocha.withOpacity(0.4),
+            ),
+          ],
+        ),
+        const SizedBox(height: 2),
+        // Topic with duration below date (exact match to collapsed subtitle)
+        Text(
+          '${_formatNeed(update.classification.primaryNeed)} · 5 min', // Topic with duration
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+            fontSize: 9, // Match collapsed subtitle size (13.5 is scaled down)
+            fontWeight: FontWeight.w300,
+            color: AhmaTheme.sageGreen, // Match collapsed subtitle color
+            letterSpacing: 0.0,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 8),
+        
+        // Tasks
+        if (plan.todoistTasks.isNotEmpty) ...[
+          Text(
+            'Tasks',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontSize: 9,
+              fontWeight: FontWeight.w600,
+              color: AhmaTheme.sageGreen,
+            ),
+          ),
+          const SizedBox(height: 4),
+          ...plan.todoistTasks.map((task) => Padding(
+            padding: const EdgeInsets.only(bottom: 3),
+            child: Row(
+              children: [
+                Container(
+                  width: 4,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AhmaTheme.sageGreen.withOpacity(0.3),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    task.taskName,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontSize: 8,
+                      color: AhmaTheme.mocha.withOpacity(0.7),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )).toList(),
+          const SizedBox(height: 8),
+        ],
+        
+        // Resources
+        if (plan.resources.isNotEmpty) ...[
+          Text(
+            'Resources',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontSize: 9,
+              fontWeight: FontWeight.w600,
+              color: AhmaTheme.palePink,
+            ),
+          ),
+          const SizedBox(height: 4),
+          ...plan.resources.map((resource) => Padding(
+            padding: const EdgeInsets.only(bottom: 3),
+            child: Row(
+              children: [
+                Container(
+                  width: 4,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AhmaTheme.palePink.withOpacity(0.3),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    resource.title,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontSize: 8,
+                      color: AhmaTheme.mocha.withOpacity(0.7),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )).toList(),
+        ],
+      ],
     );
   }
 }

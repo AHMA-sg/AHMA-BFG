@@ -74,13 +74,18 @@ class BackendNotifier extends StateNotifier<BackendState> {
       await _localDb.saveActionPlan(update);
       print('[Backend] Saved action plan to local storage (call: ${update.callId})');
 
-      // Add to state
-      final updatedList = [update, ...state.updates];
+      // Remove existing update with same callId to prevent duplicates in state
+      final filteredUpdates = state.updates.where((u) => u.callId != update.callId).toList();
+      
+      // Add new update to the beginning of the list
+      final updatedList = [update, ...filteredUpdates];
 
       state = state.copyWith(
         updates: updatedList,
         latestUpdate: update,
       );
+      
+      print('[Backend] Updated state with ${updatedList.length} total action plans');
     } catch (e) {
       print('[Backend] Error saving action plan: $e');
       state = state.copyWith(error: 'Failed to save action plan');

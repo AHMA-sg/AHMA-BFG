@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../providers/backend_provider.dart';
-import 'next_steps_screen.dart';
 
 /// House interior screen with tabs for managing caregiver tasks
 ///
@@ -71,9 +70,16 @@ class _HouseInteriorScreenState extends ConsumerState<HouseInteriorScreen>
 }
 
 /// Tab 1: Next Steps (action items from backend)
-class _NextStepsTab extends ConsumerWidget {
+class _NextStepsTab extends ConsumerStatefulWidget {
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_NextStepsTab> createState() => _NextStepsTabState();
+}
+
+class _NextStepsTabState extends ConsumerState<_NextStepsTab> {
+  final Set<String> _expandedItems = <String>{};
+
+  @override
+  Widget build(BuildContext context) {
     final backendState = ref.watch(backendProvider);
 
     if (backendState.isLoading) {
@@ -109,58 +115,222 @@ class _NextStepsTab extends ConsumerWidget {
       );
     }
 
-    // Show list of action plans
+    // Show list of expandable action plans
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: backendState.updates.length,
       itemBuilder: (context, index) {
         final update = backendState.updates[index];
+        final isExpanded = _expandedItems.contains(update.callId);
+        
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: Colors.teal,
-              child: Text(
-                '${update.stats.actionsInWebhook}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
+          elevation: isExpanded ? 4 : 1,
+          child: Column(
+            children: [
+              // Summary row (always visible)
+              ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: Colors.teal,
+                  child: Text(
+                    '${update.stats.actionsInWebhook}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
+                title: Text(
+                  _formatNeed(update.classification.primaryNeed),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 4),
+                    Text(
+                      _formatTimestamp(update.timestamp),
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${update.actionPlan.calendarEvents.length} events, '
+                      '${update.actionPlan.todoistTasks.length} tasks, '
+                      '${update.actionPlan.resources.length} resources',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                    ),
+                  ],
+                ),
+                trailing: Icon(
+                  isExpanded ? Icons.expand_less : Icons.expand_more,
+                  size: 20,
+                ),
+                isThreeLine: true,
+                onTap: () {
+                  setState(() {
+                    if (isExpanded) {
+                      _expandedItems.remove(update.callId);
+                    } else {
+                      _expandedItems.add(update.callId);
+                    }
+                  });
+                },
               ),
-            ),
-            title: Text(
-              _formatNeed(update.classification.primaryNeed),
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 4),
-                Text(
-                  _formatTimestamp(update.timestamp),
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              
+              // Expanded details (visible when expanded)
+              if (isExpanded)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    border: Border(
+                      top: BorderSide(color: Colors.grey[200]!),
+                    ),
+                  ),
+                  child: _buildActionPlanDetails(update.actionPlan),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  '${update.actionPlan.calendarEvents.length} events • '
-                  '${update.actionPlan.todoistTasks.length} tasks • '
-                  '${update.actionPlan.resources.length} resources',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-                ),
-              ],
-            ),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            isThreeLine: true,
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => NextStepsScreen(update: update),
-                ),
-              );
-            },
+            ],
           ),
         );
       },
+    );
+  }
+
+  Widget _buildActionPlanDetails(actionPlan) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Calendar Events
+        if (actionPlan.calendarEvents.isNotEmpty) ...[
+          _buildSectionHeader('Calendar Events', Icons.event),
+          const SizedBox(height: 8),
+          ...actionPlan.calendarEvents.map((event) => _buildEventItem(event)),
+          const SizedBox(height: 16),
+        ],
+        
+        // Todoist Tasks
+        if (actionPlan.todoistTasks.isNotEmpty) ...[
+          _buildSectionHeader('Tasks', Icons.task),
+          const SizedBox(height: 8),
+          ...actionPlan.todoistTasks.map((task) => _buildTaskItem(task)),
+          const SizedBox(height: 16),
+        ],
+        
+        // Resources
+        if (actionPlan.resources.isNotEmpty) ...[
+          _buildSectionHeader('Resources', Icons.article),
+          const SizedBox(height: 8),
+          ...actionPlan.resources.map((resource) => _buildResourceItem(resource)),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildSectionHeader(String title, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: Colors.teal),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.teal,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEventItem(event) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8, left: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            event.summary,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          if (event.location.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(
+              'Location: ${event.location}',
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            ),
+          ],
+          Text(
+            '${event.startTime} - ${event.endTime}',
+            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTaskItem(task) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8, left: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            task.taskName,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          if (task.taskDue.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(
+              'Due: ${task.taskDue}',
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            ),
+          ],
+          if (task.labels.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Wrap(
+              spacing: 4,
+              children: task.labels.map((label) => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.teal.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  label,
+                  style: TextStyle(fontSize: 10, color: Colors.teal[700]),
+                ),
+              )).toList(),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResourceItem(resource) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8, left: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            resource.title,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          if (resource.description.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(
+              resource.description,
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            ),
+          ],
+          Text(
+            resource.category,
+            style: TextStyle(fontSize: 10, color: Colors.grey[500]),
+          ),
+        ],
+      ),
     );
   }
 

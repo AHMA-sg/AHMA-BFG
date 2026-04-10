@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../widgets/blended_background.dart';
 import '../widgets/house_animation.dart';
 import '../widgets/hold_to_walk_button.dart';
+import '../providers/webhook_provider.dart';
 import 'ahma_main_screen.dart';
 
 /// Example of using BlendedBackground in HomeScreen
@@ -25,6 +26,9 @@ class _HomeScreenBlendedExampleState
   @override
   void initState() {
     super.initState();
+
+    // Initialize webhook server by accessing the provider
+    ref.read(webhookHandlerProvider);
 
     _logoController = AnimationController(
       vsync: this,
