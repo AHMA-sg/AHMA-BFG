@@ -7,7 +7,6 @@ import '../providers/backend_provider.dart';
 class WalkEntry {
   final String title;
   final String subtitle;
-  final String? collectible;
   final bool isActive;
   final bool isPink;
   final bool isFuture;
@@ -16,7 +15,6 @@ class WalkEntry {
   const WalkEntry({
     required this.title,
     required this.subtitle,
-    this.collectible,
     this.isActive = false,
     this.isPink = false,
     this.isFuture = false,
@@ -25,7 +23,7 @@ class WalkEntry {
 }
 
 /// Kopi Journal Screen
-/// 
+///
 /// Features:
 /// - Spiral timeline with nodes
 /// - Collectible items (☕, ✦, ?)
@@ -49,7 +47,6 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
       const WalkEntry(
         title: 'Tuesday evening',
         subtitle: 'breathing · 8 min',
-        collectible: 'kopi',
         isActive: true,
       ),
       const WalkEntry(
@@ -57,38 +54,25 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
         subtitle: 'just talking · 22 min',
         isPink: true,
       ),
-      const WalkEntry(
-        title: 'Thursday morning',
-        subtitle: 'grounding · 5 min',
-        collectible: '✦',
-      ),
-      const WalkEntry(
-        title: 'first walk',
-        subtitle: 'introduced · hello',
-      ),
-      const WalkEntry(
-        title: 'more to come',
-        subtitle: '',
-        isFuture: true,
-      ),
+      const WalkEntry(title: 'Thursday morning', subtitle: 'grounding · 5 min'),
+      const WalkEntry(title: 'first walk', subtitle: 'introduced · hello'),
     ];
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent, // Transparent to show watercolor background
+      backgroundColor:
+          Colors.transparent, // Transparent to show watercolor background
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Top bar with logo and walk count
             _buildTopBar(),
-            
+
             // Main content
-            Expanded(
-              child: _buildMainContent(),
-            ),
+            Expanded(child: _buildMainContent()),
           ],
         ),
       ),
@@ -97,7 +81,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
 
   Widget _buildTopBar() {
     final walkCount = _walks.where((walk) => !walk.isFuture).length;
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
       child: Row(
@@ -106,12 +90,13 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
           // Logo
           Text(
             'AHMA',
-            style: Theme.of(context).textTheme.displaySmall?.copyWith(
+            style: Theme.of(context).textTheme.displayLarge?.copyWith(
+              fontSize: 44,
               color: AhmaTheme.ahmaRed,
-              letterSpacing: 0.8,
+              letterSpacing: 0.3,
             ),
           ),
-          
+
           // Walk count
           Text(
             '${walkCount} walks',
@@ -136,20 +121,18 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: Text(
-              'Your Journey',
+              'Your journeys',
               style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                 fontSize: 15, // 50% larger: 15 * 1.5
                 color: AhmaTheme.mocha.withOpacity(0.8),
               ),
             ),
           ),
-          
+
           // Action plans are now integrated directly into the spiral trail
-          
+
           // Spiral nodes
-          Expanded(
-            child: _buildSpiralNodes(),
-          ),
+          Expanded(child: _buildSpiralNodes()),
         ],
       ),
     );
@@ -158,39 +141,34 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
   Widget _buildActionPlanItem(BackendUpdate update) {
     final isExpanded = _expandedPlans.contains(update.callId.hashCode);
     final plan = update.actionPlan;
-    
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         // Node dot
         _buildNodeDotForUpdate(update),
-        
+
         const SizedBox(width: 7),
-        
+
         // Expandable action plan card
-        Expanded(
-          child: _buildActionPlanCard(update, plan, isExpanded),
-        ),
-        
-        // Collectible (if any)
-        const SizedBox(width: 7),
-        _buildCollectible('✦'),
+        Expanded(child: _buildActionPlanCard(update, plan, isExpanded)),
       ],
     );
   }
 
-  Widget _buildActionPlanCard(BackendUpdate update, ActionPlan plan, bool isExpanded) {
+  Widget _buildActionPlanCard(
+    BackendUpdate update,
+    ActionPlan plan,
+    bool isExpanded,
+  ) {
     return Container(
       width: isExpanded ? double.infinity : 140,
       height: isExpanded ? null : 60,
       decoration: BoxDecoration(
         color: AhmaTheme.cardColor,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: AhmaTheme.mocha.withOpacity(0.07),
-          width: 1,
-        ),
+        border: Border.all(color: AhmaTheme.mocha.withOpacity(0.07), width: 1),
       ),
       child: Padding(
         padding: EdgeInsets.all(isExpanded ? 16 : 12),
@@ -205,13 +183,14 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
                     onTap: () => _addWalkFromActionPlan(update),
                     child: Text(
                       _formatNeed(update.classification.primaryNeed),
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontSize: 24.0, // 50% larger: 16 * 1.5
-                        fontWeight: FontWeight.w300,
-                        color: AhmaTheme.mocha,
-                        decoration: TextDecoration.underline,
-                        decorationColor: AhmaTheme.mocha.withOpacity(0.3),
-                      ),
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(
+                            fontSize: 24.0, // 50% larger: 16 * 1.5
+                            fontWeight: FontWeight.w300,
+                            color: AhmaTheme.mocha,
+                            decoration: TextDecoration.underline,
+                            decorationColor: AhmaTheme.mocha.withOpacity(0.3),
+                          ),
                     ),
                   ),
                 ),
@@ -225,7 +204,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
                 ),
               ],
             ),
-            
+
             // Description (only show when expanded)
             if (isExpanded) ...[
               const SizedBox(height: 8),
@@ -248,31 +227,36 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
                     color: AhmaTheme.mocha.withOpacity(0.5),
                   ),
                 ),
-                ...plan.calendarEvents.map((event) => Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: AhmaTheme.sageGreen.withOpacity(0.2),
-                          shape: BoxShape.circle,
+                ...plan.calendarEvents
+                    .map(
+                      (event) => Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                color: AhmaTheme.sageGreen.withOpacity(0.2),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                event.summary,
+                                style: Theme.of(context).textTheme.bodyLarge
+                                    ?.copyWith(
+                                      fontSize: 12,
+                                      color: AhmaTheme.mocha.withOpacity(0.8),
+                                    ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          event.summary,
-                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            fontSize: 12,
-                            color: AhmaTheme.mocha.withOpacity(0.8),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                )).toList(),
+                    )
+                    .toList(),
               ],
               if (plan.todoistTasks.isNotEmpty) ...[
                 const SizedBox(height: 8),
@@ -284,31 +268,36 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
                     color: AhmaTheme.mocha.withOpacity(0.5),
                   ),
                 ),
-                ...plan.todoistTasks.map((task) => Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: AhmaTheme.sageGreen.withOpacity(0.2),
-                          shape: BoxShape.circle,
+                ...plan.todoistTasks
+                    .map(
+                      (task) => Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                color: AhmaTheme.sageGreen.withOpacity(0.2),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                task.taskName,
+                                style: Theme.of(context).textTheme.bodyLarge
+                                    ?.copyWith(
+                                      fontSize: 12,
+                                      color: AhmaTheme.mocha.withOpacity(0.8),
+                                    ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          task.taskName,
-                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            fontSize: 12,
-                            color: AhmaTheme.mocha.withOpacity(0.8),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                )).toList(),
+                    )
+                    .toList(),
               ],
               const SizedBox(height: 12),
             ],
@@ -320,33 +309,28 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
 
   void _addWalkFromActionPlan(BackendUpdate update) {
     final timestamp = DateTime.now();
-    final timeStr = '${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}';
-    
+    final timeStr =
+        '${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}';
+
     // Create a new walk entry based on the action plan
     final newWalk = WalkEntry(
       title: '${_formatNeed(update.classification.primaryNeed)} · $timeStr',
-      subtitle: '${update.actionPlan.totalActions} action${update.actionPlan.totalActions == 1 ? '' : 's'} · ${update.stats.newActions} new',
-      collectible: 'kopi',
+      subtitle:
+          '${update.actionPlan.totalActions} action${update.actionPlan.totalActions == 1 ? '' : 's'} · ${update.stats.newActions} new',
       isActive: true,
     );
-    
+
     setState(() {
-      // Remove the 'more to come' future entry if it exists
-      _walks = _walks.where((walk) => !walk.isFuture).toList();
       // Add the new walk at the top
       _walks.insert(0, newWalk);
-      // Add back the 'more to come' entry
-      _walks.add(const WalkEntry(
-        title: 'more to come',
-        subtitle: '',
-        isFuture: true,
-      ));
     });
-    
+
     // Show a snackbar to confirm
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Added ${_formatNeed(update.classification.primaryNeed)} to your journey!'),
+        content: Text(
+          'Added ${_formatNeed(update.classification.primaryNeed)} to your journey!',
+        ),
         backgroundColor: AhmaTheme.sageGreen,
         duration: const Duration(seconds: 2),
       ),
@@ -387,37 +371,39 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
       builder: (context, ref, child) {
         final backendState = ref.watch(backendProvider);
         final actionPlans = backendState.updates;
-        
+
         // Combine existing walks with action plans
         // Action plans should appear at the top (after stubs) in chronological order
         final allTrailItems = <dynamic>[];
-        
+
         // Add action plans first (newest at top)
         final sortedActionPlans = List.from(actionPlans.take(3));
-        sortedActionPlans.sort((a, b) => b.timestamp.compareTo(a.timestamp)); // Newest first
-        
+        sortedActionPlans.sort(
+          (a, b) => b.timestamp.compareTo(a.timestamp),
+        ); // Newest first
+
         for (final update in sortedActionPlans) {
           final timestamp = update.timestamp;
           final dateStr = '${timestamp.day}/${timestamp.month}';
-          
+
           // Calculate call duration (placeholder - you might need to store actual duration)
-          final callDuration = '5 min'; // TODO: Get actual call duration from data
-          
+          final callDuration =
+              '5 min'; // TODO: Get actual call duration from data
+
           final topic = _formatNeed(update.classification.primaryNeed);
           final actionPlanWalk = WalkEntry(
             title: dateStr, // Title is now the date
             subtitle: '$topic · $callDuration', // Topic with duration
-            collectible: 'kopi',
             isActive: true,
             backendUpdate: update, // Store the update for expansion
           );
-          
+
           allTrailItems.add(actionPlanWalk);
         }
-        
+
         // Add existing walks after action plans
         allTrailItems.addAll(_walks);
-        
+
         return SingleChildScrollView(
           child: ConstrainedBox(
             constraints: BoxConstraints(
@@ -446,7 +432,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
                     ),
                   ),
                 ),
-                
+
                 // Nodes (walks + action plans) with dynamic positioning
                 ..._buildDynamicTrailItems(allTrailItems),
               ],
@@ -460,13 +446,15 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
   List<Widget> _buildDynamicTrailItems(List<dynamic> allTrailItems) {
     final items = <Widget>[];
     double currentTop = 10.0;
-    
+
     for (int index = 0; index < allTrailItems.length; index++) {
       final item = allTrailItems[index];
       final walk = item as WalkEntry;
       final isActionPlan = walk.backendUpdate != null;
-      final isExpanded = isActionPlan && _expandedPlans.contains(walk.backendUpdate!.callId.hashCode);
-      
+      final isExpanded =
+          isActionPlan &&
+          _expandedPlans.contains(walk.backendUpdate!.callId.hashCode);
+
       // Calculate height for this item based on expansion state
       double itemHeight = 55.0; // Default height
       if (isExpanded && isActionPlan) {
@@ -474,45 +462,48 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
         final update = walk.backendUpdate!;
         final plan = update.actionPlan;
         int contentCount = plan.todoistTasks.length + plan.resources.length;
-        itemHeight = 55.0 + (contentCount * 15.0) + 40.0; // Base + content + padding
+        itemHeight =
+            55.0 + (contentCount * 15.0) + 40.0; // Base + content + padding
       }
-      
-      final leftOffset = index % 2 == 0 ? 0.0 : (index % 3 == 1 ? 12.0 : 16.0);
-      
+
       items.add(
         AnimatedPositioned(
           duration: const Duration(milliseconds: 800),
           curve: Curves.easeOutCubic,
           top: currentTop,
-          left: leftOffset,
+          left: 0,
           child: _buildTrailItem(item),
         ),
       );
-      
+
       // Move to next position
       currentTop += itemHeight + 10.0;
     }
-    
+
     return items;
   }
 
   Widget _buildTrailItem(dynamic item) {
     final walk = item as WalkEntry;
     final isActionPlan = walk.backendUpdate != null;
-    final isExpanded = isActionPlan && _expandedPlans.contains(walk.backendUpdate!.callId.hashCode);
-    
+    final isExpanded =
+        isActionPlan &&
+        _expandedPlans.contains(walk.backendUpdate!.callId.hashCode);
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         // Node dot
         _buildNodeDot(walk),
-        
+
         const SizedBox(width: 7),
-        
+
         // Expandable node card
         GestureDetector(
-          onTap: isActionPlan ? () => _toggleActionPlanExpansion(walk.backendUpdate!.callId) : null,
+          onTap: isActionPlan
+              ? () => _toggleActionPlanExpansion(walk.backendUpdate!.callId)
+              : null,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 800),
             curve: Curves.easeInOutCubic,
@@ -525,31 +516,27 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
               vertical: isExpanded ? 10 : 6,
             ),
             decoration: BoxDecoration(
-              color: isExpanded && isActionPlan 
-                ? AhmaTheme.cardColor.withOpacity(0.1) // Subtle cream card fade in
-                : Colors.transparent,
+              color: isExpanded && isActionPlan
+                  ? AhmaTheme.cardColor.withOpacity(
+                      0.1,
+                    ) // Subtle cream card fade in
+                  : Colors.transparent,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: isExpanded && isActionPlan
-                  ? AhmaTheme.mocha.withOpacity(0.05) // Subtle border fade in
-                  : Colors.transparent,
+                    ? AhmaTheme.mocha.withOpacity(0.05) // Subtle border fade in
+                    : Colors.transparent,
                 width: 1,
               ),
             ),
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 400),
               child: isExpanded && isActionPlan
-                ? _buildExpandedActionPlan(walk.backendUpdate!)
-                : _buildNodeCard(walk, isActionPlan),
+                  ? _buildExpandedActionPlan(walk.backendUpdate!)
+                  : _buildNodeCard(walk, isActionPlan),
             ),
           ),
         ),
-        
-        // Collectible (if any)
-        if (walk.collectible != null) ...[
-          const SizedBox(width: 7),
-          _buildCollectible(walk.collectible!),
-        ],
       ],
     );
   }
@@ -557,7 +544,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
   Widget _buildNodeDotForUpdate(BackendUpdate update) {
     Color dotColor = AhmaTheme.mid;
     Color borderColor = AhmaTheme.mocha.withOpacity(0.18);
-    
+
     // Color based on primary need
     switch (update.classification.primaryNeed.toLowerCase()) {
       case 'mental_health':
@@ -572,17 +559,14 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
         dotColor = AhmaTheme.mid;
         borderColor = AhmaTheme.mocha.withOpacity(0.18);
     }
-    
+
     return Container(
       width: 9,
       height: 9,
       decoration: BoxDecoration(
         color: dotColor,
         shape: BoxShape.circle,
-        border: Border.all(
-          color: borderColor,
-          width: 1.5,
-        ),
+        border: Border.all(color: borderColor, width: 1.5),
       ),
     );
   }
@@ -590,7 +574,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
   Widget _buildNodeDot(dynamic item) {
     Color dotColor = AhmaTheme.mid;
     Color borderColor = AhmaTheme.mocha.withOpacity(0.18);
-    
+
     if (item is WalkEntry) {
       if (item.isActive) {
         dotColor = AhmaTheme.sageGreen;
@@ -599,7 +583,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
         dotColor = AhmaTheme.palePink;
         borderColor = AhmaTheme.palePink;
       }
-      
+
       if (item.isFuture) {
         return Container(
           width: 9,
@@ -615,17 +599,14 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
         );
       }
     }
-    
+
     return Container(
       width: 9,
       height: 9,
       decoration: BoxDecoration(
         color: dotColor,
         shape: BoxShape.circle,
-        border: Border.all(
-          color: borderColor,
-          width: 1.5,
-        ),
+        border: Border.all(color: borderColor, width: 1.5),
       ),
     );
   }
@@ -636,16 +617,13 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
       decoration: BoxDecoration(
         color: AhmaTheme.cardColor,
         borderRadius: BorderRadius.circular(10),
-        border: walk.isFuture 
-          ? Border.all(
-              color: AhmaTheme.mocha.withOpacity(0.06),
-              width: 1,
-              style: BorderStyle.solid,
-            )
-          : Border.all(
-              color: AhmaTheme.mocha.withOpacity(0.07),
-              width: 1,
-            ),
+        border: walk.isFuture
+            ? Border.all(
+                color: AhmaTheme.mocha.withOpacity(0.06),
+                width: 1,
+                style: BorderStyle.solid,
+              )
+            : Border.all(color: AhmaTheme.mocha.withOpacity(0.07), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -675,7 +653,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
               ],
             ],
           ),
-          
+
           // Subtitle - prevent wrapping
           if (walk.subtitle.isNotEmpty) ...[
             const SizedBox(height: 1),
@@ -695,50 +673,9 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
     );
   }
 
-  Widget _buildCollectible(String emoji) {
-    Color bgColor = AhmaTheme.sageGreen.withOpacity(0.2);
-    
-    if (emoji == '☕' || emoji == 'kopi') {
-      bgColor = AhmaTheme.palePink.withOpacity(0.3);
-    } else if (emoji == '?') {
-      bgColor = AhmaTheme.mid.withOpacity(0.3);
-    }
-    
-    return Container(
-      width: 18,
-      height: 18,
-      decoration: BoxDecoration(
-        color: bgColor,
-        shape: BoxShape.circle,
-        border: emoji == '?' 
-          ? Border.all(
-              color: AhmaTheme.mocha.withOpacity(0.15),
-              width: 1,
-              style: BorderStyle.solid,
-            )
-          : null,
-      ),
-      child: Center(
-        child: emoji == 'kopi' 
-          ? Image.asset(
-              'resources/Kopi.png',
-              width: 12,
-              height: 12,
-            )
-          : Text(
-              emoji,
-              style: AhmaTheme.labelTextStyle.copyWith(
-                fontSize: 8,
-                color: AhmaTheme.mocha.withOpacity(0.6),
-              ),
-            ),
-      ),
-    );
-  }
-
   Widget _buildExpandedActionPlan(BackendUpdate update) {
     final plan = update.actionPlan;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -778,7 +715,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
           overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 8),
-        
+
         // Tasks
         if (plan.todoistTasks.isNotEmpty) ...[
           Text(
@@ -790,34 +727,39 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
             ),
           ),
           const SizedBox(height: 4),
-          ...plan.todoistTasks.map((task) => Padding(
-            padding: const EdgeInsets.only(bottom: 3),
-            child: Row(
-              children: [
-                Container(
-                  width: 4,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AhmaTheme.sageGreen.withOpacity(0.3),
-                    shape: BoxShape.circle,
+          ...plan.todoistTasks
+              .map(
+                (task) => Padding(
+                  padding: const EdgeInsets.only(bottom: 3),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 4,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: AhmaTheme.sageGreen.withOpacity(0.3),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          task.taskName,
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                fontSize: 8,
+                                color: AhmaTheme.mocha.withOpacity(0.7),
+                              ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    task.taskName,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontSize: 8,
-                      color: AhmaTheme.mocha.withOpacity(0.7),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          )).toList(),
+              )
+              .toList(),
           const SizedBox(height: 8),
         ],
-        
+
         // Resources
         if (plan.resources.isNotEmpty) ...[
           Text(
@@ -829,31 +771,36 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
             ),
           ),
           const SizedBox(height: 4),
-          ...plan.resources.map((resource) => Padding(
-            padding: const EdgeInsets.only(bottom: 3),
-            child: Row(
-              children: [
-                Container(
-                  width: 4,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AhmaTheme.palePink.withOpacity(0.3),
-                    shape: BoxShape.circle,
+          ...plan.resources
+              .map(
+                (resource) => Padding(
+                  padding: const EdgeInsets.only(bottom: 3),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 4,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: AhmaTheme.palePink.withOpacity(0.3),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          resource.title,
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                fontSize: 8,
+                                color: AhmaTheme.mocha.withOpacity(0.7),
+                              ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    resource.title,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontSize: 8,
-                      color: AhmaTheme.mocha.withOpacity(0.7),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          )).toList(),
+              )
+              .toList(),
         ],
       ],
     );

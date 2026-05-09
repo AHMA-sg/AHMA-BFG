@@ -8,10 +8,8 @@ import 'home_screen_example_blended.dart';
 import '../providers/call_provider.dart';
 
 /// AHMA Call Screen
-/// 
+///
 /// Features:
-/// - Tea card in center with breathing ring animation
-/// - Exercise pills (grounding, breathing, just chat)
 /// - Push-to-talk button with kopi fill animation
 /// - End call button
 class AhmaCallScreen extends ConsumerStatefulWidget {
@@ -23,59 +21,18 @@ class AhmaCallScreen extends ConsumerStatefulWidget {
 
 class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
     with TickerProviderStateMixin {
-  late AnimationController _breathingController;
   late AnimationController _kopiFillController;
   late AnimationController _connectionBarController;
-  late Animation<double> _breathingAnimation;
   late Animation<double> _kopiFillAnimation;
   late Animation<double> _connectionBarAnimation;
-  bool _isRecording = false;
   bool _isPressing = false;
   bool _callStarted = false;
   bool _showPhoneOn = false;
   Timer? _callStartTimer;
 
-  // Random phrases for tea card
-  final List<String> _teaPhrases = [
-    'walking & talking..',
-    'cooking..',
-    'brewing kopi..',
-    'knitting..',
-    'looking at the flowers..',
-    'stargazing..',
-    'sitting..',
-    'sipping teh..',
-  ];
-  
-  // Current phrase for tea card
-  String _currentPhrase = 'walking & talking..';
-
-  // Method to change the current phrase
-  void _changePhrase() {
-    final random = DateTime.now().millisecondsSinceEpoch;
-    _currentPhrase = _teaPhrases[random % _teaPhrases.length];
-  }
-
   @override
   void initState() {
     super.initState();
-    
-    // Change phrase when screen becomes visible
-    _changePhrase();
-    
-    // Breathing animation (4s cycle)
-    _breathingController = AnimationController(
-      duration: const Duration(seconds: 4),
-      vsync: this,
-    )..repeat(reverse: true);
-    
-    _breathingAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.045,
-    ).animate(CurvedAnimation(
-      parent: _breathingController,
-      curve: Curves.easeInOut,
-    ));
 
     // Kopi fill animation
     _kopiFillController = AnimationController(
@@ -83,13 +40,9 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
       vsync: this,
     );
 
-    _kopiFillAnimation = Tween<double>(
-      begin: 8.0,
-      end: 34.0,
-    ).animate(CurvedAnimation(
-      parent: _kopiFillController,
-      curve: Curves.easeInOut,
-    ));
+    _kopiFillAnimation = Tween<double>(begin: 8.0, end: 34.0).animate(
+      CurvedAnimation(parent: _kopiFillController, curve: Curves.easeInOut),
+    );
 
     // Connection bar animation
     _connectionBarController = AnimationController(
@@ -97,20 +50,18 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
       vsync: this,
     );
 
-    _connectionBarAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _connectionBarController,
-      curve: Curves.easeInOut,
-    ));
+    _connectionBarAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _connectionBarController,
+        curve: Curves.easeInOut,
+      ),
+    );
 
     // Call will be started manually when user presses and holds button
   }
 
   @override
   void dispose() {
-    _breathingController.dispose();
     _kopiFillController.dispose();
     _connectionBarController.dispose();
     _callStartTimer?.cancel();
@@ -120,19 +71,18 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
   @override
   Widget build(BuildContext context) {
     final callState = ref.watch(callProvider);
-    
+
     return Scaffold(
-      backgroundColor: Colors.transparent, // Transparent to show watercolor background
+      backgroundColor:
+          Colors.transparent, // Transparent to show watercolor background
       body: SafeArea(
         child: Column(
           children: [
             // Top bar with logo and end button
             _buildTopBar(),
-            
+
             // Main content
-            Expanded(
-              child: _buildMainContent(callState),
-            ),
+            Expanded(child: _buildMainContent(callState)),
           ],
         ),
       ),
@@ -149,11 +99,11 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
           GestureDetector(
             onTap: () async {
               // Disconnect the call if it's active
-              if (_callStarted && ref.read(callProvider).status != CallStatus.ended) {
+              if (_callStarted &&
+                  ref.read(callProvider).status != CallStatus.ended) {
                 await ref.read(callProvider.notifier).endCall();
-                _changePhrase(); // Change phrase when ending a call
               }
-              
+
               // Navigate back to appropriate home screen based on manual toggle
               if (USE_UNITY_HOME_SCREEN) {
                 // Unity home screen
@@ -164,7 +114,9 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
               } else {
                 // Example blended home screen
                 Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const HomeScreenBlendedExample()),
+                  MaterialPageRoute(
+                    builder: (_) => const HomeScreenBlendedExample(),
+                  ),
                   (route) => false,
                 );
               }
@@ -187,7 +139,7 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
               ),
             ),
           ),
-          
+
           // Logo
           Text(
             'AHMA',
@@ -196,7 +148,7 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
               letterSpacing: 0.8,
             ),
           ),
-          
+
           // Empty space for balance
           const SizedBox(width: 26),
         ],
@@ -207,179 +159,25 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
   Widget _buildMainContent(CallState callState) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Spacer(),
-          
-          // Breathing ring with tea card
-          _buildBreathingRing(callState),
-          
-          const SizedBox(height: 24),
-          
-          // Exercise pills
-          _buildExercisePills(),
-          
-          const SizedBox(height: 20),
-          
-          // Push-to-talk area
-          _buildPushToTalkArea(callState),
-          
-          const SizedBox(height: 6),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBreathingRing(CallState callState) {
-    return AnimatedBuilder(
-      animation: _breathingAnimation,
-      builder: (context, child) {
-        return Transform.scale(
-          scale: _breathingAnimation.value,
-          child: Container(
-            width: 208,
-            height: 208,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: AhmaTheme.sageGreen.withOpacity(0.18),
-                width: 1,
-              ),
-            ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Inner breathing ring (delayed)
-                Transform.scale(
-                  scale: _breathingAnimation.value * 0.95,
-                  child: Container(
-                    width: 188,
-                    height: 188,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: AhmaTheme.palePink.withOpacity(0.2),
-                        width: 1,
-                      ),
-                    ),
-                  ),
-                ),
-                
-                // Tea card with call status
-                _buildTeaCard(callState),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildTeaCard(CallState callState) {
-    String statusText;
-    Color statusColor;
-    
-    if (!_callStarted) {
-      statusText = _currentPhrase;
-      statusColor = AhmaTheme.mocha.withOpacity(0.6);
-    } else {
-      switch (callState.status) {
-        case CallStatus.connecting:
-          statusText = 'connecting...';
-          statusColor = AhmaTheme.ahmaRed.withOpacity(0.8);
-          break;
-        case CallStatus.active:
-          // Use stored phrase
-          statusText = _currentPhrase;
-          statusColor = AhmaTheme.sageGreen.withOpacity(0.8);
-          break;
-        case CallStatus.ended:
-          statusText = 'call ended';
-          statusColor = AhmaTheme.mocha.withOpacity(0.5);
-          break;
-        case CallStatus.error:
-          statusText = 'error';
-          statusColor = AhmaTheme.ahmaRed.withOpacity(0.8);
-          break;
-        default:
-          statusText = 'initializing...';
-          statusColor = AhmaTheme.mocha.withOpacity(0.6);
-      }
-    }
-    
-    return Container(
-      width: 156,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 18),
-      decoration: AhmaTheme.cardDecoration,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Tea cup SVG
-          _buildTeaCupIcon(),
-          
-          const SizedBox(height: 12),
-          
-          // Status label
-          Text(
-            statusText,
-            style: AhmaTheme.cardLabelStyle.copyWith(
-              color: statusColor,
-              fontSize: 12.0, // Much smaller text
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTeaCupIcon() {
-    return Image.asset(
-      'resources/full-cup.png',
-      width: 66,
-      height: 66,
-    );
-  }
-
-  Widget _buildExercisePills() {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      alignment: WrapAlignment.center,
-      children: [
-        _buildPill('grounding'),
-        _buildPill('breathing'),
-        _buildPill('just chat'),
-      ],
-    );
-  }
-
-  Widget _buildPill(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-      decoration: AhmaTheme.pillDecoration,
-      child: Text(
-        text,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          fontSize: 15.0, // 50% larger: 10 * 1.5
-          color: AhmaTheme.mocha.withOpacity(0.8),
-          letterSpacing: 0.2,
-        ),
-      ),
+      child: Center(child: _buildPushToTalkArea(callState)),
     );
   }
 
   Widget _buildPushToTalkArea(CallState callState) {
     final isActive = callState.status == CallStatus.active;
     final isConnecting = callState.status == CallStatus.connecting;
-    
+
     return Column(
       children: [
         // Push-to-talk button
         GestureDetector(
-          onTapDown: (!_callStarted || isActive) ? (_) => _startRecording() : null,
+          onTapDown: (!_callStarted || isActive)
+              ? (_) => _startRecording()
+              : null,
           onTapUp: (!_callStarted || isActive) ? (_) => _stopRecording() : null,
-          onTapCancel: (!_callStarted || isActive) ? () => _stopRecording() : null,
+          onTapCancel: (!_callStarted || isActive)
+              ? () => _stopRecording()
+              : null,
           child: Stack(
             alignment: Alignment.center,
             children: [
@@ -395,15 +193,15 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
                   ),
                 ),
               ),
-              
+
               // Phone or Mic icon
               _buildButtonIcon(callState),
             ],
           ),
         ),
-        
+
         const SizedBox(height: 5),
-        
+
         // Hint text
         Text(
           _getHintText(callState),
@@ -413,9 +211,9 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
             letterSpacing: 0.7,
           ),
         ),
-        
+
         const SizedBox(height: 8),
-        
+
         // Connection bar or kopi fill animation
         if (isConnecting) _buildConnectionBar(),
         if (isActive) _buildKopiFillBar(),
@@ -427,38 +225,37 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
     return SizedBox(
       width: 86,
       height: 18,
-      child: CustomPaint(
-        painter: _KopiFillPainter(_kopiFillAnimation.value),
-      ),
+      child: CustomPaint(painter: _KopiFillPainter(_kopiFillAnimation.value)),
     );
   }
 
   void _startRecording() {
     setState(() {
-      _isRecording = true;
       _isPressing = true;
     });
-    
+
     if (!_callStarted) {
       // Show phone-on icon immediately
       setState(() {
         _showPhoneOn = true;
       });
-      
+
       // Start the call after 2 seconds
       _callStartTimer = Timer(const Duration(seconds: 2), () {
         if (mounted && _isPressing) {
           setState(() {
             _callStarted = true;
-            _changePhrase(); // Change phrase when starting a call
           });
           _connectionBarController.forward();
-          
-          ref.read(callProvider.notifier).startCall(
-            userName: 'Abhi',  // Example: Pass actual user name from auth
-            careRecipientName: 'Grandpa',  // Example: Get from user profile
-            caregiverType: 'family',  // Example: family, professional, volunteer
-          );
+
+          ref
+              .read(callProvider.notifier)
+              .startCall(
+                userName: 'Abhi', // Example: Pass actual user name from auth
+                careRecipientName: 'Grandpa', // Example: Get from user profile
+                caregiverType:
+                    'family', // Example: family, professional, volunteer
+              );
         }
       });
     } else {
@@ -470,15 +267,14 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
 
   void _stopRecording() {
     setState(() {
-      _isRecording = false;
       _isPressing = false;
       _showPhoneOn = false;
     });
-    
+
     // Cancel the call start timer if user releases before 2 seconds
     _callStartTimer?.cancel();
     _callStartTimer = null;
-    
+
     if (_callStarted && ref.read(callProvider).status == CallStatus.active) {
       _kopiFillController.stop();
       _kopiFillController.reset();
@@ -486,12 +282,13 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
     }
   }
 
-  
   Color _getRingColor(CallState callState) {
     if (!_callStarted) {
-      return _isPressing ? AhmaTheme.sageGreen.withOpacity(0.25) : AhmaTheme.mocha.withOpacity(0.1);
+      return _isPressing
+          ? AhmaTheme.sageGreen.withOpacity(0.25)
+          : AhmaTheme.mocha.withOpacity(0.1);
     }
-    
+
     switch (callState.status) {
       case CallStatus.connecting:
       case CallStatus.active:
@@ -518,7 +315,7 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
         );
       }
     }
-    
+
     switch (callState.status) {
       case CallStatus.connecting:
         // Show phone-on icon while connecting
@@ -555,7 +352,7 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
     if (!_callStarted) {
       return 'press & hold to call';
     }
-    
+
     switch (callState.status) {
       case CallStatus.connecting:
         return 'connecting...';
@@ -570,7 +367,7 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
     if (!_callStarted) {
       return AhmaTheme.mocha.withOpacity(0.35);
     }
-    
+
     switch (callState.status) {
       case CallStatus.connecting:
       case CallStatus.active:
@@ -629,7 +426,8 @@ class _ConnectionBarPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return oldDelegate is! _ConnectionBarPainter || oldDelegate.progress != progress;
+    return oldDelegate is! _ConnectionBarPainter ||
+        oldDelegate.progress != progress;
   }
 }
 
@@ -645,7 +443,7 @@ class _TeaCupPainter extends CustomPainter {
     final shadowPaint = Paint()
       ..color = AhmaTheme.mid.withOpacity(0.3)
       ..style = PaintingStyle.fill;
-    
+
     final shadowRect = Rect.fromCenter(
       center: Offset(size.width * 0.5, size.height * 0.82),
       width: size.width * 0.58,
@@ -658,8 +456,10 @@ class _TeaCupPainter extends CustomPainter {
       ..moveTo(size.width * 0.24, size.height * 0.42)
       ..lineTo(size.width * 0.27, size.height * 0.79)
       ..quadraticBezierTo(
-        size.width * 0.5, size.height * 0.86,
-        size.width * 0.71, size.height * 0.79,
+        size.width * 0.5,
+        size.height * 0.86,
+        size.width * 0.71,
+        size.height * 0.79,
       )
       ..lineTo(size.width * 0.76, size.height * 0.42)
       ..close();
@@ -675,8 +475,10 @@ class _TeaCupPainter extends CustomPainter {
       ..moveTo(size.width * 0.27, size.height * 0.51)
       ..lineTo(size.width * 0.28, size.height * 0.77)
       ..quadraticBezierTo(
-        size.width * 0.5, size.height * 0.82,
-        size.width * 0.70, size.height * 0.77,
+        size.width * 0.5,
+        size.height * 0.82,
+        size.width * 0.70,
+        size.height * 0.77,
       )
       ..lineTo(size.width * 0.72, size.height * 0.51)
       ..close();
@@ -733,12 +535,16 @@ class _TeaCupPainter extends CustomPainter {
     final handlePath = Path()
       ..moveTo(size.width * 0.76, size.height * 0.48)
       ..quadraticBezierTo(
-        size.width * 0.86, size.height * 0.48,
-        size.width * 0.86, size.height * 0.59,
+        size.width * 0.86,
+        size.height * 0.48,
+        size.width * 0.86,
+        size.height * 0.59,
       )
       ..quadraticBezierTo(
-        size.width * 0.86, size.height * 0.70,
-        size.width * 0.76, size.height * 0.70,
+        size.width * 0.86,
+        size.height * 0.70,
+        size.width * 0.76,
+        size.height * 0.70,
       );
 
     canvas.drawPath(handlePath, handlePaint);
@@ -780,6 +586,7 @@ class _KopiFillPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return oldDelegate is! _KopiFillPainter || oldDelegate.fillWidth != fillWidth;
+    return oldDelegate is! _KopiFillPainter ||
+        oldDelegate.fillWidth != fillWidth;
   }
 }

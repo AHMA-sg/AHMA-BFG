@@ -98,7 +98,7 @@ flutter:
 
   # Environment configuration & Assets
   assets:
-    - .env
+    - .env.example
     # Images
     - resources/home-art-bg.png
     - resources/full-cup.png

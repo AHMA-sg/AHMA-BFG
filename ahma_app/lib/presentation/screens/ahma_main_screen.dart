@@ -8,7 +8,7 @@ import 'kopi_journal_screen.dart';
 import 'profile_screen.dart';
 
 /// Main AHMA Screen with Bottom Navigation
-/// 
+///
 /// This is the new main screen that replaces the old home screen
 /// and provides navigation between the three core experiences:
 /// - Profile (affirmations, user stats)
@@ -33,17 +33,12 @@ class _AhmaMainScreenState extends ConsumerState<AhmaMainScreen> {
           children: [
             // Status bar
             const AhmaStatusBar(),
-            
+
             // Main content
-            Expanded(
-              child: _buildCurrentScreen(),
-            ),
-            
+            Expanded(child: _buildCurrentScreen()),
+
             // Bottom navigation
-            AhmaBottomNav(
-              currentTab: _currentTab,
-              onTabChanged: _onTabChanged,
-            ),
+            AhmaBottomNav(currentTab: _currentTab, onTabChanged: _onTabChanged),
           ],
         ),
       ),
@@ -53,7 +48,10 @@ class _AhmaMainScreenState extends ConsumerState<AhmaMainScreen> {
   Widget _buildCurrentScreen() {
     switch (_currentTab) {
       case AhmaNavTab.profile:
-        return const ProfileScreen();
+        return ProfileScreen(
+          onOpenCallJourney: () => _onTabChanged(AhmaNavTab.call),
+          onOpenPastJourneys: () => _onTabChanged(AhmaNavTab.kopi),
+        );
       case AhmaNavTab.call:
         return const AhmaCallScreen();
       case AhmaNavTab.kopi:

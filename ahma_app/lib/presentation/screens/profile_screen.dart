@@ -1,428 +1,512 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../core/theme/ahma_theme.dart';
+import '../widgets/house_animation.dart';
+import 'ahma_call_screen.dart';
+import 'kopi_journal_screen.dart';
 
-class Affirmation {
-  final String text;
-  final String from;
-  final Color? dotColor;
+class ProfileScreen extends ConsumerWidget {
+  final VoidCallback? onOpenCallJourney;
+  final VoidCallback? onOpenPastJourneys;
 
-  const Affirmation({
-    required this.text,
-    required this.from,
-    this.dotColor,
+  const ProfileScreen({
+    super.key,
+    this.onOpenCallJourney,
+    this.onOpenPastJourneys,
   });
-}
-
-/// Profile Screen with Affirmations
-/// 
-/// Features:
-/// - User profile with name and streak
-/// - Today's affirmation card
-/// - This week's mood pills
-/// - Collectibles display
-/// - Past walks with affirmations
-class ProfileScreen extends ConsumerStatefulWidget {
-  const ProfileScreen({super.key});
 
   @override
-  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final houseHeight = screenHeight * 0.29;
+
+    return Scaffold(
+      backgroundColor: AhmaTheme.backgroundInner,
+      body: Container(
+        color: AhmaTheme.backgroundInner,
+        child: SafeArea(
+          bottom: false,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _ProfileHero(
+                  onOpenCallJourney: () => _openCallJourney(context),
+                  onOpenPastJourneys: () => _openPastJourneys(context),
+                ),
+                const SizedBox(height: 24),
+                _AffirmationCard(),
+                const SizedBox(height: 26),
+                Center(
+                  child: Text(
+                    'welcome home',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontSize: 28,
+                      fontStyle: FontStyle.italic,
+                      color: AhmaTheme.mocha.withOpacity(0.62),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Center(
+                  child: Icon(
+                    Icons.favorite_rounded,
+                    color: AhmaTheme.palePink.withOpacity(0.7),
+                    size: 22,
+                  ),
+                ),
+                Transform.translate(
+                  offset: const Offset(0, -14),
+                  child: Center(
+                    child: IgnorePointer(
+                      child: Opacity(
+                        opacity: 0.98,
+                        child: HouseAnimationCinematic(height: houseHeight),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openCallJourney(BuildContext context) {
+    if (onOpenCallJourney != null) {
+      onOpenCallJourney!();
+      return;
+    }
+
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const AhmaCallScreen()));
+  }
+
+  void _openPastJourneys(BuildContext context) {
+    if (onOpenPastJourneys != null) {
+      onOpenPastJourneys!();
+      return;
+    }
+
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const KopiJournalScreen()));
+  }
 }
 
-class _ProfileScreenState extends ConsumerState<ProfileScreen> {
-  final List<String> _weekMoods = ['tired', 'hopeful', 'calm'];
-  final List<String> _collectibles = ['☕', '✦', '?'];
-  final List<Affirmation> _pastAffirmations = [
-    const Affirmation(
-      text: 'You are allowed to take up space.',
-      from: '',
-      dotColor: AhmaTheme.palePink,
-    ),
-    const Affirmation(
-      text: 'It\'s okay that today was hard.',
-      from: '',
-      dotColor: AhmaTheme.sageGreen,
-    ),
-  ];
+class _ProfileHero extends StatelessWidget {
+  final VoidCallback onOpenCallJourney;
+  final VoidCallback onOpenPastJourneys;
+
+  const _ProfileHero({
+    required this.onOpenCallJourney,
+    required this.onOpenPastJourneys,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent, // Transparent to show watercolor background
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Top bar with logo and profile icon
-            _buildTopBar(),
-            
-            // Main content
-            Expanded(
-              child: _buildMainContent(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTopBar() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Logo
-          Text(
-            'AHMA',
-            style: Theme.of(context).textTheme.displaySmall?.copyWith(
-              color: AhmaTheme.ahmaRed,
-              letterSpacing: 0.8,
-            ),
-          ),
-          
-          // Profile icon (half turtle)
-          _buildProfileIcon(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProfileIcon() {
-    return SizedBox(
-      width: 26,
-      height: 26,
-      child: CustomPaint(
-        painter: _ProfileIconPainter(),
-      ),
-    );
-  }
-
-  Widget _buildMainContent() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 8),
-          
-          // User info section
-          _buildUserInfo(),
-          
-          const SizedBox(height: 8),
-          
-          // Today's affirmation
-          _buildTodaysAffirmation(),
-          
-          const SizedBox(height: 7),
-          
-          // This week and collectibles grid
-          _buildWeekGrid(),
-          
-          const SizedBox(height: 7),
-          
-          // Past walks section
-          _buildPastWalks(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildUserInfo() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Abhi',
-              style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                fontSize: 25.5, // 50% larger: 17 * 1.5
-                color: AhmaTheme.mocha.withOpacity(0.82),
-              ),
-            ),
-            const SizedBox(height: 1),
-            Text(
-              "You've been on 4 walks.",
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontSize: 12.0, // 50% larger: 8 * 1.5
-                color: AhmaTheme.sageGreen,
-                letterSpacing: 0.8,
-                fontWeight: FontWeight.w200,
-              ),
-            ),
-          ],
-        ),
-        
-        // Streak counter
-        Column(
-          children: [
-            Text(
-              '3',
-              style: AhmaTheme.labelTextStyle.copyWith(
-                fontSize: 21.0, // 50% larger: 14 * 1.5
-                color: AhmaTheme.ahmaRed,
-              ),
-            ),
-            Text(
-              'streak',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontSize: 10.5, // 50% larger: 7 * 1.5
-                color: AhmaTheme.mocha.withOpacity(0.38),
-                letterSpacing: 0.7,
-                fontWeight: FontWeight.w200,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTodaysAffirmation() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(13),
-      decoration: AhmaTheme.cardDecoration,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Label
-          Text(
-            'today\'s affirmation',
-            style: AhmaTheme.labelTextStyle.copyWith(
-              fontSize: 10.5, // 50% larger: 7 * 1.5
-              color: AhmaTheme.sageGreen.withOpacity(0.65),
-              letterSpacing: 0.8,
-            ),
-          ),
-          
-          const SizedBox(height: 7),
-          
-          // Affirmation text
-          Text(
-            'You don\'t have to have it all figured out. Resting is also moving forward.',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              fontSize: 18.0, // 50% larger: 12 * 1.5
-              color: AhmaTheme.mocha.withOpacity(0.82),
-              height: 1.55,
-            ),
-          ),
-          
-          const SizedBox(height: 7),
-          
-          // From
-          Text(
-            '— from your 3rd journey',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              fontSize: 12.0, // 50% larger: 8 * 1.5
-              color: AhmaTheme.sageGreen,
-              letterSpacing: 0.7,
-              fontWeight: FontWeight.w200,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWeekGrid() {
-    return Row(
-      children: [
-        // This week's moods
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(10),
-            decoration: AhmaTheme.cardDecoration,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Label
-                Text(
-                  'this week',
-                  style: AhmaTheme.labelTextStyle.copyWith(
-                    fontSize: 10.5, // 50% larger: 7 * 1.5
-                    color: AhmaTheme.sageGreen.withOpacity(0.65),
-                    letterSpacing: 0.8,
-                  ),
-                ),
-                
-                const SizedBox(height: 4),
-                
-                // Mood pills
-                Wrap(
-                  spacing: 4,
-                  runSpacing: 4,
-                  children: _weekMoods.map((mood) => _buildMoodPill(mood)).toList(),
-                ),
-              ],
-            ),
-          ),
-        ),
-        
-        const SizedBox(width: 7),
-        
-        // Collectibles
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(10),
-            decoration: AhmaTheme.cardDecoration,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Label
-                Text(
-                  'collectibles',
-                  style: AhmaTheme.labelTextStyle.copyWith(
-                    fontSize: 10.5, // 50% larger: 7 * 1.5
-                    color: AhmaTheme.sageGreen.withOpacity(0.65),
-                    letterSpacing: 0.8,
-                  ),
-                ),
-                
-                const SizedBox(height: 4),
-                
-                // Collectible items
-                Row(
-                  children: _collectibles.map((collectible) => 
-                    Padding(
-                      padding: const EdgeInsets.only(right: 5),
-                      child: _buildCollectibleItem(collectible),
-                    ),
-                  ).toList(),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMoodPill(String mood) {
-    Color bgColor = AhmaTheme.cardColor;
-    
-    if (mood == 'calm') {
-      bgColor = AhmaTheme.palePink.withOpacity(0.18);
-    }
-    
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AhmaTheme.mocha.withOpacity(0.12),
-          width: 1,
-        ),
-      ),
-      child: Text(
-        mood,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          fontSize: 13.5, // 50% larger: 9 * 1.5
-          color: AhmaTheme.mocha.withOpacity(0.8),
-          letterSpacing: 0.2,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCollectibleItem(String collectible) {
-    Color bgColor = AhmaTheme.sageGreen.withOpacity(0.2);
-    Border? border;
-    
-    if (collectible == '☕') {
-      bgColor = AhmaTheme.palePink.withOpacity(0.3);
-    } else if (collectible == '?') {
-      bgColor = AhmaTheme.mid.withOpacity(0.3);
-      border = Border.all(
-        color: AhmaTheme.mocha.withOpacity(0.15),
-        width: 1,
-        style: BorderStyle.solid,
-      );
-    }
-    
-    return Container(
-      width: 20,
-      height: 20,
-      decoration: BoxDecoration(
-        color: bgColor,
-        shape: BoxShape.circle,
-        border: border,
-      ),
-      child: Center(
-        child: Text(
-          collectible,
-          style: AhmaTheme.labelTextStyle.copyWith(
-            fontSize: 12.0, // 50% larger: 8 * 1.5
-            color: AhmaTheme.mocha.withOpacity(0.6),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPastWalks() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Section label
-        Text(
-          'past walks',
-          style: AhmaTheme.labelTextStyle.copyWith(
-            fontSize: 10.5, // 50% larger: 7 * 1.5
-            color: AhmaTheme.mocha.withOpacity(0.32),
-            letterSpacing: 0.8,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'AHMA',
+                    style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                      fontSize: 44,
+                      color: AhmaTheme.ahmaRed,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Text(
+                        'Your AI care companion',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              fontSize: 18,
+                              color: AhmaTheme.mocha.withOpacity(0.64),
+                              fontWeight: FontWeight.w300,
+                              letterSpacing: 0.1,
+                            ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.favorite_rounded,
+                        color: AhmaTheme.palePink.withOpacity(0.8),
+                        size: 18,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.28),
+                border: Border.all(color: Colors.white.withOpacity(0.5)),
+              ),
+              child: Center(
+                child: Text(
+                  'A',
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontSize: 24,
+                    color: AhmaTheme.ahmaRed.withOpacity(0.72),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 30),
+        RichText(
+          text: TextSpan(
+            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+              fontSize: 36,
+              color: AhmaTheme.mocha.withOpacity(0.95),
+              height: 1.1,
+            ),
+            children: [
+              const TextSpan(text: 'Good morning, '),
+              TextSpan(
+                text: 'Abhi',
+                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                  fontSize: 36,
+                  color: AhmaTheme.mocha.withOpacity(0.95),
+                  height: 1.1,
+                ),
+              ),
+            ],
           ),
         ),
-        
-        const SizedBox(height: 5),
-        
-        // Past affirmation cards
-        ..._pastAffirmations.map((affirmation) => 
-          Padding(
-            padding: const EdgeInsets.only(bottom: 5),
-            child: _buildPastAffirmationCard(affirmation),
-          ),
-        ).toList(),
+        const SizedBox(height: 18),
+        Row(
+          children: [
+            Icon(
+              Icons.favorite_rounded,
+              color: AhmaTheme.palePink.withOpacity(0.75),
+              size: 22,
+            ),
+            const SizedBox(width: 10),
+            Text(
+              "You've been on 4 walks.",
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontSize: 19,
+                color: AhmaTheme.mocha.withOpacity(0.88),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 26),
+        _CallJourneyCard(onTap: onOpenCallJourney),
+        const SizedBox(height: 18),
+        _PastJourneysCard(onTap: onOpenPastJourneys),
       ],
     );
   }
+}
 
-  Widget _buildPastAffirmationCard(Affirmation affirmation) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-      decoration: BoxDecoration(
-        color: AhmaTheme.cardColor,
-        borderRadius: BorderRadius.circular(9),
-        border: Border.all(
-          color: AhmaTheme.mocha.withOpacity(0.06),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          // Color dot
-          Container(
-            width: 5,
-            height: 5,
-            decoration: BoxDecoration(
-              color: affirmation.dotColor ?? AhmaTheme.sageGreen,
-              shape: BoxShape.circle,
+class _CallJourneyCard extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _CallJourneyCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(34),
+        child: Ink(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(28, 28, 26, 28),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(34),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [const Color(0xFF6A7151), AhmaTheme.sageGreen],
             ),
           ),
-          
-          const SizedBox(width: 7),
-          
-          // Affirmation text
-          Expanded(
-            child: Text(
-              affirmation.text,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontSize: 15.0, // 50% larger: 10 * 1.5
-                color: AhmaTheme.mocha,
-                height: 1.45,
+          child: Stack(
+            children: [
+              Positioned(
+                right: -8,
+                bottom: -14,
+                child: Opacity(
+                  opacity: 0.12,
+                  child: CustomPaint(
+                    size: const Size(120, 120),
+                    painter: _LeafPainter(),
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Start a call journey',
+                          style: Theme.of(context).textTheme.headlineLarge
+                              ?.copyWith(
+                                fontSize: 33,
+                                color: Colors.white,
+                                height: 1.05,
+                              ),
+                        ),
+                        const SizedBox(height: 14),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 280),
+                          child: Text(
+                            'Talk to your AI companion for care guidance and support.',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  fontSize: 20,
+                                  height: 1.35,
+                                  color: Colors.white.withOpacity(0.92),
+                                ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  _PhoneOrb(),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PastJourneysCard extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _PastJourneysCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(28),
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
+          decoration: BoxDecoration(
+            color: AhmaTheme.cardColor.withOpacity(0.68),
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(color: const Color(0xFFE6D2BE), width: 1.4),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 62,
+                height: 62,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AhmaTheme.palePink.withOpacity(0.28),
+                ),
+                child: Icon(
+                  Icons.receipt_long_rounded,
+                  color: AhmaTheme.ahmaRed.withOpacity(0.6),
+                  size: 30,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Your past journeys',
+                      style: Theme.of(context).textTheme.headlineLarge
+                          ?.copyWith(
+                            fontSize: 24,
+                            color: Colors.black.withOpacity(0.9),
+                          ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'View your previous calls and summaries.',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontSize: 18,
+                        color: AhmaTheme.mocha.withOpacity(0.78),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: Colors.black.withOpacity(0.82),
+                size: 34,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AffirmationCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 360;
+
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(22, 22, 18, 18),
+          decoration: BoxDecoration(
+            color: AhmaTheme.cardColor.withOpacity(0.74),
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(color: const Color(0xFFE8D7C5), width: 1.35),
+          ),
+          child: isCompact
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _AffirmationCopy(),
+                    const SizedBox(height: 12),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: SizedBox(
+                        width: 150,
+                        height: 200,
+                        child: Image.asset(
+                          'resources/full-cup.png',
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              : Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(child: _AffirmationCopy()),
+                    const SizedBox(width: 10),
+                    SizedBox(
+                      width: 150,
+                      height: 230,
+                      child: Image.asset(
+                        'resources/full-cup.png',
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ],
+                ),
+        );
+      },
+    );
+  }
+}
+
+class _AffirmationCopy extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          Icons.format_quote_rounded,
+          color: const Color(0xFFFFC85A),
+          size: 42,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'TODAY\'S AFFIRMATION',
+          style: AhmaTheme.labelTextStyle.copyWith(
+            fontSize: 11.5,
+            color: AhmaTheme.sageGreen.withOpacity(0.9),
+            letterSpacing: 1.0,
+          ),
+        ),
+        const SizedBox(height: 18),
+        Text(
+          "You don't have to have it all figured out. Resting is also moving forward.",
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            fontSize: 30,
+            color: Colors.black.withOpacity(0.92),
+            height: 1.32,
+          ),
+        ),
+        const SizedBox(height: 26),
+        Text(
+          'From your 3rd journey',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontSize: 17,
+            color: AhmaTheme.mocha.withOpacity(0.74),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PhoneOrb extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 178,
+      height: 178,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: 178,
+            height: 178,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withOpacity(0.07),
+            ),
+          ),
+          Container(
+            width: 150,
+            height: 150,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withOpacity(0.1),
+            ),
+          ),
+          Container(
+            width: 126,
+            height: 126,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Color(0xFFFAF5EE),
+            ),
+            child: Center(
+              child: Image.asset(
+                'resources/Phone-on.png',
+                width: 52.8,
+                height: 52.8,
               ),
             ),
           ),
@@ -432,65 +516,192 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 }
 
-class _ProfileIconPainter extends CustomPainter {
+class _LeafPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    // Background circle
-    final bgPaint = Paint()
-      ..color = AhmaTheme.cardColor
-      ..style = PaintingStyle.fill;
-    
-    final bgBorderPaint = Paint()
-      ..color = AhmaTheme.mocha.withOpacity(0.1)
+    final stemPaint = Paint()
+      ..color = Colors.white.withOpacity(0.35)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.5;
+      ..strokeWidth = 2.2
+      ..strokeCap = StrokeCap.round;
 
-    final center = Offset(size.width * 0.5, size.height * 0.5);
-    canvas.drawCircle(center, size.width * 0.46, bgPaint);
-    canvas.drawCircle(center, size.width * 0.46, bgBorderPaint);
-
-    // Body (ellipse - half turtle shape)
-    final bodyPaint = Paint()
-      ..color = AhmaTheme.sageGreen.withOpacity(0.7)
+    final leafPaint = Paint()
+      ..color = Colors.white.withOpacity(0.24)
       ..style = PaintingStyle.fill;
 
-    final bodyRect = Rect.fromCenter(
-      center: Offset(size.width * 0.5, size.height * 0.65),
-      width: size.width * 0.62,
-      height: size.height * 0.42,
-    );
-    canvas.drawOval(bodyRect, bodyPaint);
+    final path = Path()
+      ..moveTo(size.width * 0.48, size.height)
+      ..quadraticBezierTo(
+        size.width * 0.44,
+        size.height * 0.72,
+        size.width * 0.56,
+        size.height * 0.4,
+      )
+      ..quadraticBezierTo(
+        size.width * 0.62,
+        size.height * 0.18,
+        size.width * 0.5,
+        size.height * 0.02,
+      );
+    canvas.drawPath(path, stemPaint);
 
-    // Head (ellipse)
-    final headPaint = Paint()
-      ..color = AhmaTheme.sageGreen.withOpacity(0.8)
+    void drawLeaf(double x, double y, double w, double h, double rotation) {
+      canvas.save();
+      canvas.translate(x, y);
+      canvas.rotate(rotation);
+      canvas.drawOval(
+        Rect.fromCenter(center: Offset.zero, width: w, height: h),
+        leafPaint,
+      );
+      canvas.restore();
+    }
+
+    drawLeaf(size.width * 0.34, size.height * 0.7, 18, 34, -0.6);
+    drawLeaf(size.width * 0.66, size.height * 0.65, 18, 34, 0.7);
+    drawLeaf(size.width * 0.36, size.height * 0.46, 16, 30, -0.9);
+    drawLeaf(size.width * 0.68, size.height * 0.34, 16, 30, 0.9);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _FlowerPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final stemPaint = Paint()
+      ..color = const Color(0xFF9FB28D).withOpacity(0.72)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round;
+
+    final leafPaint = Paint()
+      ..color = const Color(0xFFDDE6D4).withOpacity(0.92)
       ..style = PaintingStyle.fill;
 
-    final headRect = Rect.fromCenter(
-      center: Offset(size.width * 0.5, size.height * 0.42),
-      width: size.width * 0.42,
-      height: size.height * 0.35,
-    );
-    canvas.drawOval(headRect, headPaint);
+    final petalPaint = Paint()
+      ..shader = const RadialGradient(
+        colors: [Color(0xFFFFF4B8), Color(0xFFF7C95E)],
+      ).createShader(Rect.fromCircle(center: Offset.zero, radius: 26));
 
-    // Eyes (small ellipses for half turtle effect)
-    final eyePaint = Paint()
-      ..color = AhmaTheme.sageGreen.withOpacity(0.45)
+    final centerPaint = Paint()
+      ..color = const Color(0xFFD9A34A)
       ..style = PaintingStyle.fill;
 
-    final leftEyeRect = Rect.fromCenter(
-      center: Offset(size.width * 0.33, size.height * 0.33),
-      width: size.width * 0.14,
-      height: size.width * 0.14,
-    );
-    canvas.drawOval(leftEyeRect, eyePaint);
+    void drawStem(List<Offset> points) {
+      final path = Path()..moveTo(points.first.dx, points.first.dy);
+      for (var i = 1; i < points.length; i++) {
+        path.quadraticBezierTo(
+          (points[i - 1].dx + points[i].dx) / 2,
+          (points[i - 1].dy + points[i].dy) / 2,
+          points[i].dx,
+          points[i].dy,
+        );
+      }
+      canvas.drawPath(path, stemPaint);
+    }
 
-    final rightEyeRect = Rect.fromCenter(
-      center: Offset(size.width * 0.52, size.height * 0.33),
-      width: size.width * 0.14,
-      height: size.width * 0.14,
+    void drawLeaf(Offset center, Size leafSize, double rotation) {
+      canvas.save();
+      canvas.translate(center.dx, center.dy);
+      canvas.rotate(rotation);
+      final path = Path()
+        ..moveTo(0, 0)
+        ..quadraticBezierTo(
+          -leafSize.width * 0.5,
+          -leafSize.height * 0.15,
+          0,
+          -leafSize.height,
+        )
+        ..quadraticBezierTo(
+          leafSize.width * 0.45,
+          -leafSize.height * 0.2,
+          0,
+          0,
+        );
+      canvas.drawPath(path, leafPaint);
+      canvas.restore();
+    }
+
+    void drawFlower(Offset center, double radius, {double scale = 1}) {
+      for (var i = 0; i < 10; i++) {
+        canvas.save();
+        canvas.translate(center.dx, center.dy);
+        canvas.rotate((math.pi * 2 / 10) * i);
+        final rect = Rect.fromCenter(
+          center: Offset(0, -radius * 0.6),
+          width: radius * 0.8 * scale,
+          height: radius * 1.35 * scale,
+        );
+        canvas.drawOval(rect, petalPaint);
+        canvas.restore();
+      }
+      canvas.drawCircle(center, radius * 0.36 * scale, centerPaint);
+      canvas.drawCircle(
+        center,
+        radius * 0.18 * scale,
+        Paint()..color = const Color(0xFFFCE9A0),
+      );
+    }
+
+    drawStem([
+      Offset(size.width * 0.54, size.height),
+      Offset(size.width * 0.58, size.height * 0.76),
+      Offset(size.width * 0.5, size.height * 0.5),
+      Offset(size.width * 0.58, size.height * 0.22),
+    ]);
+    drawStem([
+      Offset(size.width * 0.74, size.height),
+      Offset(size.width * 0.7, size.height * 0.76),
+      Offset(size.width * 0.76, size.height * 0.5),
+      Offset(size.width * 0.7, size.height * 0.16),
+    ]);
+    drawStem([
+      Offset(size.width * 0.63, size.height),
+      Offset(size.width * 0.62, size.height * 0.82),
+      Offset(size.width * 0.67, size.height * 0.62),
+      Offset(size.width * 0.64, size.height * 0.32),
+    ]);
+
+    drawLeaf(
+      Offset(size.width * 0.51, size.height * 0.85),
+      const Size(22, 38),
+      -0.8,
     );
-    canvas.drawOval(rightEyeRect, eyePaint);
+    drawLeaf(
+      Offset(size.width * 0.67, size.height * 0.78),
+      const Size(20, 42),
+      0.6,
+    );
+    drawLeaf(
+      Offset(size.width * 0.55, size.height * 0.67),
+      const Size(22, 40),
+      -0.35,
+    );
+    drawLeaf(
+      Offset(size.width * 0.76, size.height * 0.6),
+      const Size(20, 38),
+      0.65,
+    );
+    drawLeaf(
+      Offset(size.width * 0.59, size.height * 0.48),
+      const Size(22, 40),
+      -0.7,
+    );
+    drawLeaf(
+      Offset(size.width * 0.72, size.height * 0.39),
+      const Size(18, 34),
+      0.4,
+    );
+    drawLeaf(
+      Offset(size.width * 0.44, size.height * 0.91),
+      const Size(18, 30),
+      -0.4,
+    );
+
+    drawFlower(Offset(size.width * 0.47, size.height * 0.56), 26);
+    drawFlower(Offset(size.width * 0.59, size.height * 0.23), 18, scale: 0.8);
+    drawFlower(Offset(size.width * 0.78, size.height * 0.3), 12, scale: 0.72);
   }
 
   @override

@@ -1,9 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/call_model.dart';
+import '../../data/models/action_plan.dart';
 import '../../data/datasources/ultravox_api.dart';
 import '../../data/datasources/ultravox_rtc.dart';
 import '../../data/datasources/backend_api.dart';
 import '../../core/config/env_config.dart';
+import 'backend_provider.dart';
 
 /// Call state
 class CallState {
@@ -34,21 +36,17 @@ class CallState {
   }
 }
 
-enum CallStatus {
-  idle,
-  connecting,
-  active,
-  ended,
-  error,
-}
+enum CallStatus { idle, connecting, active, ended, error }
 
 /// Call provider
 class CallNotifier extends StateNotifier<CallState> {
   final UltravoxApi _api;
   final UltravoxRtcManager _rtc;
   final BackendApi _backend;
+  final Future<void> Function(BackendUpdate update) _processBackendUpdate;
 
-  CallNotifier(this._api, this._rtc, this._backend) : super(const CallState());
+  CallNotifier(this._api, this._rtc, this._backend, this._processBackendUpdate)
+    : super(const CallState());
 
   /// Start a voice call
   Future<void> startCall({
@@ -79,7 +77,7 @@ class CallNotifier extends StateNotifier<CallState> {
           if (caregiverType != null) 'caregiverType': caregiverType,
         },
         firstSpeakerSettings: {
-          'agent': {'text': greeting}
+          'agent': {'text': greeting},
         },
         // Note: initialMessages is for conversation history (USER/AGENT messages)
         // Context is passed via greeting and metadata instead
@@ -88,20 +86,14 @@ class CallNotifier extends StateNotifier<CallState> {
       // Connect WebRTC
       await _rtc.connect(call.joinUrl);
 
-      state = state.copyWith(
-        status: CallStatus.active,
-        call: call,
-      );
+      state = state.copyWith(status: CallStatus.active, call: call);
 
       print('[Call] Started call: ${call.callId}');
       if (userName != null) {
         print('[Call] 👤 User: $userName');
       }
     } catch (e) {
-      state = state.copyWith(
-        status: CallStatus.error,
-        error: e.toString(),
-      );
+      state = state.copyWith(status: CallStatus.error, error: e.toString());
       print('[Call] Error starting call: $e');
     }
   }
@@ -140,20 +132,14 @@ class CallNotifier extends StateNotifier<CallState> {
 
       // Update state
       final updatedCall = state.call!.copyWith(transcript: messages);
-      state = state.copyWith(
-        status: CallStatus.ended,
-        call: updatedCall,
-      );
+      state = state.copyWith(status: CallStatus.ended, call: updatedCall);
 
       // TODO: Send transcript to Flask backend
       await _sendTranscriptToBackend(updatedCall);
 
       print('[Call] Ended call: ${state.call!.callId}');
     } catch (e) {
-      state = state.copyWith(
-        status: CallStatus.error,
-        error: e.toString(),
-      );
+      state = state.copyWith(status: CallStatus.error, error: e.toString());
       print('[Call] Error ending call: $e');
     }
   }
@@ -169,7 +155,7 @@ class CallNotifier extends StateNotifier<CallState> {
   void startAudioCapture() {
     try {
       print('[Call] 🎤 Starting audio capture (PTT pressed)');
-      
+
       // Check if WebRTC is connected
       if (!_rtc.isConnected) {
         print('[Call] ⚠️  WebRTC not connected, cannot start audio capture');
@@ -189,7 +175,7 @@ class CallNotifier extends StateNotifier<CallState> {
   void stopAudioCapture() {
     try {
       print('[Call] 🎤 Stopping audio capture (PTT released)');
-      
+
       // Use muting instead of enable/disable for better performance
       _rtc.setMuted(true);
       state = state.copyWith(isMuted: true);
@@ -205,7 +191,9 @@ class CallNotifier extends StateNotifier<CallState> {
   /// Send transcript to Flask backend
   Future<void> _sendTranscriptToBackend(CallModel call) async {
     try {
-      print('[Call] Sending transcript to backend: ${call.transcript.length} messages');
+      print(
+        '[Call] Sending transcript to backend: ${call.transcript.length} messages',
+      );
 
       // Determine stress level from metadata or default
       final stressLevel = state.call?.stage == CallStage.assess
@@ -217,16 +205,19 @@ class CallNotifier extends StateNotifier<CallState> {
         userId: 'default_user', // TODO: Get from auth provider
         transcript: call.transcript,
         stressLevel: stressLevel,
-        metadata: {
-          'finalStage': call.stage.toString(),
-        },
+        metadata: {'finalStage': call.stage.toString()},
       );
 
       print('[Call] ✅ Backend response: ${result['message']}');
+      final updateJson = result['update'];
+      if (updateJson is Map<String, dynamic>) {
+        await _processBackendUpdate(BackendUpdate.fromJson(updateJson));
+        print('[Call] ✅ Action plan update processed from backend response');
+      }
+
       if (result['actions'] != null) {
         print('[Call] 🎯 Actions taken: ${result['actions']}');
       }
-
     } catch (e) {
       print('[Call] ⚠️  Backend error (non-critical): $e');
       // Don't fail the call end if backend is unreachable
@@ -247,5 +238,6 @@ final callProvider = StateNotifierProvider<CallNotifier, CallState>((ref) {
       },
     ),
     BackendApi(),
+    (update) => ref.read(backendProvider.notifier).processUpdate(update),
   );
 });

@@ -1,8 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "installCommand": "git clone https://github.com/flutter/flutter.git -b stable --depth 1 && if [ ! -f .env ]; then cp .env.example .env; fi && ./flutter/bin/flutter config --enable-web && ./flutter/bin/flutter pub get",
-  "buildCommand": "./flutter/bin/flutter build web --release",
+  "installCommand": "git clone https://github.com/flutter/flutter.git -b stable --depth 1 && ./flutter/bin/flutter config --enable-web && ./flutter/bin/flutter pub get",
+  "buildCommand": "./flutter/bin/flutter build web --release --dart-define=BACKEND_API_URL=${BACKEND_API_URL:-http://localhost:5001} --dart-define=BACKEND_API_KEY=${BACKEND_API_KEY:-} --dart-define=ULTRAVOX_API_KEY=${ULTRAVOX_API_KEY:-} --dart-define=ULTRAVOX_BASE_URL=${ULTRAVOX_BASE_URL:-https://api.ultravox.ai/api} --dart-define=CORPUS_ID_CAREGIVER_GUIDES=${CORPUS_ID_CAREGIVER_GUIDES:-} --dart-define=AHMA_AGENT_ID=${AHMA_AGENT_ID:-} --dart-define=WEBHOOK_SECRET=${WEBHOOK_SECRET:-default_secret} --dart-define=WEBHOOK_PORT=${WEBHOOK_PORT:-8080}",
   "outputDirectory": "build/web",
   "rewrites": [
     {

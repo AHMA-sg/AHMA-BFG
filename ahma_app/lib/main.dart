@@ -15,7 +15,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Load environment variables
-  await dotenv.load(fileName: '.env');
+  await dotenv.load(fileName: '.env.example', isOptional: true);
 
   // Request microphone permission (required for voice calls)
   await _requestPermissions();
