@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/action_plan.dart';
-import '../../data/datasources/local_db.dart';
+import '../../data/datasources/local_db_web.dart'
+    if (dart.library.io) '../../data/datasources/local_db.dart';
 
 /// Backend update state
 class BackendState {
@@ -52,7 +53,9 @@ class BackendNotifier extends StateNotifier<BackendState> {
         isLoading: false,
       );
 
-      print('[Backend] Loaded ${updates.length} action plans from local storage');
+      print(
+        '[Backend] Loaded ${updates.length} action plans from local storage',
+      );
     } catch (e) {
       print('[Backend] Error loading from local storage: $e');
       state = state.copyWith(
@@ -72,20 +75,23 @@ class BackendNotifier extends StateNotifier<BackendState> {
     try {
       // Save to local database
       await _localDb.saveActionPlan(update);
-      print('[Backend] Saved action plan to local storage (call: ${update.callId})');
+      print(
+        '[Backend] Saved action plan to local storage (call: ${update.callId})',
+      );
 
       // Remove existing update with same callId to prevent duplicates in state
-      final filteredUpdates = state.updates.where((u) => u.callId != update.callId).toList();
-      
+      final filteredUpdates = state.updates
+          .where((u) => u.callId != update.callId)
+          .toList();
+
       // Add new update to the beginning of the list
       final updatedList = [update, ...filteredUpdates];
 
-      state = state.copyWith(
-        updates: updatedList,
-        latestUpdate: update,
+      state = state.copyWith(updates: updatedList, latestUpdate: update);
+
+      print(
+        '[Backend] Updated state with ${updatedList.length} total action plans',
       );
-      
-      print('[Backend] Updated state with ${updatedList.length} total action plans');
     } catch (e) {
       print('[Backend] Error saving action plan: $e');
       state = state.copyWith(error: 'Failed to save action plan');
@@ -165,7 +171,9 @@ final localDatabaseProvider = Provider<LocalDatabase>((ref) {
 });
 
 /// Provider
-final backendProvider = StateNotifierProvider<BackendNotifier, BackendState>((ref) {
+final backendProvider = StateNotifierProvider<BackendNotifier, BackendState>((
+  ref,
+) {
   final localDb = ref.watch(localDatabaseProvider);
   return BackendNotifier(localDb);
 });

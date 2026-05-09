@@ -110,13 +110,8 @@ flutter:
     - resources/Sh1.png
     - resources/Sh2.png
     - resources/Sh3.png
-    - resources/L0.png
-    - resources/L1.png
-    - resources/L2.png
-    - resources/L3.png
     - resources/ahma-logo.png
     - resources/ahma-logo-white.png
-    - resources/L3.png
 
     # Sky backgrounds (8 times of day) - CREATE THESE PNGS
     # See SKY_BACKGROUNDS_GUIDE.md for color palettes and creation tips

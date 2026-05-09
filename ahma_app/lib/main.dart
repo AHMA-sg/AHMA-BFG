@@ -1,4 +1,4 @@
-import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -20,22 +20,24 @@ Future<void> main() async {
   // Request microphone permission (required for voice calls)
   await _requestPermissions();
 
-  runApp(
-    const ProviderScope(
-      child: MyApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 Future<void> _requestPermissions() async {
   try {
+    if (kIsWeb) {
+      debugPrint('Running on web - microphone permissions handled by browser');
+      return;
+    }
+
     // Request microphone permission on all platforms
-    if (Platform.isAndroid || Platform.isIOS) {
+    if (defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS) {
       final status = await Permission.microphone.request();
       if (status.isDenied) {
         debugPrint('Microphone permission denied');
       }
-    } else if (Platform.isMacOS) {
+    } else if (defaultTargetPlatform == TargetPlatform.macOS) {
       // macOS also needs explicit microphone permission
       final status = await Permission.microphone.request();
       if (status.isDenied) {
@@ -44,7 +46,9 @@ Future<void> _requestPermissions() async {
         debugPrint('Microphone permission granted on macOS');
       }
     } else {
-      debugPrint('Running on other platform - microphone permissions handled by OS');
+      debugPrint(
+        'Running on other platform - microphone permissions handled by OS',
+      );
     }
   } catch (e) {
     debugPrint('Permission request failed: $e');
@@ -61,9 +65,9 @@ class MyApp extends StatelessWidget {
       title: 'AHMA',
       debugShowCheckedModeBanner: false,
       theme: AhmaTheme.lightTheme,
-      home: USE_UNITY_HOME_SCREEN 
-        ? const UnityHomeScreen() 
-        : const HomeScreenBlendedExample(),
+      home: USE_UNITY_HOME_SCREEN
+          ? const UnityHomeScreen()
+          : const HomeScreenBlendedExample(),
     );
   }
 }

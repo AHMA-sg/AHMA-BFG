@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
-import '../../data/datasources/webhook_handler.dart';
+import '../../data/datasources/webhook_handler_web.dart'
+    if (dart.library.io) '../../data/datasources/webhook_handler.dart';
 import '../../core/config/env_config.dart';
 import 'backend_provider.dart';
 
@@ -58,6 +59,8 @@ Future<void> _registerWebhookWithBackend() async {
     }
   } catch (e) {
     print('[Webhook] ❌ Error registering webhook: $e');
-    print('[Webhook]    Make sure backend is running on ${EnvConfig.backendApiUrl}');
+    print(
+      '[Webhook]    Make sure backend is running on ${EnvConfig.backendApiUrl}',
+    );
   }
 }
