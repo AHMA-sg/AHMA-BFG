@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
@@ -36,8 +36,16 @@ class LocalDatabase {
 
   /// Initialize database with schema
   Future<Database> _initDB() async {
+    if (kIsWeb) {
+      throw UnsupportedError('Local database is not available on web');
+    }
+
+    final platform = defaultTargetPlatform;
+
     // Initialize FFI for desktop platforms (Linux, Windows, macOS)
-    if (Platform.isLinux || Platform.isWindows || Platform.isMacOS) {
+    if (platform == TargetPlatform.linux ||
+        platform == TargetPlatform.windows ||
+        platform == TargetPlatform.macOS) {
       sqfliteFfiInit();
       databaseFactory = databaseFactoryFfi;
     }
@@ -98,7 +106,7 @@ class LocalDatabase {
           created_at TEXT NOT NULL
         )
       ''');
-      
+
       // Copy data from old table to new table (removing duplicates)
       await db.execute('''
         INSERT INTO $_actionPlansTable\_new (call_id, call_type, user_id, timestamp, classification, action_plan, stats, created_at)
@@ -106,16 +114,18 @@ class LocalDatabase {
         FROM $_actionPlansTable
         GROUP BY call_id
       ''');
-      
+
       // Drop old table and rename new table
       await db.execute('DROP TABLE $_actionPlansTable');
-      await db.execute('ALTER TABLE $_actionPlansTable\_new RENAME TO $_actionPlansTable');
-      
+      await db.execute(
+        'ALTER TABLE $_actionPlansTable\_new RENAME TO $_actionPlansTable',
+      );
+
       // Recreate indexes
       await db.execute('''
         CREATE INDEX idx_timestamp ON $_actionPlansTable(timestamp DESC)
       ''');
-      
+
       await db.execute('''
         CREATE INDEX idx_user_id ON $_actionPlansTable(user_id)
       ''');
@@ -130,7 +140,8 @@ class LocalDatabase {
       'call_id': update.callId,
       'call_type': update.type,
       'user_id': update.userId,
-      'timestamp': update.timestamp.toIso8601String(), // Convert DateTime to String
+      'timestamp': update.timestamp
+          .toIso8601String(), // Convert DateTime to String
       'classification': jsonEncode(update.classification.toJson()),
       'action_plan': jsonEncode(update.actionPlan.toJson()),
       'stats': jsonEncode(update.stats.toJson()),
@@ -194,7 +205,7 @@ class LocalDatabase {
     );
 
     print('[DB] Query returned ${results.length} results');
-    
+
     final updates = results.map((row) {
       final update = BackendUpdate.fromJson({
         'type': row['call_type'],
@@ -205,8 +216,10 @@ class LocalDatabase {
         'action_plan': jsonDecode(row['action_plan'] as String),
         'stats': jsonDecode(row['stats'] as String),
       });
-      
-      print('[DB]   Call: ${update.callId}, Tasks: ${update.actionPlan.todoistTasks.length}');
+
+      print(
+        '[DB]   Call: ${update.callId}, Tasks: ${update.actionPlan.todoistTasks.length}',
+      );
       return update;
     }).toList();
 
