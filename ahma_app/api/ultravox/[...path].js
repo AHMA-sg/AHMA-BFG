@@ -19,13 +19,17 @@ function setCorsHeaders(res) {
 export default async function handler(req, res) {
   setCorsHeaders(res);
 
+  console.log(`[Ultravox Proxy] ${req.method} ${req.url}`);
+
   if (req.method === 'OPTIONS') {
+    console.log('[Ultravox Proxy] CORS preflight');
     res.status(204).end();
     return;
   }
 
   const apiKey = process.env.ULTRAVOX_API_KEY;
   if (!apiKey) {
+    console.error('[Ultravox Proxy] Missing ULTRAVOX_API_KEY');
     res.status(500).json({error: 'Missing ULTRAVOX_API_KEY'});
     return;
   }
@@ -36,6 +40,7 @@ export default async function handler(req, res) {
   const upstreamUrl = `${baseUrl.replace(/\/$/, '')}/${path}${search}`;
 
   try {
+    console.log(`[Ultravox Proxy] Forwarding to ${upstreamUrl}`);
     const response = await fetch(upstreamUrl, {
       method: req.method,
       headers: {
@@ -46,10 +51,12 @@ export default async function handler(req, res) {
     });
 
     const text = await response.text();
+    console.log(`[Ultravox Proxy] Ultravox responded ${response.status}`);
     res.status(response.status);
     res.setHeader('Content-Type', response.headers.get('content-type') || 'application/json');
     res.send(text);
   } catch (error) {
+    console.error('[Ultravox Proxy] Upstream error', error);
     res.status(502).json({error: String(error)});
   }
 }
