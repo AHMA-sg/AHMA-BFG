@@ -48,64 +48,10 @@ class ProfileScreen extends ConsumerWidget {
     );
 
     return Scaffold(
-<<<<<<< HEAD
-      backgroundColor: AhmaTheme.backgroundInner,
-      body: Container(
-        color: AhmaTheme.backgroundInner,
-        child: SafeArea(
-          bottom: false,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(18, 8, 18, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _ProfileHero(
-                  onOpenCallJourney: () => _openCallJourney(context),
-                  onOpenPastJourneys: () => _openPastJourneys(context),
-                ),
-                const SizedBox(height: 18),
-                _AffirmationCard(),
-                const SizedBox(height: 22),
-                Center(
-                  child: Text(
-                    'welcome home',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontSize: 28,
-                      fontStyle: FontStyle.italic,
-                      color: AhmaTheme.mocha.withOpacity(0.62),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Center(
-                  child: Icon(
-                    Icons.favorite_rounded,
-                    color: AhmaTheme.palePink.withOpacity(0.7),
-                    size: 22,
-                  ),
-                ),
-                Transform.translate(
-                  offset: const Offset(0, -14),
-                  child: Center(
-                    child: IgnorePointer(
-                      child: Opacity(
-                        opacity: 0.98,
-                        child: HouseAnimationCinematic(height: houseHeight),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-=======
       backgroundColor: Colors.transparent,
       body: onOpenCallJourney == null && onOpenPastJourneys == null
           ? SafeArea(child: content)
           : content,
->>>>>>> c769436ab06cecb23fd16456b300ddfbedd77c6d
     );
   }
 
@@ -132,12 +78,8 @@ class ProfileScreen extends ConsumerWidget {
   }
 }
 
-<<<<<<< HEAD
-class _ProfileHero extends StatelessWidget {
-=======
 class _ProfileContent extends StatelessWidget {
   final double scale;
->>>>>>> c769436ab06cecb23fd16456b300ddfbedd77c6d
   final VoidCallback onOpenCallJourney;
   final VoidCallback onOpenPastJourneys;
 
@@ -173,39 +115,105 @@ class _ProfileContent extends StatelessWidget {
           SizedBox(height: s(14)),
           _AffirmationCard(scale: scale),
           Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: LayoutBuilder(
-                    builder: (context, houseConstraints) {
-                      final houseHeight = houseConstraints.maxHeight;
+            child: LayoutBuilder(
+              builder: (context, sectionConstraints) {
+                final welcomeTextHeight = t(22);
+                final houseHeight = math.max(
+                  0.0,
+                  sectionConstraints.maxHeight - s(8) - welcomeTextHeight,
+                );
 
-                      return Center(
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: Center(
                         child: IgnorePointer(
                           child: Opacity(
                             opacity: 0.98,
                             child: HouseAnimationCinematic(height: houseHeight),
                           ),
                         ),
-                      );
-                    },
-                  ),
-                ),
-                SizedBox(height: s(8)),
-                Text(
-                  'Welcome home, we\'re here with you.',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontSize: t(16),
-                    fontStyle: FontStyle.italic,
-                    color: AhmaTheme.mocha.withOpacity(0.62),
-                  ),
-                ),
-              ],
+                      ),
+                    ),
+                    SizedBox(height: s(8)),
+                    SizedBox(
+                      height: welcomeTextHeight,
+                      child: Center(
+                        child: _WelcomeHomeText(
+                          scale: scale,
+                          travelDistance:
+                              houseHeight * houseCinematicBeginYOffset,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _WelcomeHomeText extends StatefulWidget {
+  final double scale;
+  final double travelDistance;
+
+  const _WelcomeHomeText({required this.scale, required this.travelDistance});
+
+  @override
+  State<_WelcomeHomeText> createState() => _WelcomeHomeTextState();
+}
+
+class _WelcomeHomeTextState extends State<_WelcomeHomeText>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _curve;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: houseCinematicDuration,
+    );
+    _curve = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
+
+    Future.delayed(houseCinematicDelay, () {
+      if (mounted) {
+        _controller.forward();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    double s(double value) => value * widget.scale;
+    double t(double value) => s(value * _profileTextScale);
+
+    return AnimatedBuilder(
+      animation: _curve,
+      builder: (context, child) {
+        final translateY = (1 - _curve.value) * widget.travelDistance;
+        return Transform.translate(offset: Offset(0, translateY), child: child);
+      },
+      child: Text(
+        'Welcome home, we\'re here with you.',
+        textAlign: TextAlign.center,
+        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+          fontSize: t(16),
+          fontStyle: FontStyle.italic,
+          color: AhmaTheme.mocha.withOpacity(0.62),
+        ),
       ),
     );
   }
@@ -284,7 +292,7 @@ class _ProfileHero extends StatelessWidget {
               ),
               child: Center(
                 child: Text(
-                  'A',
+                  'S',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontSize: t(24),
                     color: AhmaTheme.ahmaRed.withOpacity(0.72),
@@ -305,7 +313,7 @@ class _ProfileHero extends StatelessWidget {
             children: [
               const TextSpan(text: 'Good morning, '),
               TextSpan(
-                text: 'Abhi',
+                text: 'Sam',
                 style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                   fontSize: t(24),
                   color: AhmaTheme.mocha.withOpacity(0.95),

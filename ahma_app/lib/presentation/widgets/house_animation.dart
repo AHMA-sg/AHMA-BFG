@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 
+const Duration houseCinematicDelay = Duration(milliseconds: 2000);
+const Duration houseCinematicDuration = Duration(milliseconds: 2500);
+const double houseCinematicBeginYOffset = 1.5;
+
 /// Animated house that rises from bottom and settles in the center
 ///
 /// Features:
@@ -31,11 +35,7 @@ class HouseAnimation extends StatelessWidget {
           child: ElasticIn(
             duration: const Duration(milliseconds: 800),
             delay: const Duration(milliseconds: 1000),
-            child: Image.asset(
-              imagePath,
-              height: height,
-              fit: BoxFit.contain,
-            ),
+            child: Image.asset(imagePath, height: height, fit: BoxFit.contain),
           ),
         ),
       ),
@@ -58,7 +58,8 @@ class HouseAnimationCinematic extends StatefulWidget {
   });
 
   @override
-  State<HouseAnimationCinematic> createState() => _HouseAnimationCinematicState();
+  State<HouseAnimationCinematic> createState() =>
+      _HouseAnimationCinematicState();
 }
 
 class _HouseAnimationCinematicState extends State<HouseAnimationCinematic>
@@ -73,33 +74,32 @@ class _HouseAnimationCinematicState extends State<HouseAnimationCinematic>
 
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2500), // Slower, cinematic
+      duration: houseCinematicDuration, // Slower, cinematic
     );
 
     // Slow camera descent - house rises from below
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 1.5), // Start below screen
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeInOut, // Smooth, cinematic ease
-      ),
-    );
+    _slideAnimation =
+        Tween<Offset>(
+          begin: const Offset(
+            0,
+            houseCinematicBeginYOffset,
+          ), // Start below screen
+          end: Offset.zero,
+        ).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: Curves.easeInOut, // Smooth, cinematic ease
+          ),
+        );
 
     // Subtle scale for depth effect
     _scaleAnimation = Tween<double>(
       begin: 0.85,
       end: 1.0,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeOut,
-      ),
-    );
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     // Start animation after 2 second delay (camera focusing)
-    Future.delayed(const Duration(milliseconds: 2000), () {
+    Future.delayed(houseCinematicDelay, () {
       if (mounted) {
         _controller.forward();
       }
@@ -167,21 +167,19 @@ class _HouseAnimationCustomState extends State<HouseAnimationCustom>
     );
 
     // Slide up animation
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 2), // Start 2x screen height below
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.0, 0.7, curve: Curves.easeOut),
-      ),
-    );
+    _slideAnimation =
+        Tween<Offset>(
+          begin: const Offset(0, 2), // Start 2x screen height below
+          end: Offset.zero,
+        ).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: const Interval(0.0, 0.7, curve: Curves.easeOut),
+          ),
+        );
 
     // Gentle bounce on settle
-    _bounceAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.0,
-    ).animate(
+    _bounceAnimation = Tween<double>(begin: 1.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
         curve: const Interval(0.7, 1.0, curve: Curves.elasticOut),

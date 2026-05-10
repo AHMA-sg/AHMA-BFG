@@ -169,58 +169,6 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
       children: [
         // Push-to-talk button
         GestureDetector(
-<<<<<<< HEAD
-          onTapDown: (_) => _startRecording(),
-          onTapUp: (_) => _stopRecording(),
-          onTapCancel: _stopRecording,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // Outer ring (40% larger)
-              Container(
-                width: 92.4, // 40% larger: 66 * 1.4
-                height: 92.4, // 40% larger: 66 * 1.4
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: _getRingColor(callState),
-                    width: 1.4, // 40% larger: 1 * 1.4
-                  ),
-                ),
-              ),
-
-              // Phone icon with in-button status label
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 12,
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildButtonIcon(callState),
-                    const SizedBox(height: 4),
-                    Text(
-                      _getHintText(callState),
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: AhmaTheme.labelTextStyle.copyWith(
-                        fontSize: 8.5,
-                        color: _getTextColor(callState),
-                        letterSpacing: 0.5,
-                        height: 1.1,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-
-=======
           onTapDown: (!_callStarted || isActive)
               ? (_) => _startRecording()
               : null,
@@ -230,20 +178,6 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
               : null,
           child: _buildPrimaryActionOrb(callState),
         ),
-
-        const SizedBox(height: 10),
-
-        // Hint text
-        Text(
-          _getHintText(callState),
-          style: AhmaTheme.labelTextStyle.copyWith(
-            fontSize: 12.0, // 50% larger: 8 * 1.5
-            color: _getTextColor(callState),
-            letterSpacing: 0.7,
-          ),
-        ),
-
->>>>>>> c769436ab06cecb23fd16456b300ddfbedd77c6d
         const SizedBox(height: 8),
 
         // Connection bar or kopi fill animation
@@ -486,35 +420,6 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
           size: 28,
           color: Colors.white.withOpacity(0.4),
         );
-    }
-  }
-
-  String _getHintText(CallState callState) {
-    if (!_callStarted) {
-      return 'press & hold to call';
-    }
-
-    switch (callState.status) {
-      case CallStatus.connecting:
-        return 'connecting...';
-      case CallStatus.active:
-        return _isPressing ? 'release to send' : 'hold to speak';
-      default:
-        return 'call ended';
-    }
-  }
-
-  Color _getTextColor(CallState callState) {
-    if (!_callStarted) {
-      return AhmaTheme.mocha.withOpacity(0.35);
-    }
-
-    switch (callState.status) {
-      case CallStatus.connecting:
-      case CallStatus.active:
-        return AhmaTheme.mocha.withOpacity(0.35);
-      default:
-        return AhmaTheme.mocha.withOpacity(0.2);
     }
   }
 
