@@ -16,7 +16,7 @@ function setCorsHeaders(res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,X-API-Key');
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   setCorsHeaders(res);
 
   console.log(`[Ultravox Proxy] ${req.method} ${req.url}`);
@@ -34,10 +34,17 @@ export default async function handler(req, res) {
     return;
   }
 
+  const rawPath = req.query.path;
+  const path = Array.isArray(rawPath) ? rawPath.join('/') : rawPath;
+
+  if (!path || path === '__health') {
+    console.log('[Ultravox Proxy] Health check');
+    res.status(200).json({ok: true, hasUltravoxApiKey: Boolean(apiKey)});
+    return;
+  }
+
   const baseUrl = process.env.ULTRAVOX_BASE_URL || 'https://api.ultravox.ai/api';
-  const path = Array.isArray(req.query.path) ? req.query.path.join('/') : req.query.path;
-  const search = req.url.includes('?') ? `?${req.url.split('?')[1]}` : '';
-  const upstreamUrl = `${baseUrl.replace(/\/$/, '')}/${path}${search}`;
+  const upstreamUrl = `${baseUrl.replace(/\/$/, '')}/${path}`;
 
   try {
     console.log(`[Ultravox Proxy] Forwarding to ${upstreamUrl}`);
@@ -59,4 +66,4 @@ export default async function handler(req, res) {
     console.error('[Ultravox Proxy] Upstream error', error);
     res.status(502).json({error: String(error)});
   }
-}
+};
