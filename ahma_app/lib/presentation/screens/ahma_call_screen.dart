@@ -281,7 +281,7 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
               .read(callProvider.notifier)
               .startCall(
                 userName: 'Sam', // Example: Pass actual user name from auth
-                careRecipientName: 'Grandpa', // Example: Get from user profile
+                careRecipientName: 'Mum', // Example: Get from user profile
                 caregiverType:
                     'family', // Example: family, professional, volunteer
               );
