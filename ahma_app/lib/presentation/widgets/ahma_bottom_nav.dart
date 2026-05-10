@@ -16,18 +16,15 @@ class AhmaBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 80, // 25% larger: 64 * 1.25 = 80
+      height: 68,
       decoration: BoxDecoration(
         color: AhmaTheme.background.withOpacity(0.96),
         border: Border(
-          top: BorderSide(
-            color: AhmaTheme.mocha.withOpacity(0.07),
-            width: 1,
-          ),
+          top: BorderSide(color: AhmaTheme.mocha.withOpacity(0.07), width: 1),
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 7.5, left: 7.5, right: 7.5), // 25% larger padding
+        padding: const EdgeInsets.only(bottom: 6, left: 8, right: 8),
         child: Row(
           children: [
             Expanded(
@@ -36,22 +33,18 @@ class AhmaBottomNav extends StatelessWidget {
                   context,
                   AhmaNavTab.profile,
                   _buildProfileIcon(),
-                  'me',
+                  'home',
                 ),
               ),
             ),
-            Expanded(
-              child: Center(
-                child: _buildCallButton(context),
-              ),
-            ),
+            Expanded(child: Center(child: _buildCallButton(context))),
             Expanded(
               child: Center(
                 child: _buildNavItem(
                   context,
                   AhmaNavTab.kopi,
                   _buildKopiIcon(),
-                  'journey',
+                  'journeys',
                 ),
               ),
             ),
@@ -68,24 +61,26 @@ class AhmaBottomNav extends StatelessWidget {
     String label,
   ) {
     final isActive = currentTab == tab;
-    
+
     return GestureDetector(
       onTap: () => onTabChanged(tab),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8.75, vertical: 3.75), // 25% larger padding
+        padding: const EdgeInsets.symmetric(
+          horizontal: 8.75,
+          vertical: 3.75,
+        ), // 25% larger padding
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Opacity(
-              opacity: isActive ? 1.0 : 0.45,
-              child: icon,
-            ),
+            Opacity(opacity: isActive ? 1.0 : 0.45, child: icon),
             const SizedBox(height: 2.5), // 25% larger spacing
             Text(
               label,
               style: AhmaTheme.navLabelStyle.copyWith(
-                color: isActive ? AhmaTheme.sageGreen : AhmaTheme.mocha.withOpacity(0.35),
-                fontSize: (AhmaTheme.navLabelStyle.fontSize ?? 10) * 1.25, // 25% larger font
+                color: isActive
+                    ? AhmaTheme.sageGreen
+                    : AhmaTheme.mocha.withOpacity(0.35),
+                fontSize: (AhmaTheme.navLabelStyle.fontSize ?? 10) * 1.05,
               ),
             ),
           ],
@@ -101,8 +96,8 @@ class AhmaBottomNav extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 58, // 10% larger: 52.5 * 1.1
-            height: 58, // 10% larger: 52.5 * 1.1
+            width: 52,
+            height: 52,
             decoration: BoxDecoration(
               color: AhmaTheme.sageGreen,
               shape: BoxShape.circle,
@@ -111,8 +106,8 @@ class AhmaBottomNav extends StatelessWidget {
               alignment: Alignment.center,
               children: [
                 Container(
-                  width: 68, // 10% larger: 62.5 * 1.1
-                  height: 68, // 10% larger: 62.5 * 1.1
+                  width: 60,
+                  height: 60,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
@@ -122,9 +117,9 @@ class AhmaBottomNav extends StatelessWidget {
                   ),
                 ),
                 Image.asset(
-                  'resources/ahma-logo-white.png', // Changed from mic icon
-                  width: 28.75, // 15% larger: 25 * 1.15
-                  height: 28.75, // 15% larger: 25 * 1.15
+                  'resources/Phone-on.png', // Changed from ahma logo
+                  width: 31,
+                  height: 31,
                 ),
               ],
             ),
@@ -136,21 +131,11 @@ class AhmaBottomNav extends StatelessWidget {
   }
 
   Widget _buildProfileIcon() {
-    return SizedBox(
-      width: 30, // 10% larger: 27.5 * 1.1
-      height: 30, // 10% larger: 27.5 * 1.1
-      child: CustomPaint(
-        painter: _ProfileIconPainter(),
-      ),
-    );
+    return Image.asset('resources/ahma-logo.png', width: 26, height: 26);
   }
 
   Widget _buildKopiIcon() {
-    return Image.asset(
-      'resources/Kopi.png',
-      width: 30, // 10% larger: 27.5 * 1.1
-      height: 30, // 10% larger: 27.5 * 1.1
-    );
+    return Image.asset('resources/Kopi.png', width: 26, height: 26);
   }
 }
 
@@ -175,7 +160,7 @@ class _ProfileIconPainter extends CustomPainter {
       width: size.width * 0.41,
       height: size.height * 0.32,
     );
-    
+
     final headPaint = Paint()
       ..color = AhmaTheme.sageGreen.withOpacity(0.75)
       ..style = PaintingStyle.fill;
@@ -207,7 +192,7 @@ class _KopiIconPainter extends CustomPainter {
       width: size.width * 0.32,
       height: size.height * 0.25,
     );
-    
+
     final headPaint = Paint()
       ..color = AhmaTheme.sageGreen.withOpacity(0.7)
       ..style = PaintingStyle.fill;
@@ -247,7 +232,7 @@ class _KopiIconPainter extends CustomPainter {
       size.width * 0.23,
       size.height * 0.18,
     );
-    
+
     final shellPaint = Paint()
       ..color = AhmaTheme.mid.withOpacity(0.65)
       ..style = PaintingStyle.fill;
@@ -263,7 +248,7 @@ class _KopiIconPainter extends CustomPainter {
       size.width * 0.18,
       size.height * 0.09,
     );
-    
+
     final shellOpeningPaint = Paint()
       ..color = AhmaTheme.mocha.withOpacity(0.55)
       ..style = PaintingStyle.fill;

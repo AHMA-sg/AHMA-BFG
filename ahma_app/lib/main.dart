@@ -5,6 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'presentation/screens/unity_home_screen.dart';
 import 'presentation/screens/home_screen_example_blended.dart';
+import 'presentation/screens/ahma_main_screen.dart';
 import 'core/config/env_file_loader.dart';
 import 'core/theme/ahma_theme.dart';
 
@@ -73,7 +74,7 @@ class MyApp extends StatelessWidget {
       theme: AhmaTheme.lightTheme,
       home: USE_UNITY_HOME_SCREEN
           ? const UnityHomeScreen()
-          : const HomeScreenBlendedExample(),
+          : const AhmaMainScreen(),
     );
   }
 }

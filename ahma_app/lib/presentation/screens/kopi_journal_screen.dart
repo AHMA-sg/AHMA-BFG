@@ -83,15 +83,16 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
     final walkCount = _walks.where((walk) => !walk.isFuture).length;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 6),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // Logo
           Text(
             'AHMA',
-            style: Theme.of(context).textTheme.displayLarge?.copyWith(
-              fontSize: 44,
+            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+              fontSize: 34,
+              fontWeight: FontWeight.w700,
               color: AhmaTheme.ahmaRed,
               letterSpacing: 0.3,
             ),

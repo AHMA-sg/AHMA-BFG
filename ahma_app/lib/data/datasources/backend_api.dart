@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../../core/config/env_config.dart';
 import '../../core/constants/api_constants.dart';
 import '../models/call_model.dart';
@@ -7,9 +8,11 @@ class BackendApi {
   late final Dio _dio;
 
   BackendApi() {
+    final baseUrl = _resolveBaseUrl();
+
     _dio = Dio(
       BaseOptions(
-        baseUrl: EnvConfig.backendApiUrl,
+        baseUrl: baseUrl,
         headers: {
           'Content-Type': 'application/json',
           if (EnvConfig.backendApiKey.isNotEmpty)
@@ -28,6 +31,29 @@ class BackendApi {
         logPrint: (obj) => print('[Backend API] $obj'),
       ),
     );
+  }
+
+  String _resolveBaseUrl() {
+    final configuredUrl = EnvConfig.backendApiUrl.trim();
+
+    if (!kIsWeb) {
+      return configuredUrl;
+    }
+
+    final host = Uri.base.host;
+    final isLocalPage = host == 'localhost' || host == '127.0.0.1';
+    final isLocalBackend =
+        configuredUrl.startsWith('http://localhost') ||
+        configuredUrl.startsWith('http://127.0.0.1');
+
+    if (!isLocalPage && isLocalBackend) {
+      print(
+        '[Backend API] Ignoring localhost BACKEND_API_URL on deployed web; using same-origin /api',
+      );
+      return '';
+    }
+
+    return configuredUrl;
   }
 
   /// Create an Ultravox agent call through the backend/proxy.
