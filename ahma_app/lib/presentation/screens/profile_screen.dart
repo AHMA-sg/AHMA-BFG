@@ -41,16 +41,7 @@ class ProfileScreen extends ConsumerWidget {
                 const SizedBox(height: 18),
                 _AffirmationCard(),
                 const SizedBox(height: 22),
-                Center(
-                  child: Text(
-                    'welcome home',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontSize: 28,
-                      fontStyle: FontStyle.italic,
-                      color: AhmaTheme.mocha.withOpacity(0.62),
-                    ),
-                  ),
-                ),
+                const _WelcomeHomeText(),
                 const SizedBox(height: 8),
                 Center(
                   child: Icon(
@@ -98,6 +89,67 @@ class ProfileScreen extends ConsumerWidget {
     Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (_) => const KopiJournalScreen()));
+  }
+}
+
+class _WelcomeHomeText extends StatefulWidget {
+  const _WelcomeHomeText();
+
+  @override
+  State<_WelcomeHomeText> createState() => _WelcomeHomeTextState();
+}
+
+class _WelcomeHomeTextState extends State<_WelcomeHomeText>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _offsetAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2500),
+    );
+    _offsetAnimation = Tween<double>(
+      begin: 14,
+      end: 0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+
+    Future.delayed(const Duration(milliseconds: 2000), () {
+      if (mounted) {
+        _controller.forward();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _offsetAnimation,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(0, _offsetAnimation.value),
+          child: child,
+        );
+      },
+      child: Center(
+        child: Text(
+          'welcome home',
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            fontSize: 28,
+            fontStyle: FontStyle.italic,
+            color: AhmaTheme.mocha.withOpacity(0.62),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -164,7 +216,7 @@ class _ProfileHero extends StatelessWidget {
               ),
               child: Center(
                 child: Text(
-                  'A',
+                  'S',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontSize: 24,
                     color: AhmaTheme.ahmaRed.withOpacity(0.72),
@@ -185,7 +237,7 @@ class _ProfileHero extends StatelessWidget {
             children: [
               const TextSpan(text: 'Good morning, '),
               TextSpan(
-                text: 'Abhi',
+                text: 'Sam',
                 style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                   fontSize: 34,
                   color: AhmaTheme.mocha.withOpacity(0.95),

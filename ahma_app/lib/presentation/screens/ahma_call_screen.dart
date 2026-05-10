@@ -193,21 +193,34 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
                 ),
               ),
 
-              // Phone or Mic icon
-              _buildButtonIcon(callState),
+              // Phone icon with in-button status label
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 12,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildButtonIcon(callState),
+                    const SizedBox(height: 4),
+                    Text(
+                      _getHintText(callState),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AhmaTheme.labelTextStyle.copyWith(
+                        fontSize: 8.5,
+                        color: _getTextColor(callState),
+                        letterSpacing: 0.5,
+                        height: 1.1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
-          ),
-        ),
-
-        const SizedBox(height: 5),
-
-        // Hint text
-        Text(
-          _getHintText(callState),
-          style: AhmaTheme.labelTextStyle.copyWith(
-            fontSize: 12.0, // 50% larger: 8 * 1.5
-            color: _getTextColor(callState),
-            letterSpacing: 0.7,
           ),
         ),
 
