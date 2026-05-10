@@ -30,7 +30,7 @@ class ProfileScreen extends ConsumerWidget {
         child: SafeArea(
           bottom: false,
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+            padding: const EdgeInsets.fromLTRB(18, 8, 18, 0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -38,9 +38,9 @@ class ProfileScreen extends ConsumerWidget {
                   onOpenCallJourney: () => _openCallJourney(context),
                   onOpenPastJourneys: () => _openPastJourneys(context),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 18),
                 _AffirmationCard(),
-                const SizedBox(height: 26),
+                const SizedBox(height: 22),
                 Center(
                   child: Text(
                     'welcome home',
@@ -174,11 +174,11 @@ class _ProfileHero extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 30),
+        const SizedBox(height: 24),
         RichText(
           text: TextSpan(
             style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-              fontSize: 36,
+              fontSize: 34,
               color: AhmaTheme.mocha.withOpacity(0.95),
               height: 1.1,
             ),
@@ -187,7 +187,7 @@ class _ProfileHero extends StatelessWidget {
               TextSpan(
                 text: 'Abhi',
                 style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                  fontSize: 36,
+                  fontSize: 34,
                   color: AhmaTheme.mocha.withOpacity(0.95),
                   height: 1.1,
                 ),
@@ -213,9 +213,9 @@ class _ProfileHero extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 26),
+        const SizedBox(height: 22),
         _CallJourneyCard(onTap: onOpenCallJourney),
-        const SizedBox(height: 18),
+        const SizedBox(height: 14),
         _PastJourneysCard(onTap: onOpenPastJourneys),
       ],
     );
@@ -236,7 +236,7 @@ class _CallJourneyCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(34),
         child: Ink(
           width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(28, 28, 26, 28),
+          padding: const EdgeInsets.fromLTRB(24, 24, 20, 24),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(34),
             gradient: LinearGradient(
@@ -268,7 +268,7 @@ class _CallJourneyCard extends StatelessWidget {
                           'Start a call journey',
                           style: Theme.of(context).textTheme.headlineLarge
                               ?.copyWith(
-                                fontSize: 33,
+                                fontSize: 27,
                                 color: Colors.white,
                                 height: 1.05,
                               ),
@@ -280,7 +280,7 @@ class _CallJourneyCard extends StatelessWidget {
                             'Talk to your AI companion for care guidance and support.',
                             style: Theme.of(context).textTheme.titleMedium
                                 ?.copyWith(
-                                  fontSize: 20,
+                                  fontSize: 18,
                                   height: 1.35,
                                   color: Colors.white.withOpacity(0.92),
                                 ),
@@ -289,7 +289,7 @@ class _CallJourneyCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
                   _PhoneOrb(),
                 ],
               ),
@@ -314,7 +314,7 @@ class _PastJourneysCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(28),
         child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           decoration: BoxDecoration(
             color: AhmaTheme.cardColor.withOpacity(0.68),
             borderRadius: BorderRadius.circular(28),
@@ -323,8 +323,8 @@ class _PastJourneysCard extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                width: 62,
-                height: 62,
+                width: 54,
+                height: 54,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: AhmaTheme.palePink.withOpacity(0.28),
@@ -332,10 +332,10 @@ class _PastJourneysCard extends StatelessWidget {
                 child: Icon(
                   Icons.receipt_long_rounded,
                   color: AhmaTheme.ahmaRed.withOpacity(0.6),
-                  size: 30,
+                  size: 26,
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -344,7 +344,7 @@ class _PastJourneysCard extends StatelessWidget {
                       'Your past journeys',
                       style: Theme.of(context).textTheme.headlineLarge
                           ?.copyWith(
-                            fontSize: 24,
+                            fontSize: 23,
                             color: Colors.black.withOpacity(0.9),
                           ),
                     ),
@@ -352,7 +352,7 @@ class _PastJourneysCard extends StatelessWidget {
                     Text(
                       'View your previous calls and summaries.',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontSize: 18,
+                        fontSize: 16,
                         color: AhmaTheme.mocha.withOpacity(0.78),
                       ),
                     ),
@@ -474,30 +474,30 @@ class _PhoneOrb extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 178,
-      height: 178,
+      width: 138,
+      height: 138,
       child: Stack(
         alignment: Alignment.center,
         children: [
           Container(
-            width: 178,
-            height: 178,
+            width: 138,
+            height: 138,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.white.withOpacity(0.07),
             ),
           ),
           Container(
-            width: 150,
-            height: 150,
+            width: 116,
+            height: 116,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.white.withOpacity(0.1),
             ),
           ),
           Container(
-            width: 126,
-            height: 126,
+            width: 96,
+            height: 96,
             decoration: const BoxDecoration(
               shape: BoxShape.circle,
               color: Color(0xFFFAF5EE),
@@ -505,8 +505,8 @@ class _PhoneOrb extends StatelessWidget {
             child: Center(
               child: Image.asset(
                 'resources/Phone-on.png',
-                width: 52.8,
-                height: 52.8,
+                width: 42,
+                height: 42,
               ),
             ),
           ),

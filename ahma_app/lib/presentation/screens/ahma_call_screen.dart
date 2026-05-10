@@ -168,6 +168,8 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
     final isConnecting = callState.status == CallStatus.connecting;
 
     return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
       children: [
         // Push-to-talk button
         GestureDetector(

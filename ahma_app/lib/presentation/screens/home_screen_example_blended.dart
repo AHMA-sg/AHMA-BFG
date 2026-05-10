@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../widgets/blended_background.dart';
 import '../widgets/house_animation.dart';
-import '../widgets/hold_to_walk_button.dart';
+import '../widgets/watercolor_background.dart';
 import '../providers/webhook_provider.dart';
 import 'ahma_main_screen.dart';
 
@@ -35,9 +34,10 @@ class _HomeScreenBlendedExampleState
       duration: const Duration(milliseconds: 1500),
     );
 
-    _logoOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _logoController, curve: Curves.easeIn),
-    );
+    _logoOpacity = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _logoController, curve: Curves.easeIn));
 
     Future.delayed(const Duration(milliseconds: 4500), () {
       if (mounted) {
@@ -60,31 +60,8 @@ class _HomeScreenBlendedExampleState
     return Scaffold(
       body: Stack(
         children: [
-          // OPTION 1: Static blended background
           const Positioned.fill(
-            child: BlendedBackground(
-              backgroundColor: Color(0xFFFFF4E6), // Base cream color
-              layers: [
-                // Base watercolor texture
-                BackgroundLayer(
-                  imagePath: 'resources/bg-watercolor-base.png',
-                  opacity: 1.0,
-                  blendMode: BlendMode.srcOver,
-                ),
-                // Teal overlay with multiply blend (creates depth)
-                BackgroundLayer(
-                  imagePath: 'resources/bg-watercolor-teal.png',
-                  opacity: 0.5,
-                  blendMode: BlendMode.multiply,
-                ),
-                // Soft accent layer
-                BackgroundLayer(
-                  imagePath: 'resources/bg-watercolor-accent.png',
-                  opacity: 0.3,
-                  blendMode: BlendMode.softLight,
-                ),
-              ],
-            ),
+            child: WatercolorBackground(child: SizedBox.expand()),
           ),
 
           // OPTION 2: Animated blended background (layers fade in)
@@ -119,9 +96,7 @@ class _HomeScreenBlendedExampleState
               onTap: () {
                 // Navigate to AHMA main screen
                 Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const AhmaMainScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const AhmaMainScreen()),
                 );
               },
             ),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../widgets/ahma_bottom_nav.dart';
-import '../widgets/ahma_phone_container.dart';
 import '../../core/theme/ahma_theme.dart';
 import 'ahma_call_screen.dart';
 import 'kopi_journal_screen.dart';
@@ -26,21 +25,13 @@ class _AhmaMainScreenState extends ConsumerState<AhmaMainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return AhmaPhoneContainer(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: Column(
-          children: [
-            // Status bar
-            const AhmaStatusBar(),
-
-            // Main content
-            Expanded(child: _buildCurrentScreen()),
-
-            // Bottom navigation
-            AhmaBottomNav(currentTab: _currentTab, onTabChanged: _onTabChanged),
-          ],
-        ),
+    return Scaffold(
+      backgroundColor: AhmaTheme.backgroundInner,
+      body: Column(
+        children: [
+          Expanded(child: _buildCurrentScreen()),
+          AhmaBottomNav(currentTab: _currentTab, onTabChanged: _onTabChanged),
+        ],
       ),
     );
   }
