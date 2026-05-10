@@ -7,23 +7,75 @@ class BackendApi {
   late final Dio _dio;
 
   BackendApi() {
-    _dio = Dio(BaseOptions(
-      baseUrl: EnvConfig.backendApiUrl,
-      headers: {
-        'Content-Type': 'application/json',
-        if (EnvConfig.backendApiKey.isNotEmpty)
-          'X-API-Key': EnvConfig.backendApiKey,
-      },
-      connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(seconds: 30),
-    ));
+    _dio = Dio(
+      BaseOptions(
+        baseUrl: EnvConfig.backendApiUrl,
+        headers: {
+          'Content-Type': 'application/json',
+          if (EnvConfig.backendApiKey.isNotEmpty)
+            'X-API-Key': EnvConfig.backendApiKey,
+        },
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 30),
+      ),
+    );
 
     // Add logging interceptor
-    _dio.interceptors.add(LogInterceptor(
-      requestBody: true,
-      responseBody: true,
-      logPrint: (obj) => print('[Backend API] $obj'),
-    ));
+    _dio.interceptors.add(
+      LogInterceptor(
+        requestBody: true,
+        responseBody: true,
+        logPrint: (obj) => print('[Backend API] $obj'),
+      ),
+    );
+  }
+
+  /// Create an Ultravox agent call through the backend/proxy.
+  ///
+  /// Flutter Web cannot reliably call Ultravox REST directly because browsers
+  /// enforce CORS and would expose the API key. The backend owns the API key.
+  Future<CallModel> createUltravoxCall({
+    required String agentId,
+    Map<String, dynamic>? metadata,
+    Map<String, dynamic>? firstSpeakerSettings,
+  }) async {
+    try {
+      final data = {
+        if (metadata != null) 'metadata': metadata,
+        if (firstSpeakerSettings != null)
+          'firstSpeakerSettings': firstSpeakerSettings,
+        'medium': {'webRtc': {}},
+      };
+
+      final response = await _dio.post(
+        '/api/ultravox/agents/$agentId/calls',
+        data: data,
+      );
+
+      return CallModel.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      print('Error creating proxied Ultravox call: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<Message>> getUltravoxCallMessages(String callId) async {
+    try {
+      final response = await _dio.get('/api/ultravox/calls/$callId/messages');
+      final results = response.data['results'] as List;
+      return results.map((m) => Message.fromJson(m)).toList();
+    } catch (e) {
+      print('Error getting proxied Ultravox messages: $e');
+      return [];
+    }
+  }
+
+  Future<void> endUltravoxCall(String callId) async {
+    try {
+      await _dio.delete('/api/ultravox/calls/$callId');
+    } catch (e) {
+      print('Error ending proxied Ultravox call: $e');
+    }
   }
 
   /// Send transcript to backend after call ends
@@ -38,11 +90,15 @@ class BackendApi {
       final data = {
         'callId': callId,
         'userId': userId,
-        'transcript': transcript.map((m) => {
-          'role': m.role,
-          'text': m.text,
-          'timestamp': (m.timestamp ?? DateTime.now()).toIso8601String(),
-        }).toList(),
+        'transcript': transcript
+            .map(
+              (m) => {
+                'role': m.role,
+                'text': m.text,
+                'timestamp': (m.timestamp ?? DateTime.now()).toIso8601String(),
+              },
+            )
+            .toList(),
         'stressLevel': stressLevel,
         if (metadata != null) 'metadata': metadata,
       };

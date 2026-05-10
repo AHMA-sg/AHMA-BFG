@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class EnvConfig {
@@ -57,7 +58,7 @@ class EnvConfig {
   static String get backendApiUrl => _value(
     _backendApiUrl,
     'BACKEND_API_URL',
-    fallback: 'http://localhost:5001',
+    fallback: kIsWeb ? '' : 'http://localhost:5001',
   );
   static String get backendApiKey => _value(_backendApiKey, 'BACKEND_API_KEY');
 

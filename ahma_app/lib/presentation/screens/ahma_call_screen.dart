@@ -263,13 +263,21 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
 
           if (!mounted) return;
 
-          if (ref.read(callProvider).status == CallStatus.error) {
+          final status = ref.read(callProvider).status;
+          if (status == CallStatus.active && _isPressing) {
+            _kopiFillController.repeat(reverse: true);
+            ref.read(callProvider.notifier).startAudioCapture();
+          }
+
+          if (status == CallStatus.error) {
             setState(() {
               _callStarted = false;
               _showPhoneOn = false;
             });
             _connectionBarController.reset();
           }
+
+          _callStartTimer = null;
         }
       });
     } else {

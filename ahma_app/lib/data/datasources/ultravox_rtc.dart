@@ -14,6 +14,7 @@ class UltravoxRtcManager {
   WebSocketChannel? _signalingChannel;
   LocalAudioTrack? _localAudioTrack;
   EventsListener<RoomEvent>? _roomListener;
+  Completer<void>? _connectCompleter;
 
   final Function(String)? onMessage;
   final Function(RemoteAudioTrack)? onRemoteStream;
@@ -25,12 +26,22 @@ class UltravoxRtcManager {
   Future<void> connect(String joinUrl) async {
     try {
       print('[WebRTC] Connecting to: $joinUrl');
+      _connectCompleter = Completer<void>();
 
       // Connect to signaling to get LiveKit room info
       await _connectSignaling(joinUrl);
+      await _connectCompleter!.future.timeout(
+        const Duration(seconds: 25),
+        onTimeout: () {
+          throw TimeoutException('Timed out waiting for LiveKit connection');
+        },
+      );
 
       print('[WebRTC] Connection setup complete');
     } catch (e) {
+      if (_connectCompleter?.isCompleted == false) {
+        _connectCompleter!.completeError(e);
+      }
       print('[WebRTC] Connection error: $e');
       rethrow;
     }
@@ -61,9 +72,17 @@ class UltravoxRtcManager {
           });
         },
         onError: (error) {
+          if (_connectCompleter?.isCompleted == false) {
+            _connectCompleter!.completeError(error);
+          }
           print('[WebRTC] Signaling error: $error');
         },
         onDone: () {
+          if (_connectCompleter?.isCompleted == false) {
+            _connectCompleter!.completeError(
+              StateError('Signaling channel closed before LiveKit connected'),
+            );
+          }
           print('[WebRTC] Signaling channel closed');
         },
       );
@@ -126,7 +145,13 @@ class UltravoxRtcManager {
 
       // Enable microphone and publish local audio (starts muted for PTT)
       await _enableMicrophone();
+      if (_connectCompleter?.isCompleted == false) {
+        _connectCompleter!.complete();
+      }
     } catch (e) {
+      if (_connectCompleter?.isCompleted == false) {
+        _connectCompleter!.completeError(e);
+      }
       print('[LiveKit] Error connecting to room: $e');
       rethrow;
     }
@@ -358,6 +383,7 @@ class UltravoxRtcManager {
     await _room?.disconnect();
     await _room?.dispose();
     _room = null;
+    _connectCompleter = null;
 
     print('[WebRTC] Disconnected and cleaned up');
   }

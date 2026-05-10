@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/call_model.dart';
 import '../../data/datasources/ultravox_api.dart';
@@ -56,28 +57,35 @@ class CallNotifier extends StateNotifier<CallState> {
 
       print('[Call] Starting call');
 
-      // Create call via Ultravox API. Tools are configured on the agent.
-      final call = await _api.createCall(
-        agentId: EnvConfig.ahmaAgentId,
-        metadata: {
-          'app': 'ahma_flutter',
-          'stage': 'assess',
-          if (userName != null) 'userName': userName,
-          if (careRecipientName != null) 'careRecipientName': careRecipientName,
-          if (caregiverType != null) 'caregiverType': caregiverType,
+      // Create call via backend on web to avoid browser CORS and API key leaks.
+      // Tools are configured on the agent.
+      final metadata = {
+        'app': 'ahma_flutter',
+        'stage': 'assess',
+        if (userName != null) 'userName': userName,
+        if (careRecipientName != null) 'careRecipientName': careRecipientName,
+        if (caregiverType != null) 'caregiverType': caregiverType,
+      };
+      final firstSpeakerSettings = {
+        'agent': {
+          'text': _buildPersonalizedGreeting(
+            userName,
+            careRecipientName,
+            caregiverType,
+          ),
         },
-        firstSpeakerSettings: {
-          'agent': {
-            'text': _buildPersonalizedGreeting(
-              userName,
-              careRecipientName,
-              caregiverType,
-            ),
-          },
-        },
-        // Note: initialMessages is for conversation history (USER/AGENT messages)
-        // Context is passed via greeting and metadata instead
-      );
+      };
+      final call = kIsWeb
+          ? await _backend.createUltravoxCall(
+              agentId: EnvConfig.ahmaAgentId,
+              metadata: metadata,
+              firstSpeakerSettings: firstSpeakerSettings,
+            )
+          : await _api.createCall(
+              agentId: EnvConfig.ahmaAgentId,
+              metadata: metadata,
+              firstSpeakerSettings: firstSpeakerSettings,
+            );
 
       // Connect WebRTC
       await _rtc.connect(call.joinUrl);
@@ -98,7 +106,7 @@ class CallNotifier extends StateNotifier<CallState> {
     final apiKey = EnvConfig.ultravoxApiKey.trim();
     final agentId = EnvConfig.ahmaAgentId.trim();
 
-    if (apiKey.isEmpty || apiKey == 'your_ultravox_api_key_here') {
+    if (!kIsWeb && (apiKey.isEmpty || apiKey == 'your_ultravox_api_key_here')) {
       throw StateError(
         'Missing ULTRAVOX_API_KEY. Add it to ahma_app/.env or pass it with --dart-define.',
       );
@@ -135,13 +143,19 @@ class CallNotifier extends StateNotifier<CallState> {
 
     try {
       // Get final transcript
-      final messages = await _api.getCallMessages(state.call!.callId);
+      final messages = kIsWeb
+          ? await _backend.getUltravoxCallMessages(state.call!.callId)
+          : await _api.getCallMessages(state.call!.callId);
 
       // Disconnect WebRTC
       await _rtc.disconnect();
 
       // End call via API
-      await _api.endCall(state.call!.callId);
+      if (kIsWeb) {
+        await _backend.endUltravoxCall(state.call!.callId);
+      } else {
+        await _api.endCall(state.call!.callId);
+      }
 
       // Update state
       final updatedCall = state.call!.copyWith(transcript: messages);
