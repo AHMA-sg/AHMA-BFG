@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
 import '../../core/theme/ahma_theme.dart';
 import 'watercolor_background.dart';
 
 /// AHMA Phone Container
-/// 
+///
 /// Mimics the exact phone container from the HTML design
 /// with watercolor background and grain texture overlay
 class AhmaPhoneContainer extends StatelessWidget {
@@ -15,46 +16,47 @@ class AhmaPhoneContainer extends StatelessWidget {
   const AhmaPhoneContainer({
     super.key,
     required this.child,
-    this.width = 272,  // Original size - scaling will handle the rest
+    this.width = 272, // Original size - scaling will handle the rest
     this.height = 570, // Original size - scaling will handle the rest
     this.scaleFactor = 1.2, // 20% larger by default
   });
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
-    
-    // More conservative scaling to prevent overflow
-    double scaleFactor;
-    if (screenHeight < 650) {
-      scaleFactor = 0.9; // Even smaller for very compact phones
-    } else if (screenHeight < 750) {
-      scaleFactor = 1.0; // Normal for compact phones
-    } else {
-      scaleFactor = 1.15; // 15% larger for larger phones (not 20%)
-    }
-    
-    return Transform.scale(
-      scale: scaleFactor,
-      child: Container(
-        width: width,
-        height: height,
-        decoration: BoxDecoration(
-          color: AhmaTheme.background,
-          borderRadius: BorderRadius.circular(34),
-          border: Border.all(
-            color: AhmaTheme.mocha.withOpacity(0.12),
-            width: 1.5,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final targetHeight = constraints.maxHeight.isFinite
+            ? constraints.maxHeight - 24
+            : (height ?? 570) * scaleFactor;
+        final aspectRatio = (width ?? 272) / (height ?? 570);
+        final targetWidth = constraints.maxWidth.isFinite
+            ? math.min(constraints.maxWidth - 24, targetHeight * aspectRatio)
+            : (width ?? 272) * scaleFactor;
+        final shellWidth = math.max(width ?? 272, targetWidth);
+        final shellHeight = shellWidth / aspectRatio;
+
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Container(
+              width: shellWidth,
+              height: shellHeight,
+              decoration: BoxDecoration(
+                color: AhmaTheme.background,
+                borderRadius: BorderRadius.circular(34),
+                border: Border.all(
+                  color: AhmaTheme.mocha.withOpacity(0.12),
+                  width: 1.5,
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(34),
+                child: WatercolorBackground(opacity: 0.55, child: child),
+              ),
+            ),
           ),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(34),
-          child: WatercolorBackground(
-            opacity: 0.55,
-            child: child,
-          ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -90,29 +92,29 @@ class AhmaTopBar extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // End button or leading widget
-          onEndPressed != null 
-            ? GestureDetector(
-                onTap: onEndPressed,
-                child: Container(
-                  width: 26,
-                  height: 26,
-                  decoration: BoxDecoration(
-                    color: AhmaTheme.ahmaRed.withOpacity(0.08),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AhmaTheme.ahmaRed.withOpacity(0.18),
-                      width: 1,
+          onEndPressed != null
+              ? GestureDetector(
+                  onTap: onEndPressed,
+                  child: Container(
+                    width: 26,
+                    height: 26,
+                    decoration: BoxDecoration(
+                      color: AhmaTheme.ahmaRed.withOpacity(0.08),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AhmaTheme.ahmaRed.withOpacity(0.18),
+                        width: 1,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.close,
+                      size: 11,
+                      color: AhmaTheme.ahmaRed,
                     ),
                   ),
-                  child: const Icon(
-                    Icons.close,
-                    size: 11,
-                    color: AhmaTheme.ahmaRed,
-                  ),
-                ),
-              )
-            : trailing ?? const SizedBox(width: 26),
-          
+                )
+              : trailing ?? const SizedBox(width: 26),
+
           // Logo/title
           Text(
             title!,
@@ -121,7 +123,7 @@ class AhmaTopBar extends StatelessWidget {
               letterSpacing: 0.8,
             ),
           ),
-          
+
           // Trailing widget or empty space for balance
           const SizedBox(width: 26),
         ],

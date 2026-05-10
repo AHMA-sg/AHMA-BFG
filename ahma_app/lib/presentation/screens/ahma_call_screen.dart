@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 import '../../core/theme/ahma_theme.dart';
-import '../../main.dart';
-import 'unity_home_screen.dart';
-import 'home_screen_example_blended.dart';
 import '../providers/call_provider.dart';
+import 'profile_screen.dart';
 
 /// AHMA Call Screen
 ///
@@ -13,7 +11,9 @@ import '../providers/call_provider.dart';
 /// - Push-to-talk button with kopi fill animation
 /// - End call button
 class AhmaCallScreen extends ConsumerStatefulWidget {
-  const AhmaCallScreen({super.key});
+  final VoidCallback? onBackToProfile;
+
+  const AhmaCallScreen({super.key, this.onBackToProfile});
 
   @override
   ConsumerState<AhmaCallScreen> createState() => _AhmaCallScreenState();
@@ -91,37 +91,24 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
 
   Widget _buildTopBar() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 6),
+      child: Stack(
+        alignment: Alignment.centerRight,
         children: [
-          // End call button
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'AHMA',
+              style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                fontSize: 34,
+                fontWeight: FontWeight.w700,
+                color: AhmaTheme.ahmaRed,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ),
           GestureDetector(
-            onTap: () async {
-              // Disconnect the call if it's active
-              if (_callStarted &&
-                  ref.read(callProvider).status != CallStatus.ended) {
-                await ref.read(callProvider.notifier).endCall();
-                if (!mounted) return;
-              }
-
-              // Navigate back to appropriate home screen based on manual toggle
-              if (USE_UNITY_HOME_SCREEN) {
-                // Unity home screen
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const UnityHomeScreen()),
-                  (route) => false,
-                );
-              } else {
-                // Example blended home screen
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(
-                    builder: (_) => const HomeScreenBlendedExample(),
-                  ),
-                  (route) => false,
-                );
-              }
-            },
+            onTap: _handleBackToProfile,
             child: Container(
               width: 26,
               height: 26,
@@ -134,34 +121,43 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
                 ),
               ),
               child: const Icon(
-                Icons.close,
-                size: 11,
+                Icons.arrow_back_rounded,
+                size: 14,
                 color: AhmaTheme.ahmaRed,
               ),
             ),
           ),
-
-          // Logo
-          Text(
-            'AHMA',
-            style: Theme.of(context).textTheme.displaySmall?.copyWith(
-              color: AhmaTheme.ahmaRed,
-              letterSpacing: 0.8,
-            ),
-          ),
-
-          // Empty space for balance
-          const SizedBox(width: 26),
         ],
       ),
     );
   }
 
-  Widget _buildMainContent(CallState callState) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      child: Center(child: _buildPushToTalkArea(callState)),
+  Future<void> _handleBackToProfile() async {
+    if (_callStarted && ref.read(callProvider).status != CallStatus.ended) {
+      await ref.read(callProvider.notifier).endCall();
+    }
+
+    if (!mounted) return;
+
+    if (widget.onBackToProfile != null) {
+      widget.onBackToProfile!();
+      return;
+    }
+
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+      return;
+    }
+
+    navigator.pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const ProfileScreen()),
+      (route) => false,
     );
+  }
+
+  Widget _buildMainContent(CallState callState) {
+    return Center(child: _buildPushToTalkArea(callState));
   }
 
   Widget _buildPushToTalkArea(CallState callState) {
@@ -170,36 +166,20 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
-      mainAxisSize: MainAxisSize.min,
       children: [
         // Push-to-talk button
         GestureDetector(
-          onTapDown: (_) => _startRecording(),
-          onTapUp: (_) => _stopRecording(),
-          onTapCancel: _stopRecording,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // Outer ring (40% larger)
-              Container(
-                width: 92.4, // 40% larger: 66 * 1.4
-                height: 92.4, // 40% larger: 66 * 1.4
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: _getRingColor(callState),
-                    width: 1.4, // 40% larger: 1 * 1.4
-                  ),
-                ),
-              ),
-
-              // Phone or Mic icon
-              _buildButtonIcon(callState),
-            ],
-          ),
+          onTapDown: (!_callStarted || isActive)
+              ? (_) => _startRecording()
+              : null,
+          onTapUp: (!_callStarted || isActive) ? (_) => _stopRecording() : null,
+          onTapCancel: (!_callStarted || isActive)
+              ? () => _stopRecording()
+              : null,
+          child: _buildPrimaryActionOrb(callState),
         ),
 
-        const SizedBox(height: 5),
+        const SizedBox(height: 10),
 
         // Hint text
         Text(
@@ -220,6 +200,69 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
     );
   }
 
+  Widget _buildPrimaryActionOrb(CallState callState) {
+    return SizedBox(
+      width: 220,
+      height: 220,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            width: 220,
+            height: 220,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: _getOrbOuterColor(callState),
+            ),
+          ),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            width: 178,
+            height: 178,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: _getOrbMiddleColor(callState),
+            ),
+          ),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            width: 146,
+            height: 146,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: _getOrbInnerColor(callState),
+              boxShadow: [
+                BoxShadow(
+                  color: AhmaTheme.mocha.withOpacity(0.08),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _getOrbPrompt(callState),
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    fontSize: 12,
+                    color: _getOrbPromptColor(callState),
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                _buildButtonIcon(callState),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildKopiFillBar() {
     return SizedBox(
       width: 86,
@@ -229,11 +272,6 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
   }
 
   void _startRecording() {
-    final status = ref.read(callProvider).status;
-    if (_callStarted && status != CallStatus.active) {
-      return;
-    }
-
     setState(() {
       _isPressing = true;
     });
@@ -245,14 +283,14 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
       });
 
       // Start the call after 2 seconds
-      _callStartTimer = Timer(const Duration(seconds: 2), () async {
+      _callStartTimer = Timer(const Duration(seconds: 2), () {
         if (mounted && _isPressing) {
           setState(() {
             _callStarted = true;
           });
           _connectionBarController.forward();
 
-          await ref
+          ref
               .read(callProvider.notifier)
               .startCall(
                 userName: 'Abhi', // Example: Pass actual user name from auth
@@ -260,24 +298,6 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
                 caregiverType:
                     'family', // Example: family, professional, volunteer
               );
-
-          if (!mounted) return;
-
-          final status = ref.read(callProvider).status;
-          if (status == CallStatus.active && _isPressing) {
-            _kopiFillController.repeat(reverse: true);
-            ref.read(callProvider.notifier).startAudioCapture();
-          }
-
-          if (status == CallStatus.error) {
-            setState(() {
-              _callStarted = false;
-              _showPhoneOn = false;
-            });
-            _connectionBarController.reset();
-          }
-
-          _callStartTimer = null;
         }
       });
     } else {
@@ -288,10 +308,6 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
   }
 
   void _stopRecording() {
-    if (!_isPressing && !_showPhoneOn) {
-      return;
-    }
-
     setState(() {
       _isPressing = false;
       _showPhoneOn = false;
@@ -308,19 +324,85 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
     }
   }
 
-  Color _getRingColor(CallState callState) {
+  Color _getOrbOuterColor(CallState callState) {
     if (!_callStarted) {
       return _isPressing
-          ? AhmaTheme.sageGreen.withOpacity(0.25)
-          : AhmaTheme.mocha.withOpacity(0.1);
+          ? AhmaTheme.sageGreen.withOpacity(0.20)
+          : Colors.white.withOpacity(0.08);
+    }
+
+    switch (callState.status) {
+      case CallStatus.connecting:
+        return AhmaTheme.sageGreen.withOpacity(0.18);
+      case CallStatus.active:
+        return _isPressing
+            ? AhmaTheme.sageGreen.withOpacity(0.22)
+            : Colors.white.withOpacity(0.08);
+      default:
+        return Colors.white.withOpacity(0.06);
+    }
+  }
+
+  Color _getOrbMiddleColor(CallState callState) {
+    if (!_callStarted) {
+      return _isPressing
+          ? AhmaTheme.sageGreen.withOpacity(0.14)
+          : Colors.white.withOpacity(0.12);
+    }
+
+    switch (callState.status) {
+      case CallStatus.connecting:
+        return AhmaTheme.sageGreen.withOpacity(0.14);
+      case CallStatus.active:
+        return _isPressing
+            ? AhmaTheme.sageGreen.withOpacity(0.18)
+            : Colors.white.withOpacity(0.12);
+      default:
+        return Colors.white.withOpacity(0.10);
+    }
+  }
+
+  Color _getOrbInnerColor(CallState callState) {
+    if (!_callStarted) {
+      return const Color(0xFFFAF5EE);
+    }
+
+    switch (callState.status) {
+      case CallStatus.connecting:
+        return const Color(0xFFF1F6EC);
+      case CallStatus.active:
+        return _isPressing ? const Color(0xFFE6F0DB) : const Color(0xFFFAF5EE);
+      default:
+        return const Color(0xFFF4EFE8);
+    }
+  }
+
+  String _getOrbPrompt(CallState callState) {
+    if (!_callStarted) {
+      return 'hold to call';
+    }
+
+    switch (callState.status) {
+      case CallStatus.connecting:
+        return 'connecting';
+      case CallStatus.active:
+        return _isPressing ? 'release' : 'hold to speak';
+      default:
+        return 'call ended';
+    }
+  }
+
+  Color _getOrbPromptColor(CallState callState) {
+    if (!_callStarted) {
+      return AhmaTheme.sageGreen;
     }
 
     switch (callState.status) {
       case CallStatus.connecting:
       case CallStatus.active:
-        return AhmaTheme.sageGreen.withOpacity(0.25);
+        return AhmaTheme.sageGreen;
       default:
-        return AhmaTheme.mocha.withOpacity(0.1);
+        return AhmaTheme.mocha.withOpacity(0.6);
     }
   }
 
@@ -328,47 +410,27 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
     if (!_callStarted) {
       // Show phone-off icon before call starts, phone-on when pressing
       if (_showPhoneOn) {
-        return Image.asset(
-          'resources/Phone-on.png',
-          width: 52.8, // 60% larger: 33 * 1.6
-          height: 52.8, // 60% larger: 33 * 1.6
-        );
+        return Image.asset('resources/Phone-on.png', width: 38, height: 38);
       } else {
-        return Image.asset(
-          'resources/Phone-off.png',
-          width: 49.92, // 60% larger: 31.2 * 1.6
-          height: 49.92, // 60% larger: 31.2 * 1.6
-        );
+        return Image.asset('resources/Phone-off.png', width: 36, height: 36);
       }
     }
 
     switch (callState.status) {
       case CallStatus.connecting:
         // Show phone-on icon while connecting
-        return Image.asset(
-          'resources/Phone-on.png',
-          width: 49.92, // 60% larger: 31.2 * 1.6
-          height: 49.92, // 60% larger: 31.2 * 1.6
-        );
+        return Image.asset('resources/Phone-on.png', width: 36, height: 36);
       case CallStatus.active:
         // Show phone-off icon when not pressing, phone-on when pressing
         if (_isPressing) {
-          return Image.asset(
-            'resources/Phone-on.png',
-            width: 49.92, // 60% larger: 31.2 * 1.6
-            height: 49.92, // 60% larger: 31.2 * 1.6
-          );
+          return Image.asset('resources/Phone-on.png', width: 36, height: 36);
         } else {
-          return Image.asset(
-            'resources/Phone-off.png',
-            width: 49.92, // 60% larger: 31.2 * 1.6
-            height: 49.92, // 60% larger: 31.2 * 1.6
-          );
+          return Image.asset('resources/Phone-off.png', width: 36, height: 36);
         }
       default:
         return Icon(
           Icons.phone_disabled,
-          size: 20,
+          size: 28,
           color: Colors.white.withOpacity(0.4),
         );
     }

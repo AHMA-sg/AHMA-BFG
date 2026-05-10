@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../widgets/ahma_bottom_nav.dart';
-import '../../core/theme/ahma_theme.dart';
+import '../widgets/ahma_phone_container.dart';
 import 'ahma_call_screen.dart';
 import 'kopi_journal_screen.dart';
 import 'profile_screen.dart';
@@ -25,13 +25,21 @@ class _AhmaMainScreenState extends ConsumerState<AhmaMainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AhmaTheme.backgroundInner,
-      body: Column(
-        children: [
-          Expanded(child: _buildCurrentScreen()),
-          AhmaBottomNav(currentTab: _currentTab, onTabChanged: _onTabChanged),
-        ],
+    return AhmaPhoneContainer(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Column(
+          children: [
+            // Status bar
+            const AhmaStatusBar(),
+
+            // Main content
+            Expanded(child: _buildCurrentScreen()),
+
+            // Bottom navigation
+            AhmaBottomNav(currentTab: _currentTab, onTabChanged: _onTabChanged),
+          ],
+        ),
       ),
     );
   }
@@ -44,7 +52,9 @@ class _AhmaMainScreenState extends ConsumerState<AhmaMainScreen> {
           onOpenPastJourneys: () => _onTabChanged(AhmaNavTab.kopi),
         );
       case AhmaNavTab.call:
-        return const AhmaCallScreen();
+        return AhmaCallScreen(
+          onBackToProfile: () => _onTabChanged(AhmaNavTab.profile),
+        );
       case AhmaNavTab.kopi:
         return const KopiJournalScreen();
     }
