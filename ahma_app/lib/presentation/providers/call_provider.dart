@@ -127,13 +127,13 @@ class CallNotifier extends StateNotifier<CallState> {
   ) {
     if (userName != null && careRecipientName != null) {
       // Full context greeting
-      return 'Hello $userName, this is AHMA. I understand you\'re caring for your $careRecipientName. How are you doing today?';
+      return 'Hello $userName, this is Ah Ma. I understand you\'re caring for your $careRecipientName. How are you doing today?';
     } else if (userName != null) {
       // Name only
-      return 'Hello $userName, this is AHMA. How are you doing today?';
+      return 'Hello $userName, this is Ah Ma. How are you doing today?';
     } else {
       // Generic greeting
-      return 'Hello, this is AHMA. How are you doing today?';
+      return 'Hello, this is Ah Ma. How are you doing today?';
     }
   }
 
