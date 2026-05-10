@@ -7,8 +7,8 @@ if [ ! -x "$FLUTTER_BIN" ]; then
 fi
 
 "$FLUTTER_BIN" build web --release \
-  --dart-define="BACKEND_API_URL=${BACKEND_API_URL:-}" \
-  --dart-define="BACKEND_API_KEY=${BACKEND_API_KEY:-}" \
+  --dart-define="BACKEND_API_URL=" \
+  --dart-define="BACKEND_API_KEY=" \
   --dart-define="ULTRAVOX_API_KEY=" \
   --dart-define="ULTRAVOX_BASE_URL=${ULTRAVOX_BASE_URL:-https://api.ultravox.ai/api}" \
   --dart-define="CORPUS_ID_CAREGIVER_GUIDES=${CORPUS_ID_CAREGIVER_GUIDES:-}" \

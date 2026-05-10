@@ -56,6 +56,128 @@ class BackendApi {
     return configuredUrl;
   }
 
+  Future<BackendHealthCheckResult> healthCheck() async {
+    try {
+      final path = _healthCheckPath();
+      final response = await _dio.get(
+        path,
+        options: Options(
+          validateStatus: (_) => true,
+          sendTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 10),
+        ),
+      );
+
+      final statusCode = response.statusCode;
+      final ok = statusCode != null && statusCode >= 200 && statusCode < 300;
+
+      return BackendHealthCheckResult(
+        statusCode: statusCode,
+        ok: ok,
+        label: statusCode == null ? 'No response' : _labelForStatus(statusCode),
+        detail: _detailFromResponse(response.data),
+      );
+    } on DioException catch (e) {
+      final statusCode = e.response?.statusCode;
+
+      return BackendHealthCheckResult(
+        statusCode: statusCode,
+        ok: false,
+        label: statusCode == null
+            ? 'Network error'
+            : _labelForStatus(statusCode),
+        detail: e.response?.data == null
+            ? e.message
+            : _detailFromResponse(e.response?.data),
+      );
+    } catch (e) {
+      return BackendHealthCheckResult(
+        ok: false,
+        label: 'Unexpected error',
+        detail: e.toString(),
+      );
+    }
+  }
+
+  String _healthCheckPath() {
+    if (!kIsWeb) {
+      return ApiConstants.backendHealth;
+    }
+
+    final host = Uri.base.host;
+    final isLocalPage = host == 'localhost' || host == '127.0.0.1';
+    final configuredUrl = EnvConfig.backendApiUrl.trim();
+    final isLocalBackend =
+        configuredUrl.startsWith('http://localhost') ||
+        configuredUrl.startsWith('http://127.0.0.1');
+
+    if (!isLocalPage && (configuredUrl.isEmpty || isLocalBackend)) {
+      return '/api/backend-health';
+    }
+
+    return ApiConstants.backendHealth;
+  }
+
+  static String? _detailFromResponse(Object? data) {
+    if (data == null) {
+      return null;
+    }
+
+    String text;
+    if (data is Map) {
+      text = (data['message'] ?? data['error'] ?? data['status'] ?? data)
+          .toString();
+    } else {
+      text = data.toString();
+    }
+
+    if (text.length > 160) {
+      return '${text.substring(0, 160)}...';
+    }
+
+    return text;
+  }
+
+  static String _labelForStatus(int statusCode) {
+    switch (statusCode) {
+      case 200:
+        return 'OK';
+      case 201:
+        return 'Created';
+      case 202:
+        return 'Accepted';
+      case 204:
+        return 'No Content';
+      case 400:
+        return 'Bad Request';
+      case 401:
+        return 'Unauthorized';
+      case 403:
+        return 'Forbidden';
+      case 404:
+        return 'Not Found';
+      case 500:
+        return 'Internal Server Error';
+      case 502:
+        return 'Bad Gateway';
+      case 503:
+        return 'Service Unavailable';
+      case 504:
+        return 'Gateway Timeout';
+      default:
+        if (statusCode >= 200 && statusCode < 300) {
+          return 'OK';
+        }
+        if (statusCode >= 400 && statusCode < 500) {
+          return 'Client Error';
+        }
+        if (statusCode >= 500) {
+          return 'Server Error';
+        }
+        return 'HTTP Status';
+    }
+  }
+
   /// Create an Ultravox agent call through the backend/proxy.
   ///
   /// Flutter Web cannot reliably call Ultravox REST directly because browsers
@@ -164,5 +286,27 @@ class BackendApi {
       print('Error sending tool request: $e');
       rethrow;
     }
+  }
+}
+
+class BackendHealthCheckResult {
+  final int? statusCode;
+  final bool ok;
+  final String label;
+  final String? detail;
+
+  const BackendHealthCheckResult({
+    this.statusCode,
+    required this.ok,
+    required this.label,
+    this.detail,
+  });
+
+  String get displayStatus {
+    if (statusCode == null) {
+      return label;
+    }
+
+    return '$statusCode $label';
   }
 }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/ahma_theme.dart';
+import '../../data/datasources/backend_api.dart';
 import '../widgets/house_animation.dart';
 import 'ahma_call_screen.dart';
 import 'kopi_journal_screen.dart';
@@ -269,8 +270,134 @@ class _ProfileHero extends StatelessWidget {
         _CallJourneyCard(scale: scale, onTap: onOpenCallJourney),
         SizedBox(height: s(10)),
         _PastJourneysCard(scale: scale, onTap: onOpenPastJourneys),
+        SizedBox(height: s(10)),
+        _BackendHealthCheckCard(scale: scale),
       ],
     );
+  }
+}
+
+class _BackendHealthCheckCard extends StatefulWidget {
+  final double scale;
+
+  const _BackendHealthCheckCard({required this.scale});
+
+  @override
+  State<_BackendHealthCheckCard> createState() =>
+      _BackendHealthCheckCardState();
+}
+
+class _BackendHealthCheckCardState extends State<_BackendHealthCheckCard> {
+  late final BackendApi _backendApi;
+  BackendHealthCheckResult? _result;
+  bool _isChecking = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _backendApi = BackendApi();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    double s(double value) => value * widget.scale;
+    double t(double value) => s(value * _profileTextScale);
+    final result = _result;
+    final statusColor = result == null
+        ? AhmaTheme.mocha.withValues(alpha: 0.62)
+        : result.ok
+        ? const Color(0xFF3F6D45)
+        : AhmaTheme.ahmaRed;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: s(14), vertical: s(12)),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.26),
+        borderRadius: BorderRadius.circular(s(24)),
+        border: Border.all(color: AhmaTheme.mocha.withValues(alpha: 0.08)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Temporary backend health check',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontSize: t(11.5),
+                    color: AhmaTheme.mocha.withValues(alpha: 0.78),
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+                SizedBox(height: s(4)),
+                Text(
+                  _isChecking
+                      ? 'Checking...'
+                      : result?.displayStatus ?? 'Not checked yet',
+                  style: AhmaTheme.labelTextStyle.copyWith(
+                    fontSize: t(10.5),
+                    color: statusColor,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                if (result?.detail != null) ...[
+                  SizedBox(height: s(3)),
+                  Text(
+                    result!.detail!,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontSize: t(10),
+                      color: AhmaTheme.mocha.withValues(alpha: 0.58),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          SizedBox(width: s(10)),
+          OutlinedButton.icon(
+            onPressed: _isChecking ? null : _checkBackendHealth,
+            icon: _isChecking
+                ? SizedBox(
+                    width: s(12),
+                    height: s(12),
+                    child: const CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Icon(Icons.favorite_rounded, size: s(16)),
+            label: Text(_isChecking ? 'Wait' : 'Check'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AhmaTheme.ahmaRed,
+              side: BorderSide(
+                color: AhmaTheme.ahmaRed.withValues(alpha: 0.24),
+              ),
+              padding: EdgeInsets.symmetric(horizontal: s(10), vertical: s(8)),
+              textStyle: AhmaTheme.labelTextStyle.copyWith(fontSize: t(9.5)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _checkBackendHealth() async {
+    setState(() {
+      _isChecking = true;
+      _result = null;
+    });
+
+    final result = await _backendApi.healthCheck();
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isChecking = false;
+      _result = result;
+    });
   }
 }
 
