@@ -102,6 +102,7 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
               if (_callStarted &&
                   ref.read(callProvider).status != CallStatus.ended) {
                 await ref.read(callProvider.notifier).endCall();
+                if (!mounted) return;
               }
 
               // Navigate back to appropriate home screen based on manual toggle
@@ -173,13 +174,9 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
       children: [
         // Push-to-talk button
         GestureDetector(
-          onTapDown: (!_callStarted || isActive)
-              ? (_) => _startRecording()
-              : null,
-          onTapUp: (!_callStarted || isActive) ? (_) => _stopRecording() : null,
-          onTapCancel: (!_callStarted || isActive)
-              ? () => _stopRecording()
-              : null,
+          onTapDown: (_) => _startRecording(),
+          onTapUp: (_) => _stopRecording(),
+          onTapCancel: _stopRecording,
           child: Stack(
             alignment: Alignment.center,
             children: [
@@ -232,6 +229,11 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
   }
 
   void _startRecording() {
+    final status = ref.read(callProvider).status;
+    if (_callStarted && status != CallStatus.active) {
+      return;
+    }
+
     setState(() {
       _isPressing = true;
     });
@@ -243,14 +245,14 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
       });
 
       // Start the call after 2 seconds
-      _callStartTimer = Timer(const Duration(seconds: 2), () {
+      _callStartTimer = Timer(const Duration(seconds: 2), () async {
         if (mounted && _isPressing) {
           setState(() {
             _callStarted = true;
           });
           _connectionBarController.forward();
 
-          ref
+          await ref
               .read(callProvider.notifier)
               .startCall(
                 userName: 'Abhi', // Example: Pass actual user name from auth
@@ -258,6 +260,16 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
                 caregiverType:
                     'family', // Example: family, professional, volunteer
               );
+
+          if (!mounted) return;
+
+          if (ref.read(callProvider).status == CallStatus.error) {
+            setState(() {
+              _callStarted = false;
+              _showPhoneOn = false;
+            });
+            _connectionBarController.reset();
+          }
         }
       });
     } else {
@@ -268,6 +280,10 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
   }
 
   void _stopRecording() {
+    if (!_isPressing && !_showPhoneOn) {
+      return;
+    }
+
     setState(() {
       _isPressing = false;
       _showPhoneOn = false;

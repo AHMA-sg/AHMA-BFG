@@ -1,11 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/call_model.dart';
-import '../../data/models/action_plan.dart';
 import '../../data/datasources/ultravox_api.dart';
 import '../../data/datasources/ultravox_rtc.dart';
 import '../../data/datasources/backend_api.dart';
 import '../../core/config/env_config.dart';
-import 'backend_provider.dart';
 
 /// Call state
 class CallState {
@@ -43,10 +41,8 @@ class CallNotifier extends StateNotifier<CallState> {
   final UltravoxApi _api;
   final UltravoxRtcManager _rtc;
   final BackendApi _backend;
-  final Future<void> Function(BackendUpdate update) _processBackendUpdate;
 
-  CallNotifier(this._api, this._rtc, this._backend, this._processBackendUpdate)
-    : super(const CallState());
+  CallNotifier(this._api, this._rtc, this._backend) : super(const CallState());
 
   /// Start a voice call
   Future<void> startCall({
@@ -55,20 +51,14 @@ class CallNotifier extends StateNotifier<CallState> {
     String? caregiverType,
   }) async {
     try {
-      state = state.copyWith(status: CallStatus.connecting);
+      _validateUltravoxConfig();
+      state = state.copyWith(status: CallStatus.connecting, error: null);
 
-      // Use pre-created AHMA agent (faster call setup)
-      final agentId = EnvConfig.ahmaAgentId;
+      print('[Call] Starting call');
 
-      // Build personalized greeting with context embedded
-      final greeting = _buildPersonalizedGreeting(
-        userName,
-        careRecipientName,
-        caregiverType,
-      );
-
+      // Create call via Ultravox API. Tools are configured on the agent.
       final call = await _api.createCall(
-        agentId: agentId,
+        agentId: EnvConfig.ahmaAgentId,
         metadata: {
           'app': 'ahma_flutter',
           'stage': 'assess',
@@ -77,7 +67,13 @@ class CallNotifier extends StateNotifier<CallState> {
           if (caregiverType != null) 'caregiverType': caregiverType,
         },
         firstSpeakerSettings: {
-          'agent': {'text': greeting},
+          'agent': {
+            'text': _buildPersonalizedGreeting(
+              userName,
+              careRecipientName,
+              caregiverType,
+            ),
+          },
         },
         // Note: initialMessages is for conversation history (USER/AGENT messages)
         // Context is passed via greeting and metadata instead
@@ -95,6 +91,23 @@ class CallNotifier extends StateNotifier<CallState> {
     } catch (e) {
       state = state.copyWith(status: CallStatus.error, error: e.toString());
       print('[Call] Error starting call: $e');
+    }
+  }
+
+  void _validateUltravoxConfig() {
+    final apiKey = EnvConfig.ultravoxApiKey.trim();
+    final agentId = EnvConfig.ahmaAgentId.trim();
+
+    if (apiKey.isEmpty || apiKey == 'your_ultravox_api_key_here') {
+      throw StateError(
+        'Missing ULTRAVOX_API_KEY. Add it to ahma_app/.env or pass it with --dart-define.',
+      );
+    }
+
+    if (agentId.isEmpty || agentId == 'your_ahma_agent_id_here') {
+      throw StateError(
+        'Missing AHMA_AGENT_ID. Add it to ahma_app/.env or pass it with --dart-define.',
+      );
     }
   }
 
@@ -185,8 +198,8 @@ class CallNotifier extends StateNotifier<CallState> {
     }
   }
 
-  // Note: Tools are now configured in the pre-created agent (AHMA_AGENT_ID)
-  // No need to build tools on every call - saves latency!
+  // Tools are configured in the pre-created agent (AHMA_AGENT_ID).
+  // Client-side call-stage responses are handled by UltravoxRtcManager.
 
   /// Send transcript to Flask backend
   Future<void> _sendTranscriptToBackend(CallModel call) async {
@@ -209,12 +222,6 @@ class CallNotifier extends StateNotifier<CallState> {
       );
 
       print('[Call] ✅ Backend response: ${result['message']}');
-      final updateJson = result['update'];
-      if (updateJson is Map<String, dynamic>) {
-        await _processBackendUpdate(BackendUpdate.fromJson(updateJson));
-        print('[Call] ✅ Action plan update processed from backend response');
-      }
-
       if (result['actions'] != null) {
         print('[Call] 🎯 Actions taken: ${result['actions']}');
       }
@@ -236,8 +243,10 @@ final callProvider = StateNotifierProvider<CallNotifier, CallState>((ref) {
         // Audio automatically plays through speakers via LiveKit
         // RemoteAudioTrack handles playback automatically
       },
+      onToolCall: (toolCallData) {
+        print('[Call] 🔧 Tool call handled by LiveKit');
+      },
     ),
     BackendApi(),
-    (update) => ref.read(backendProvider.notifier).processUpdate(update),
   );
 });

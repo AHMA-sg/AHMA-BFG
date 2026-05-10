@@ -5,6 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'presentation/screens/unity_home_screen.dart';
 import 'presentation/screens/home_screen_example_blended.dart';
+import 'core/config/env_file_loader.dart';
 import 'core/theme/ahma_theme.dart';
 
 // Toggle between Unity and example blended home screens
@@ -16,6 +17,11 @@ Future<void> main() async {
 
   // Load environment variables
   await dotenv.load(fileName: '.env.example', isOptional: true);
+  final exampleEnv = Map<String, String>.from(dotenv.env);
+  final localEnv = await loadLocalEnvFile();
+  if (localEnv.isNotEmpty) {
+    dotenv.testLoad(fileInput: '', mergeWith: {...exampleEnv, ...localEnv});
+  }
 
   // Request microphone permission (required for voice calls)
   await _requestPermissions();

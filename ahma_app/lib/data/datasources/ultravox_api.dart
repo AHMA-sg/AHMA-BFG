@@ -7,25 +7,30 @@ class UltravoxApi {
   late final Dio _dio;
 
   UltravoxApi() {
-    _dio = Dio(BaseOptions(
-      baseUrl: EnvConfig.ultravoxBaseUrl,
-      headers: {
-        'X-API-Key': EnvConfig.ultravoxApiKey,
-        'Content-Type': 'application/json',
-      },
-      // Optimized timeouts for real-time voice (faster failure detection)
-      connectTimeout: const Duration(seconds: 5),
-      receiveTimeout: const Duration(seconds: 10),
-      sendTimeout: const Duration(seconds: 5),
-    ));
+    _dio = Dio(
+      BaseOptions(
+        baseUrl: EnvConfig.ultravoxBaseUrl,
+        headers: {
+          'X-API-Key': EnvConfig.ultravoxApiKey,
+          'Content-Type': 'application/json',
+        },
+        // Optimized timeouts for real-time voice (faster failure detection)
+        connectTimeout: const Duration(seconds: 5),
+        receiveTimeout: const Duration(seconds: 10),
+        sendTimeout: const Duration(seconds: 5),
+      ),
+    );
 
     // Add minimal logging (full logging causes lag on WSL2)
-    _dio.interceptors.add(LogInterceptor(
-      requestBody: false,  // Disable body logging for performance
-      responseBody: false, // Disable body logging for performance
-      error: true,         // Only log errors
-      logPrint: (obj) => print('[Ultravox API] $obj'),
-    ));
+    _dio.interceptors.add(
+      LogInterceptor(
+        requestHeader: false, // Never print API keys.
+        requestBody: false, // Disable body logging for performance
+        responseBody: false, // Disable body logging for performance
+        error: true, // Only log errors
+        logPrint: (obj) => print('[Ultravox API] $obj'),
+      ),
+    );
   }
 
   /// Create a call with the AHMA agent
@@ -48,7 +53,8 @@ class UltravoxApi {
         if (systemPrompt != null) 'systemPrompt': systemPrompt,
         if (metadata != null) 'metadata': metadata,
         if (initialMessages != null) 'initialMessages': initialMessages,
-        if (firstSpeakerSettings != null) 'firstSpeakerSettings': firstSpeakerSettings,
+        if (firstSpeakerSettings != null)
+          'firstSpeakerSettings': firstSpeakerSettings,
 
         // Only include these for direct calls (no agentId)
         if (agentId == null) ...{
@@ -59,17 +65,18 @@ class UltravoxApi {
         },
 
         // Medium is required for all calls
-        'medium': {
-          'webRtc': {}
-        },
+        'medium': {'webRtc': {}},
       };
 
-      final response = await _dio.post(
-        endpoint,
-        data: data,
-      );
+      final response = await _dio.post(endpoint, data: data);
 
       return CallModel.fromJson(response.data);
+    } on DioException catch (e) {
+      print('Error creating call: $e');
+      if (e.response?.data != null) {
+        print('Error response data: ${e.response?.data}');
+      }
+      rethrow;
     } catch (e) {
       print('Error creating call: $e');
       rethrow;

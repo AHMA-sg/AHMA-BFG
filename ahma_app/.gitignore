@@ -125,6 +125,9 @@ Desktop.ini
 **/macos/build/
 **/macos/Flutter/ephemeral/
 **/macos/Flutter/Flutter-*.xcconfig
+!**/macos/Flutter/Flutter-Debug.xcconfig
+!**/macos/Flutter/Flutter-Release.xcconfig
+**/macos/Flutter/GeneratedPluginRegistrant.swift
 **/macos/Pods/
 **/windows/build/
 **/windows/runner/Debug/

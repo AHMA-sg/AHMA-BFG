@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:livekit_client/livekit_client.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../core/config/audio_config.dart';
+import '../models/navigate_tool.dart';
+import '../models/client_tool_result.dart';
 
 /// WebRTC manager for Ultravox using LiveKit
 class UltravoxRtcManager {
@@ -14,11 +17,9 @@ class UltravoxRtcManager {
 
   final Function(String)? onMessage;
   final Function(RemoteAudioTrack)? onRemoteStream;
+  final Function(Map<String, dynamic>)? onToolCall;
 
-  UltravoxRtcManager({
-    this.onMessage,
-    this.onRemoteStream,
-  });
+  UltravoxRtcManager({this.onMessage, this.onRemoteStream, this.onToolCall});
 
   /// Connect to Ultravox call via LiveKit
   Future<void> connect(String joinUrl) async {
@@ -29,7 +30,6 @@ class UltravoxRtcManager {
       await _connectSignaling(joinUrl);
 
       print('[WebRTC] Connection setup complete');
-
     } catch (e) {
       print('[WebRTC] Connection error: $e');
       rethrow;
@@ -40,14 +40,17 @@ class UltravoxRtcManager {
   Future<void> _connectSignaling(String joinUrl) async {
     try {
       // Convert HTTPS joinUrl to WSS
-      final wsUrl = joinUrl.replaceFirst('https://', 'wss://').replaceFirst('http://', 'ws://');
+      final wsUrl = joinUrl
+          .replaceFirst('https://', 'wss://')
+          .replaceFirst('http://', 'ws://');
       print('[WebRTC] Connecting to signaling: $wsUrl');
 
       _signalingChannel = WebSocketChannel.connect(Uri.parse(wsUrl));
 
       // Listen for signaling messages (non-blocking to prevent queue buildup)
       _signalingChannel!.stream.listen(
-        (message) {  // Removed async to avoid blocking stream
+        (message) {
+          // Removed async to avoid blocking stream
           print('[WebRTC] 📨 Received signaling message: $message');
           final data = jsonDecode(message);
           print('[WebRTC] 📨 Parsed message type: ${data['type']}');
@@ -64,7 +67,6 @@ class UltravoxRtcManager {
           print('[WebRTC] Signaling channel closed');
         },
       );
-
     } catch (e) {
       print('[WebRTC] Signaling error: $e');
       rethrow;
@@ -75,6 +77,7 @@ class UltravoxRtcManager {
   Future<void> _handleSignalingMessage(Map<String, dynamic> message) async {
     try {
       final type = message['type'];
+      print('[WebRTC] 📨 Signaling message type: $type');
 
       if (type == 'room_info') {
         // Received LiveKit room info
@@ -86,9 +89,9 @@ class UltravoxRtcManager {
 
         // Connect to LiveKit room
         await _connectToLiveKitRoom(roomUrl, token);
-
       } else {
         // Other message types
+        print('[WebRTC] ℹ️  Other message type: $type');
         if (onMessage != null) {
           onMessage!(jsonEncode(message));
         }
@@ -123,7 +126,6 @@ class UltravoxRtcManager {
 
       // Enable microphone and publish local audio (starts muted for PTT)
       await _enableMicrophone();
-
     } catch (e) {
       print('[LiveKit] Error connecting to room: $e');
       rethrow;
@@ -139,7 +141,7 @@ class UltravoxRtcManager {
       try {
         final permissionStatus = await Permission.microphone.status;
         print('[LiveKit] Microphone permission status: $permissionStatus');
-        
+
         if (permissionStatus.isDenied) {
           final status = await Permission.microphone.request();
           print('[LiveKit] Microphone permission requested: $status');
@@ -180,7 +182,6 @@ class UltravoxRtcManager {
 
       // Verify track is published
       print('[LiveKit] Local audio track published successfully');
-
     } catch (e) {
       print('[LiveKit] Error enabling microphone: $e');
       rethrow;
@@ -203,7 +204,9 @@ class UltravoxRtcManager {
 
       if (event.track is RemoteAudioTrack) {
         final remoteAudioTrack = event.track as RemoteAudioTrack;
-        print('[LiveKit] 🔊 Received remote audio track from ${event.participant.identity}');
+        print(
+          '[LiveKit] 🔊 Received remote audio track from ${event.participant.identity}',
+        );
 
         // Notify callback
         if (onRemoteStream != null) {
@@ -226,6 +229,113 @@ class UltravoxRtcManager {
     _roomListener!.on<RoomReconnectedEvent>((event) {
       print('[LiveKit] Room reconnected');
     });
+
+    // Listen for data messages (tool calls come through LiveKit data channel)
+    _roomListener!.on<DataReceivedEvent>((event) {
+      print('[LiveKit] 📨 Data received: ${event.data}');
+      try {
+        final dataString = String.fromCharCodes(event.data);
+        print('[LiveKit] 📝 Decoded data: $dataString');
+        final data = jsonDecode(dataString);
+
+        print('[LiveKit] 🔍 Data type check: ${data['type']}');
+        print('[LiveKit] 🔍 Available keys: ${data.keys.toList()}');
+
+        if (data['type'] == 'client_tool_invocation') {
+          print('[LiveKit] 🔧 Client tool invocation received');
+          _handleClientToolInvocation(data);
+        } else {
+          print('[LiveKit] ℹ️  Other data type: ${data['type']}');
+        }
+      } catch (e) {
+        print('[LiveKit] ❌ Error parsing data message: $e');
+        print('[LiveKit] 📄 Raw data bytes: ${event.data}');
+      }
+    });
+  }
+
+  /// Handle client tool invocations sent over the LiveKit data channel.
+  Future<void> _handleClientToolInvocation(Map<String, dynamic> data) async {
+    try {
+      print('[LiveKit] 🔧 _handleClientToolInvocation called with: $data');
+
+      final toolName = data['toolName'] as String?;
+      final parameters = data['parameters'] as Map<String, dynamic>? ?? {};
+      final invocationId = data['invocationId'] as String?;
+
+      print(
+        '[LiveKit] 🔧 Executing client tool: $toolName with params: $parameters',
+      );
+      print('[LiveKit] 🔧 Invocation ID: $invocationId');
+
+      if (toolName == 'navigate') {
+        print('[LiveKit] 🔧 Handling navigate client tool');
+
+        final result = await NavigateTool.handleNavigate(parameters);
+        print('[LiveKit] 📍 Navigate tool result: $result');
+
+        _sendClientToolResult(result, invocationId, toolName: toolName);
+
+        // Notify callback for UI updates
+        if (onToolCall != null) {
+          onToolCall!(data);
+        }
+      } else {
+        print('[LiveKit] ⚠️  Unknown client tool: $toolName');
+
+        // Send error result
+        final errorResult = ClientToolResult(
+          result: 'Unknown tool: $toolName',
+          responseType: 'error',
+        );
+        _sendClientToolResult(errorResult, invocationId, toolName: toolName);
+      }
+    } catch (e) {
+      print('[LiveKit] ❌ Error handling client tool invocation: $e');
+
+      final errorResult = ClientToolResult(
+        result: 'Error executing client tool: $e',
+        responseType: 'error',
+      );
+
+      _sendClientToolResult(
+        errorResult,
+        data['invocationId'],
+        toolName: data['toolName'] as String?,
+      );
+    }
+  }
+
+  /// Send client tool result back to Ultravox via LiveKit data channel.
+  void _sendClientToolResult(
+    ClientToolResult result,
+    String? invocationId, {
+    String? toolName,
+  }) {
+    if (_room == null) {
+      print(
+        '[LiveKit] ⚠️  No LiveKit room available to send client tool result',
+      );
+      return;
+    }
+
+    // result.result is already a JSON string for new-stage; jsonEncode
+    // will escape it properly so the server receives a string value.
+    final response = {
+      'type': 'client_tool_result',
+      'result': result.result,
+      'responseType': result.responseType,
+      if (invocationId != null) 'invocationId': invocationId,
+      if (toolName != null) 'toolName': toolName,
+    };
+    final finalResponse = jsonEncode(response);
+
+    print('[LiveKit] 🔍 Final response to send: $finalResponse');
+
+    final data = Uint8List.fromList(utf8.encode(finalResponse));
+    _room!.localParticipant?.publishData(data, reliable: true);
+
+    print('[LiveKit] 📤 Sent client tool result via LiveKit');
   }
 
   /// Disconnect and cleanup
@@ -280,5 +390,6 @@ class UltravoxRtcManager {
     }
   }
 
-  bool get isConnected => _room != null && _room!.connectionState == ConnectionState.connected;
+  bool get isConnected =>
+      _room != null && _room!.connectionState == ConnectionState.connected;
 }

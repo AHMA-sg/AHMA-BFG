@@ -1,5 +1,8 @@
 # Flutter SDK (do not commit - too large and system-specific)
 flutter/
+!ahma_app/macos/Flutter/
+!ahma_app/macos/Flutter/Flutter-Debug.xcconfig
+!ahma_app/macos/Flutter/Flutter-Release.xcconfig
 AHMA-Strands-Agent/
 
 # Environment files

@@ -20,43 +20,59 @@ class EnvConfig {
   static const String _webhookSecret = String.fromEnvironment('WEBHOOK_SECRET');
   static const String _webhookPort = String.fromEnvironment('WEBHOOK_PORT');
 
+  static bool _hasUsableValue(String value) {
+    final trimmed = value.trim();
+    return trimmed.isNotEmpty &&
+        !trimmed.startsWith('your_') &&
+        !trimmed.endsWith('_here');
+  }
+
+  static String _value(
+    String dartDefineValue,
+    String dotenvKey, {
+    String fallback = '',
+  }) {
+    if (_hasUsableValue(dartDefineValue)) {
+      return dartDefineValue.trim();
+    }
+
+    final dotenvValue = dotenv.env[dotenvKey]?.trim() ?? '';
+    if (_hasUsableValue(dotenvValue)) {
+      return dotenvValue;
+    }
+
+    return fallback;
+  }
+
   // Ultravox API
-  static String get ultravoxApiKey => _ultravoxApiKey.isNotEmpty
-      ? _ultravoxApiKey
-      : dotenv.env['ULTRAVOX_API_KEY'] ?? '';
-  static String get ultravoxBaseUrl => _ultravoxBaseUrl.isNotEmpty
-      ? _ultravoxBaseUrl
-      : dotenv.env['ULTRAVOX_BASE_URL'] ?? 'https://api.ultravox.ai/api';
+  static String get ultravoxApiKey =>
+      _value(_ultravoxApiKey, 'ULTRAVOX_API_KEY');
+  static String get ultravoxBaseUrl => _value(
+    _ultravoxBaseUrl,
+    'ULTRAVOX_BASE_URL',
+    fallback: 'https://api.ultravox.ai/api',
+  );
 
   // AHMA Backend (Flask)
-  static String get backendApiUrl => _backendApiUrl.isNotEmpty
-      ? _backendApiUrl
-      : dotenv.env['BACKEND_API_URL'] ?? 'http://localhost:5001';
-  static String get backendApiKey => _backendApiKey.isNotEmpty
-      ? _backendApiKey
-      : dotenv.env['BACKEND_API_KEY'] ?? '';
+  static String get backendApiUrl => _value(
+    _backendApiUrl,
+    'BACKEND_API_URL',
+    fallback: 'http://localhost:5001',
+  );
+  static String get backendApiKey => _value(_backendApiKey, 'BACKEND_API_KEY');
 
   // Ultravox RAG Corpus
   static String get corpusIdCaregiverGuides =>
-      _corpusIdCaregiverGuides.isNotEmpty
-      ? _corpusIdCaregiverGuides
-      : dotenv.env['CORPUS_ID_CAREGIVER_GUIDES'] ?? '';
+      _value(_corpusIdCaregiverGuides, 'CORPUS_ID_CAREGIVER_GUIDES');
 
   // Pre-created AHMA Agent ID
-  static String get ahmaAgentId => _ahmaAgentId.isNotEmpty
-      ? _ahmaAgentId
-      : dotenv.env['AHMA_AGENT_ID'] ?? '';
+  static String get ahmaAgentId => _value(_ahmaAgentId, 'AHMA_AGENT_ID');
 
   // Webhook configuration
-  static String get webhookSecret => _webhookSecret.isNotEmpty
-      ? _webhookSecret
-      : dotenv.env['WEBHOOK_SECRET'] ?? 'default_secret';
+  static String get webhookSecret =>
+      _value(_webhookSecret, 'WEBHOOK_SECRET', fallback: 'default_secret');
   static int get webhookPort =>
-      int.tryParse(
-        _webhookPort.isNotEmpty
-            ? _webhookPort
-            : dotenv.env['WEBHOOK_PORT'] ?? '8080',
-      ) ??
+      int.tryParse(_value(_webhookPort, 'WEBHOOK_PORT', fallback: '8080')) ??
       8080;
 
   // Validate configuration

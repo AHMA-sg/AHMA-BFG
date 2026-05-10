@@ -99,6 +99,7 @@ flutter:
   # Environment configuration & Assets
   assets:
     - .env.example
+    - lib/data/models/pure_client_tool.json
     # Images
     - resources/home-art-bg.png
     - resources/full-cup.png
