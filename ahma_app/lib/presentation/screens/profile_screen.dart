@@ -26,6 +26,7 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final content = LayoutBuilder(
       builder: (context, constraints) {
+        final isPhoneViewport = MediaQuery.of(context).size.width <= 480;
         final designHeight = constraints.maxHeight < 620
             ? 840.0
             : _profileDesignHeight;
@@ -37,7 +38,10 @@ class ProfileScreen extends ConsumerWidget {
           ),
         );
         final safetyFactor = constraints.maxHeight < 620 ? 0.92 : 0.95;
-        final scale = math.min(1.0, rawScale * safetyFactor);
+        final fittedScale = math.min(1.0, rawScale * safetyFactor);
+        final scale = isPhoneViewport
+            ? math.max(0.92, fittedScale)
+            : fittedScale;
 
         return _ProfileContent(
           scale: scale,
