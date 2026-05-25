@@ -28,9 +28,16 @@ class AhmaPhoneContainer extends StatelessWidget {
         final viewportWidth = constraints.maxWidth.isFinite
             ? constraints.maxWidth
             : (width ?? 272) * scaleFactor;
-        final isDesktopWidth = viewportWidth >= 1024;
-        final outerPadding = isDesktopWidth ? 32.0 : 12.0;
-        final maxShellHeight = isDesktopWidth ? 860.0 : double.infinity;
+        final viewportHeight = constraints.maxHeight.isFinite
+            ? constraints.maxHeight
+            : (height ?? 570) * scaleFactor;
+        final isPhoneViewport = viewportWidth <= 480;
+        final isTabletViewport =
+            viewportWidth <= 768 && viewportHeight <= 950;
+        final outerPadding = isPhoneViewport ? 12.0 : 24.0;
+        final maxShellHeight = isPhoneViewport
+            ? double.infinity
+            : (isTabletViewport ? 820.0 : 720.0);
         final targetHeight = constraints.maxHeight.isFinite
             ? math.min(
                 constraints.maxHeight - (outerPadding * 2),

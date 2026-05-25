@@ -66,7 +66,7 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   static const double _mobileMinimumTextScaleFactor = 1.7;
-  static const double _tabletMinimumTextScaleFactor = 1.15;
+  static const double _tabletMinimumTextScaleFactor = 1.3;
   static const double _desktopMinimumTextScaleFactor = 1.0;
 
   @override
@@ -77,8 +77,9 @@ class MyApp extends StatelessWidget {
       theme: AhmaTheme.lightTheme,
       builder: (context, child) {
         final mediaQuery = MediaQuery.of(context);
-        final viewportWidth = mediaQuery.size.width;
-        final minimumTextScaleFactor = _minimumTextScaleForWidth(viewportWidth);
+        final minimumTextScaleFactor = _minimumTextScaleForViewport(
+          mediaQuery.size,
+        );
         final currentScaleFactor = mediaQuery.textScaler.scale(16) / 16;
         final effectiveScaleFactor =
             currentScaleFactor < minimumTextScaleFactor
@@ -98,11 +99,14 @@ class MyApp extends StatelessWidget {
     );
   }
 
-  double _minimumTextScaleForWidth(double viewportWidth) {
-    if (viewportWidth <= 600) {
+  double _minimumTextScaleForViewport(Size viewportSize) {
+    final viewportWidth = viewportSize.width;
+    final viewportHeight = viewportSize.height;
+
+    if (viewportWidth <= 480) {
       return _mobileMinimumTextScaleFactor;
     }
-    if (viewportWidth <= 1024) {
+    if (viewportWidth <= 768 && viewportHeight <= 950) {
       return _tabletMinimumTextScaleFactor;
     }
     return _desktopMinimumTextScaleFactor;
