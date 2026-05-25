@@ -61,6 +61,8 @@ class AhmaBottomNav extends StatelessWidget {
     String label,
   ) {
     final isActive = currentTab == tab;
+    final isPhoneViewport = MediaQuery.of(context).size.width <= 480;
+    final labelScale = isPhoneViewport ? 1.35 : 1.8;
 
     return GestureDetector(
       onTap: () => onTabChanged(tab),
@@ -81,8 +83,10 @@ class AhmaBottomNav extends StatelessWidget {
                 color: isActive
                     ? AhmaTheme.sageGreen
                     : AhmaTheme.mocha.withOpacity(0.35),
-                fontSize: (AhmaTheme.navLabelStyle.fontSize ?? 10) * 1.8,
+                fontSize: (AhmaTheme.navLabelStyle.fontSize ?? 10) * labelScale,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.visible,
             ),
           ],
         ),
