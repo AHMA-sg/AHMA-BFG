@@ -65,7 +65,7 @@ Future<void> _requestPermissions() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  static const double _minimumTextScaleFactor = 1.5;
+  static const double _minimumTextScaleFactor = 2.0;
 
   @override
   Widget build(BuildContext context) {
