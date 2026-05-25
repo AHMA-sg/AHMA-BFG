@@ -65,7 +65,9 @@ Future<void> _requestPermissions() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  static const double _minimumTextScaleFactor = 1.7;
+  static const double _mobileMinimumTextScaleFactor = 1.7;
+  static const double _tabletMinimumTextScaleFactor = 1.3;
+  static const double _desktopMinimumTextScaleFactor = 1.05;
 
   @override
   Widget build(BuildContext context) {
@@ -75,10 +77,12 @@ class MyApp extends StatelessWidget {
       theme: AhmaTheme.lightTheme,
       builder: (context, child) {
         final mediaQuery = MediaQuery.of(context);
+        final viewportWidth = mediaQuery.size.width;
+        final minimumTextScaleFactor = _minimumTextScaleForWidth(viewportWidth);
         final currentScaleFactor = mediaQuery.textScaler.scale(16) / 16;
         final effectiveScaleFactor =
-            currentScaleFactor < _minimumTextScaleFactor
-            ? _minimumTextScaleFactor
+            currentScaleFactor < minimumTextScaleFactor
+            ? minimumTextScaleFactor
             : currentScaleFactor;
 
         return MediaQuery(
@@ -92,5 +96,15 @@ class MyApp extends StatelessWidget {
           ? const UnityHomeScreen()
           : const AhmaMainScreen(),
     );
+  }
+
+  double _minimumTextScaleForWidth(double viewportWidth) {
+    if (viewportWidth <= 600) {
+      return _mobileMinimumTextScaleFactor;
+    }
+    if (viewportWidth <= 1024) {
+      return _tabletMinimumTextScaleFactor;
+    }
+    return _desktopMinimumTextScaleFactor;
   }
 }
