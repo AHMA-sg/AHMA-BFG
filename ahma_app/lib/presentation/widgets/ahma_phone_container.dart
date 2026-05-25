@@ -32,12 +32,17 @@ class AhmaPhoneContainer extends StatelessWidget {
             ? constraints.maxHeight
             : (height ?? 570) * scaleFactor;
         final isPhoneViewport = viewportWidth <= 480;
+
+        if (isPhoneViewport) {
+          return SizedBox.expand(
+            child: WatercolorBackground(opacity: 0.55, child: child),
+          );
+        }
+
         final isTabletViewport =
             viewportWidth <= 768 && viewportHeight <= 950;
-        final outerPadding = isPhoneViewport ? 4.0 : 24.0;
-        final maxShellHeight = isPhoneViewport
-            ? double.infinity
-            : (isTabletViewport ? 820.0 : 720.0);
+        final outerPadding = 24.0;
+        final maxShellHeight = isTabletViewport ? 820.0 : 720.0;
         final targetHeight = constraints.maxHeight.isFinite
             ? math.min(
                 constraints.maxHeight - (outerPadding * 2),
