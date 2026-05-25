@@ -15,8 +15,10 @@ class AhmaBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isPhoneViewport = MediaQuery.of(context).size.width <= 480;
+
     return Container(
-      height: 128,
+      height: isPhoneViewport ? 96 : 128,
       decoration: BoxDecoration(
         color: AhmaTheme.background.withOpacity(0.96),
         border: Border(
@@ -24,7 +26,9 @@ class AhmaBottomNav extends StatelessWidget {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 18),
+        padding: isPhoneViewport
+            ? const EdgeInsets.fromLTRB(10, 8, 10, 12)
+            : const EdgeInsets.fromLTRB(12, 12, 12, 18),
         child: Row(
           children: [
             Expanded(
@@ -63,20 +67,23 @@ class AhmaBottomNav extends StatelessWidget {
     final isActive = currentTab == tab;
     final isPhoneViewport = MediaQuery.of(context).size.width <= 480;
     final labelScale = isPhoneViewport ? 1.35 : 1.8;
+    final horizontalPadding = isPhoneViewport ? 10.0 : 14.0;
+    final verticalPadding = isPhoneViewport ? 6.0 : 10.0;
+    final labelSpacing = isPhoneViewport ? 4.0 : 8.0;
 
     return GestureDetector(
       onTap: () => onTabChanged(tab),
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 10,
+        padding: EdgeInsets.symmetric(
+          horizontal: horizontalPadding,
+          vertical: verticalPadding,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Opacity(opacity: isActive ? 1.0 : 0.45, child: icon),
-            const SizedBox(height: 8),
+            SizedBox(height: labelSpacing),
             Text(
               label,
               style: AhmaTheme.navLabelStyle.copyWith(
@@ -95,6 +102,11 @@ class AhmaBottomNav extends StatelessWidget {
   }
 
   Widget _buildCallButton(BuildContext context) {
+    final isPhoneViewport = MediaQuery.of(context).size.width <= 480;
+    final buttonSize = isPhoneViewport ? 68.0 : 84.0;
+    final ringSize = isPhoneViewport ? 80.0 : 98.0;
+    final iconSize = isPhoneViewport ? 38.0 : 48.0;
+
     return GestureDetector(
       onTap: () => onTabChanged(AhmaNavTab.call),
       child: Column(
@@ -102,8 +114,8 @@ class AhmaBottomNav extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 84,
-            height: 84,
+            width: buttonSize,
+            height: buttonSize,
             decoration: BoxDecoration(
               color: AhmaTheme.sageGreen,
               shape: BoxShape.circle,
@@ -112,8 +124,8 @@ class AhmaBottomNav extends StatelessWidget {
               alignment: Alignment.center,
               children: [
                 Container(
-                  width: 98,
-                  height: 98,
+                  width: ringSize,
+                  height: ringSize,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
@@ -124,8 +136,8 @@ class AhmaBottomNav extends StatelessWidget {
                 ),
                 Image.asset(
                   'resources/Phone-on.png', // Changed from ahma logo
-                  width: 48,
-                  height: 48,
+                  width: iconSize,
+                  height: iconSize,
                 ),
               ],
             ),
@@ -137,11 +149,11 @@ class AhmaBottomNav extends StatelessWidget {
   }
 
   Widget _buildProfileIcon() {
-    return Image.asset('resources/ahma-logo.png', width: 44, height: 44);
+    return Image.asset('resources/ahma-logo.png', width: 34, height: 34);
   }
 
   Widget _buildKopiIcon() {
-    return Image.asset('resources/Kopi.png', width: 44, height: 44);
+    return Image.asset('resources/Kopi.png', width: 34, height: 34);
   }
 }
 
