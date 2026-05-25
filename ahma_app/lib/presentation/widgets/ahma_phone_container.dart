@@ -25,19 +25,31 @@ class AhmaPhoneContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        final viewportWidth = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : (width ?? 272) * scaleFactor;
+        final isDesktopWidth = viewportWidth >= 1024;
+        final outerPadding = isDesktopWidth ? 32.0 : 12.0;
+        final maxShellHeight = isDesktopWidth ? 860.0 : double.infinity;
         final targetHeight = constraints.maxHeight.isFinite
-            ? constraints.maxHeight - 24
+            ? math.min(
+                constraints.maxHeight - (outerPadding * 2),
+                maxShellHeight,
+              )
             : (height ?? 570) * scaleFactor;
         final aspectRatio = (width ?? 272) / (height ?? 570);
         final targetWidth = constraints.maxWidth.isFinite
-            ? math.min(constraints.maxWidth - 24, targetHeight * aspectRatio)
+            ? math.min(
+                constraints.maxWidth - (outerPadding * 2),
+                targetHeight * aspectRatio,
+              )
             : (width ?? 272) * scaleFactor;
         final shellWidth = math.max(width ?? 272, targetWidth);
         final shellHeight = shellWidth / aspectRatio;
 
         return Center(
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(outerPadding),
             child: Container(
               width: shellWidth,
               height: shellHeight,

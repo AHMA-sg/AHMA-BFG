@@ -95,7 +95,8 @@ class _ProfileContent extends StatelessWidget {
     double t(double value) => s(value * _profileTextScale);
     const horizontalPadding = 20.0;
     const topPadding = 10.0;
-    final bottomPadding = s(18);
+    final isMobileWidth = MediaQuery.of(context).size.width <= 600;
+    final bottomPadding = isMobileWidth ? s(28) : s(18);
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -117,10 +118,14 @@ class _ProfileContent extends StatelessWidget {
           Expanded(
             child: LayoutBuilder(
               builder: (context, sectionConstraints) {
+                final footerLift = isMobileWidth ? s(24) : 0.0;
                 final welcomeTextHeight = t(22);
                 final houseHeight = math.max(
                   0.0,
-                  sectionConstraints.maxHeight - s(8) - welcomeTextHeight,
+                  sectionConstraints.maxHeight -
+                      s(8) -
+                      welcomeTextHeight -
+                      footerLift,
                 );
 
                 return Column(
@@ -147,6 +152,7 @@ class _ProfileContent extends StatelessWidget {
                         ),
                       ),
                     ),
+                    if (footerLift > 0) SizedBox(height: footerLift),
                   ],
                 );
               },

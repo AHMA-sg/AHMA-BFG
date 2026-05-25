@@ -66,8 +66,8 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   static const double _mobileMinimumTextScaleFactor = 1.7;
-  static const double _tabletMinimumTextScaleFactor = 1.3;
-  static const double _desktopMinimumTextScaleFactor = 1.05;
+  static const double _tabletMinimumTextScaleFactor = 1.15;
+  static const double _desktopMinimumTextScaleFactor = 1.0;
 
   @override
   Widget build(BuildContext context) {
