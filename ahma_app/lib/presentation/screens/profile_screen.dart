@@ -10,7 +10,7 @@ import 'kopi_journal_screen.dart';
 
 const double _profileDesignWidth = 457;
 const double _profileDesignHeight = 760;
-const double _profileTextScale = 1.08;
+const double _profileTextScale = 0.96;
 
 class ProfileScreen extends ConsumerWidget {
   final VoidCallback? onOpenCallJourney;
@@ -40,7 +40,7 @@ class ProfileScreen extends ConsumerWidget {
         final safetyFactor = constraints.maxHeight < 620 ? 0.92 : 0.95;
         final fittedScale = math.min(1.0, rawScale * safetyFactor);
         final scale = isPhoneViewport
-            ? math.max(0.76, fittedScale)
+            ? math.max(0.72, fittedScale)
             : fittedScale;
 
         return _ProfileContent(
@@ -100,7 +100,7 @@ class _ProfileContent extends StatelessWidget {
     const horizontalPadding = 20.0;
     const topPadding = 10.0;
     final isMobileWidth = MediaQuery.of(context).size.width <= 600;
-    final bottomPadding = isMobileWidth ? s(28) : s(18);
+    final bottomPadding = isMobileWidth ? s(18) : s(18);
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
