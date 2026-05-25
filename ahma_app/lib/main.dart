@@ -65,8 +65,8 @@ Future<void> _requestPermissions() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  static const double _mobileMinimumTextScaleFactor = 1.6;
-  static const double _tabletMinimumTextScaleFactor = 1.3;
+  static const double _mobileMinimumTextScaleFactor = 1.35;
+  static const double _tabletMinimumTextScaleFactor = 1.15;
   static const double _desktopMinimumTextScaleFactor = 1.0;
 
   @override

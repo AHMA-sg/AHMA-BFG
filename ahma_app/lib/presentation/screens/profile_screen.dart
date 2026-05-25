@@ -40,7 +40,7 @@ class ProfileScreen extends ConsumerWidget {
         final safetyFactor = constraints.maxHeight < 620 ? 0.92 : 0.95;
         final fittedScale = math.min(1.0, rawScale * safetyFactor);
         final scale = isPhoneViewport
-            ? math.max(0.82, fittedScale)
+            ? math.max(0.76, fittedScale)
             : fittedScale;
 
         return _ProfileContent(
