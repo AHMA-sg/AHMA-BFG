@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'presentation/screens/unity_home_screen.dart';
-import 'presentation/screens/home_screen_example_blended.dart';
 import 'presentation/screens/ahma_main_screen.dart';
 import 'core/config/env_file_loader.dart';
 import 'core/theme/ahma_theme.dart';
@@ -66,12 +65,29 @@ Future<void> _requestPermissions() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  static const double _minimumTextScaleFactor = 1.15;
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'AHMA',
       debugShowCheckedModeBanner: false,
       theme: AhmaTheme.lightTheme,
+      builder: (context, child) {
+        final mediaQuery = MediaQuery.of(context);
+        final currentScaleFactor = mediaQuery.textScaler.scale(16) / 16;
+        final effectiveScaleFactor =
+            currentScaleFactor < _minimumTextScaleFactor
+            ? _minimumTextScaleFactor
+            : currentScaleFactor;
+
+        return MediaQuery(
+          data: mediaQuery.copyWith(
+            textScaler: TextScaler.linear(effectiveScaleFactor),
+          ),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
       home: USE_UNITY_HOME_SCREEN
           ? const UnityHomeScreen()
           : const AhmaMainScreen(),
