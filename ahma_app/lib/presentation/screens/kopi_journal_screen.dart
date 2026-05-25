@@ -434,54 +434,27 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
                   ),
                 ),
 
-                // Nodes (walks + action plans) with dynamic positioning
-                ..._buildDynamicTrailItems(allTrailItems),
+                // Let cards size themselves so larger text never overlaps.
+                Padding(
+                  padding: const EdgeInsets.only(top: 10, bottom: 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: allTrailItems
+                        .map(
+                          (item) => Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: _buildTrailItem(item),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ),
               ],
             ),
           ),
         );
       },
     );
-  }
-
-  List<Widget> _buildDynamicTrailItems(List<dynamic> allTrailItems) {
-    final items = <Widget>[];
-    double currentTop = 10.0;
-
-    for (int index = 0; index < allTrailItems.length; index++) {
-      final item = allTrailItems[index];
-      final walk = item as WalkEntry;
-      final isActionPlan = walk.backendUpdate != null;
-      final isExpanded =
-          isActionPlan &&
-          _expandedPlans.contains(walk.backendUpdate!.callId.hashCode);
-
-      // Calculate height for this item based on expansion state
-      double itemHeight = 55.0; // Default height
-      if (isExpanded && isActionPlan) {
-        // Calculate expanded height based on content
-        final update = walk.backendUpdate!;
-        final plan = update.actionPlan;
-        int contentCount = plan.todoistTasks.length + plan.resources.length;
-        itemHeight =
-            55.0 + (contentCount * 15.0) + 40.0; // Base + content + padding
-      }
-
-      items.add(
-        AnimatedPositioned(
-          duration: const Duration(milliseconds: 800),
-          curve: Curves.easeOutCubic,
-          top: currentTop,
-          left: 0,
-          child: _buildTrailItem(item),
-        ),
-      );
-
-      // Move to next position
-      currentTop += itemHeight + 10.0;
-    }
-
-    return items;
   }
 
   Widget _buildTrailItem(dynamic item) {

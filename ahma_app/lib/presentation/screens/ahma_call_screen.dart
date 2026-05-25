@@ -189,15 +189,15 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
 
   Widget _buildPrimaryActionOrb(CallState callState) {
     return SizedBox(
-      width: 280,
-      height: 280,
+      width: 340,
+      height: 340,
       child: Stack(
         alignment: Alignment.center,
         children: [
           AnimatedContainer(
             duration: const Duration(milliseconds: 180),
-            width: 280,
-            height: 280,
+            width: 340,
+            height: 340,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: _getOrbOuterColor(callState),
@@ -205,8 +205,8 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
           ),
           AnimatedContainer(
             duration: const Duration(milliseconds: 180),
-            width: 228,
-            height: 228,
+            width: 278,
+            height: 278,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: _getOrbMiddleColor(callState),
@@ -214,8 +214,8 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
           ),
           AnimatedContainer(
             duration: const Duration(milliseconds: 180),
-            width: 186,
-            height: 186,
+            width: 228,
+            height: 228,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: _getOrbInnerColor(callState),
@@ -234,13 +234,13 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
                 Text(
                   _getOrbPrompt(callState),
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    fontSize: 16,
+                    fontSize: 18,
                     color: _getOrbPromptColor(callState),
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.2,
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 18),
                 _buildButtonIcon(callState),
               ],
             ),
@@ -397,27 +397,27 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
     if (!_callStarted) {
       // Show phone-off icon before call starts, phone-on when pressing
       if (_showPhoneOn) {
-        return Image.asset('resources/Phone-on.png', width: 52, height: 52);
+        return Image.asset('resources/Phone-on.png', width: 64, height: 64);
       } else {
-        return Image.asset('resources/Phone-off.png', width: 48, height: 48);
+        return Image.asset('resources/Phone-off.png', width: 60, height: 60);
       }
     }
 
     switch (callState.status) {
       case CallStatus.connecting:
         // Show phone-on icon while connecting
-        return Image.asset('resources/Phone-on.png', width: 48, height: 48);
+        return Image.asset('resources/Phone-on.png', width: 60, height: 60);
       case CallStatus.active:
         // Show phone-off icon when not pressing, phone-on when pressing
         if (_isPressing) {
-          return Image.asset('resources/Phone-on.png', width: 48, height: 48);
+          return Image.asset('resources/Phone-on.png', width: 60, height: 60);
         } else {
-          return Image.asset('resources/Phone-off.png', width: 48, height: 48);
+          return Image.asset('resources/Phone-off.png', width: 60, height: 60);
         }
       default:
         return Icon(
           Icons.phone_disabled,
-          size: 36,
+          size: 44,
           color: Colors.white.withOpacity(0.4),
         );
     }
