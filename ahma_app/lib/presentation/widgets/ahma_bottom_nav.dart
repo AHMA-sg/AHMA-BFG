@@ -16,7 +16,7 @@ class AhmaBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 68,
+      height: 96,
       decoration: BoxDecoration(
         color: AhmaTheme.background.withOpacity(0.96),
         border: Border(
@@ -24,7 +24,7 @@ class AhmaBottomNav extends StatelessWidget {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 6, left: 8, right: 8),
+        padding: const EdgeInsets.fromLTRB(10, 8, 10, 12),
         child: Row(
           children: [
             Expanded(
@@ -66,21 +66,21 @@ class AhmaBottomNav extends StatelessWidget {
       onTap: () => onTabChanged(tab),
       child: Padding(
         padding: const EdgeInsets.symmetric(
-          horizontal: 8.75,
-          vertical: 3.75,
-        ), // 25% larger padding
+          horizontal: 12,
+          vertical: 8,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Opacity(opacity: isActive ? 1.0 : 0.45, child: icon),
-            const SizedBox(height: 2.5), // 25% larger spacing
+            const SizedBox(height: 6),
             Text(
               label,
               style: AhmaTheme.navLabelStyle.copyWith(
                 color: isActive
                     ? AhmaTheme.sageGreen
                     : AhmaTheme.mocha.withOpacity(0.35),
-                fontSize: (AhmaTheme.navLabelStyle.fontSize ?? 10) * 1.05,
+                fontSize: (AhmaTheme.navLabelStyle.fontSize ?? 10) * 1.35,
               ),
             ),
           ],
@@ -96,8 +96,8 @@ class AhmaBottomNav extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 52,
-            height: 52,
+            width: 68,
+            height: 68,
             decoration: BoxDecoration(
               color: AhmaTheme.sageGreen,
               shape: BoxShape.circle,
@@ -106,20 +106,20 @@ class AhmaBottomNav extends StatelessWidget {
               alignment: Alignment.center,
               children: [
                 Container(
-                  width: 60,
-                  height: 60,
+                  width: 78,
+                  height: 78,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: AhmaTheme.sageGreen.withOpacity(0.25),
-                      width: 1.4, // 10% larger: 1.25 * 1.1
+                      width: 1.8,
                     ),
                   ),
                 ),
                 Image.asset(
                   'resources/Phone-on.png', // Changed from ahma logo
-                  width: 31,
-                  height: 31,
+                  width: 38,
+                  height: 38,
                 ),
               ],
             ),
@@ -131,11 +131,11 @@ class AhmaBottomNav extends StatelessWidget {
   }
 
   Widget _buildProfileIcon() {
-    return Image.asset('resources/ahma-logo.png', width: 26, height: 26);
+    return Image.asset('resources/ahma-logo.png', width: 34, height: 34);
   }
 
   Widget _buildKopiIcon() {
-    return Image.asset('resources/Kopi.png', width: 26, height: 26);
+    return Image.asset('resources/Kopi.png', width: 34, height: 34);
   }
 }
 
