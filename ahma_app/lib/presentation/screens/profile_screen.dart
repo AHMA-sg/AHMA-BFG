@@ -27,6 +27,7 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final content = LayoutBuilder(
       builder: (context, constraints) {
+        final isPhoneViewport = constraints.maxWidth <= 480;
         final compact = constraints.maxHeight < 680;
         final veryCompact = constraints.maxHeight < 580;
         final designHeight = compact
@@ -39,7 +40,9 @@ class ProfileScreen extends ConsumerWidget {
             constraints.maxHeight / designHeight,
           ),
         );
-        final safetyFactor = compact ? 0.98 : 0.95;
+        final safetyFactor = isPhoneViewport
+            ? (compact ? 0.86 : 0.88)
+            : (compact ? 0.98 : 0.95);
         final scale = math.max(0.58, math.min(1.0, rawScale * safetyFactor));
 
         return _ProfileContent(

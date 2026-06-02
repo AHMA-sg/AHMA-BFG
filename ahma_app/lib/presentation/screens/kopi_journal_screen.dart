@@ -40,6 +40,10 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
   late List<WalkEntry> _walks;
   final Set<int> _expandedPlans = <int>{};
 
+  double _phoneScale(BuildContext context) {
+    return MediaQuery.of(context).size.width <= 480 ? 0.86 : 1.0;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -81,9 +85,15 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
 
   Widget _buildTopBar() {
     final walkCount = _walks.where((walk) => !walk.isFuture).length;
+    final phoneScale = _phoneScale(context);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 6),
+      padding: EdgeInsets.fromLTRB(
+        20 * phoneScale,
+        10 * phoneScale,
+        20 * phoneScale,
+        6 * phoneScale,
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -91,7 +101,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
           Text(
             'AHMA',
             style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-              fontSize: 34,
+              fontSize: 34 * phoneScale,
               fontWeight: FontWeight.w700,
               color: AhmaTheme.ahmaRed,
               letterSpacing: 0.3,
@@ -102,7 +112,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
           Text(
             '${walkCount} walks',
             style: AhmaTheme.labelTextStyle.copyWith(
-              fontSize: 12.0, // 50% larger: 8 * 1.5
+              fontSize: 12.0 * phoneScale,
               color: AhmaTheme.mocha.withOpacity(0.35),
               letterSpacing: 0.6,
             ),
@@ -113,18 +123,20 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
   }
 
   Widget _buildMainContent() {
+    final phoneScale = _phoneScale(context);
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14),
+      padding: EdgeInsets.symmetric(horizontal: 14 * phoneScale),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Section header with action plans
           Padding(
-            padding: const EdgeInsets.only(bottom: 10),
+            padding: EdgeInsets.only(bottom: 10 * phoneScale),
             child: Text(
               'Your journeys',
               style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                fontSize: 15, // 50% larger: 15 * 1.5
+                fontSize: 15 * phoneScale,
                 color: AhmaTheme.mocha.withOpacity(0.8),
               ),
             ),
@@ -368,6 +380,8 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
   }
 
   Widget _buildSpiralNodes() {
+    final phoneScale = _phoneScale(context);
+
     return Consumer(
       builder: (context, ref, child) {
         final backendState = ref.watch(backendProvider);
@@ -408,7 +422,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
         return SingleChildScrollView(
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              minHeight: 255,
+              minHeight: 255 * phoneScale,
               maxHeight: MediaQuery.of(context).size.height * 0.6,
             ),
             child: Stack(
@@ -416,8 +430,8 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
                 // Spiral line
                 Positioned(
                   left: 4,
-                  top: 10,
-                  bottom: 10,
+                  top: 10 * phoneScale,
+                  bottom: 10 * phoneScale,
                   child: Container(
                     width: 1,
                     decoration: BoxDecoration(
@@ -442,7 +456,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
                     children: allTrailItems
                         .map(
                           (item) => Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
+                            padding: EdgeInsets.only(bottom: 10 * phoneScale),
                             child: _buildTrailItem(item),
                           ),
                         )
@@ -458,6 +472,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
   }
 
   Widget _buildTrailItem(dynamic item) {
+    final phoneScale = _phoneScale(context);
     final walk = item as WalkEntry;
     final isActionPlan = walk.backendUpdate != null;
     final isExpanded =
@@ -471,7 +486,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
         // Node dot
         _buildNodeDot(walk),
 
-        const SizedBox(width: 7),
+        SizedBox(width: 7 * phoneScale),
 
         // Expandable node card
         GestureDetector(
@@ -482,12 +497,12 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
             duration: const Duration(milliseconds: 800),
             curve: Curves.easeInOutCubic,
             constraints: BoxConstraints(
-              minWidth: isExpanded ? 200 : 120,
-              maxWidth: isExpanded ? 280 : 150,
+              minWidth: (isExpanded ? 200 : 120) * phoneScale,
+              maxWidth: (isExpanded ? 280 : 150) * phoneScale,
             ),
             padding: EdgeInsets.symmetric(
-              horizontal: isExpanded ? 12 : 8,
-              vertical: isExpanded ? 10 : 6,
+              horizontal: (isExpanded ? 12 : 8) * phoneScale,
+              vertical: (isExpanded ? 10 : 6) * phoneScale,
             ),
             decoration: BoxDecoration(
               color: isExpanded && isActionPlan
@@ -546,6 +561,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
   }
 
   Widget _buildNodeDot(dynamic item) {
+    final phoneScale = _phoneScale(context);
     Color dotColor = AhmaTheme.mid;
     Color borderColor = AhmaTheme.mocha.withOpacity(0.18);
 
@@ -560,13 +576,13 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
 
       if (item.isFuture) {
         return Container(
-          width: 9,
-          height: 9,
+          width: 9 * phoneScale,
+          height: 9 * phoneScale,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(
               color: borderColor,
-              width: 1.5,
+              width: 1.5 * phoneScale,
               style: BorderStyle.solid,
             ),
           ),
@@ -575,19 +591,24 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
     }
 
     return Container(
-      width: 9,
-      height: 9,
+      width: 9 * phoneScale,
+      height: 9 * phoneScale,
       decoration: BoxDecoration(
         color: dotColor,
         shape: BoxShape.circle,
-        border: Border.all(color: borderColor, width: 1.5),
+        border: Border.all(color: borderColor, width: 1.5 * phoneScale),
       ),
     );
   }
 
   Widget _buildNodeCard(WalkEntry walk, [bool isActionPlan = false]) {
+    final phoneScale = _phoneScale(context);
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      padding: EdgeInsets.symmetric(
+        horizontal: 9 * phoneScale,
+        vertical: 5 * phoneScale,
+      ),
       decoration: BoxDecoration(
         color: AhmaTheme.cardColor,
         borderRadius: BorderRadius.circular(10),
@@ -610,7 +631,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
                 child: Text(
                   walk.title,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontSize: 10,
+                    fontSize: 10 * phoneScale,
                     color: AhmaTheme.mocha.withOpacity(0.8),
                     fontWeight: FontWeight.w300,
                     letterSpacing: walk.isFuture ? 0.04 : 0.0,
@@ -618,10 +639,10 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
                 ),
               ),
               if (isActionPlan) ...[
-                const SizedBox(width: 4),
+                SizedBox(width: 4 * phoneScale),
                 Icon(
                   Icons.expand_more,
-                  size: 12,
+                  size: 12 * phoneScale,
                   color: AhmaTheme.mocha.withOpacity(0.4),
                 ),
               ],
@@ -630,11 +651,11 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
 
           // Subtitle - prevent wrapping
           if (walk.subtitle.isNotEmpty) ...[
-            const SizedBox(height: 1),
+            SizedBox(height: 1 * phoneScale),
             Text(
               walk.subtitle,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                fontSize: 13.5, // 50% larger: 9 * 1.5
+                fontSize: 13.5 * phoneScale,
                 color: AhmaTheme.sageGreen,
                 fontWeight: FontWeight.w300,
               ),

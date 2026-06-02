@@ -18,7 +18,7 @@ class AhmaBottomNav extends StatelessWidget {
     final mediaQuery = MediaQuery.of(context);
     final isPhoneViewport = mediaQuery.size.width <= 480;
     final isShortViewport = mediaQuery.size.height <= 700;
-    final navHeight = isPhoneViewport ? (isShortViewport ? 72.0 : 82.0) : 118.0;
+    final navHeight = isPhoneViewport ? (isShortViewport ? 66.0 : 74.0) : 118.0;
 
     return Container(
       height: navHeight,
@@ -30,7 +30,7 @@ class AhmaBottomNav extends StatelessWidget {
       ),
       child: Padding(
         padding: isPhoneViewport
-            ? EdgeInsets.fromLTRB(10, isShortViewport ? 4 : 6, 10, 8)
+            ? EdgeInsets.fromLTRB(10, isShortViewport ? 3 : 5, 10, 7)
             : const EdgeInsets.fromLTRB(12, 10, 12, 14),
         child: Row(
           children: [
@@ -71,7 +71,7 @@ class AhmaBottomNav extends StatelessWidget {
     final mediaQuery = MediaQuery.of(context);
     final isPhoneViewport = mediaQuery.size.width <= 480;
     final isShortViewport = mediaQuery.size.height <= 700;
-    final labelScale = isPhoneViewport ? (isShortViewport ? 0.95 : 1.05) : 1.45;
+    final labelScale = isPhoneViewport ? (isShortViewport ? 0.82 : 0.92) : 1.45;
     final horizontalPadding = isPhoneViewport ? 10.0 : 14.0;
     final verticalPadding = isPhoneViewport ? 2.0 : 8.0;
     final labelSpacing = isPhoneViewport ? 1.0 : 6.0;
@@ -110,9 +110,9 @@ class AhmaBottomNav extends StatelessWidget {
     final mediaQuery = MediaQuery.of(context);
     final isPhoneViewport = mediaQuery.size.width <= 480;
     final isShortViewport = mediaQuery.size.height <= 700;
-    final buttonSize = isPhoneViewport ? (isShortViewport ? 50.0 : 56.0) : 76.0;
-    final ringSize = isPhoneViewport ? (isShortViewport ? 60.0 : 66.0) : 88.0;
-    final iconSize = isPhoneViewport ? (isShortViewport ? 28.0 : 32.0) : 44.0;
+    final buttonSize = isPhoneViewport ? (isShortViewport ? 46.0 : 52.0) : 76.0;
+    final ringSize = isPhoneViewport ? (isShortViewport ? 54.0 : 60.0) : 88.0;
+    final iconSize = isPhoneViewport ? (isShortViewport ? 25.0 : 29.0) : 44.0;
 
     return GestureDetector(
       onTap: () => onTabChanged(AhmaNavTab.call),
@@ -156,11 +156,11 @@ class AhmaBottomNav extends StatelessWidget {
   }
 
   Widget _buildProfileIcon() {
-    return Image.asset('resources/ahma-logo.png', width: 28, height: 28);
+    return Image.asset('resources/ahma-logo.png', width: 24, height: 24);
   }
 
   Widget _buildKopiIcon() {
-    return Image.asset('resources/Kopi.png', width: 28, height: 28);
+    return Image.asset('resources/Kopi.png', width: 24, height: 24);
   }
 }
 
