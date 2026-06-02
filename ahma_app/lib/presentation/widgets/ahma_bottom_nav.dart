@@ -94,7 +94,7 @@ class AhmaBottomNav extends StatelessWidget {
               style: AhmaTheme.navLabelStyle.copyWith(
                 color: isActive
                     ? AhmaTheme.sageGreen
-                    : AhmaTheme.mocha.withOpacity(0.35),
+                    : AhmaTheme.mocha.withValues(alpha: 0.6),
                 fontSize: (AhmaTheme.navLabelStyle.fontSize ?? 10) * labelScale,
               ),
               maxLines: 1,

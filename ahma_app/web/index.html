@@ -82,8 +82,8 @@
 
     #flutter-phone-frame {
       position: relative;
-      width: min(390px, calc(100vw - 32px));
-      height: min(844px, calc(100dvh - 32px));
+      width: min(390px, calc((100dvh - 32px) * 390 / 844), calc(100vw - 32px));
+      aspect-ratio: 390 / 844;
       overflow: hidden;
       border-radius: 36px;
       background: #f8f2ea;

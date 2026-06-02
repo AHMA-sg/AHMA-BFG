@@ -113,7 +113,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
             '${walkCount} walks',
             style: AhmaTheme.labelTextStyle.copyWith(
               fontSize: 12.0 * phoneScale,
-              color: AhmaTheme.mocha.withOpacity(0.35),
+              color: AhmaTheme.mocha.withValues(alpha: 0.6),
               letterSpacing: 0.6,
             ),
           ),
