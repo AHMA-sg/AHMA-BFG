@@ -234,13 +234,13 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
                 Text(
                   _getOrbPrompt(callState),
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    fontSize: 18,
+                    fontSize: 20,
                     color: _getOrbPromptColor(callState),
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.2,
                   ),
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 20),
                 _buildButtonIcon(callState),
               ],
             ),
@@ -397,22 +397,22 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
     if (!_callStarted) {
       // Show phone-off icon before call starts, phone-on when pressing
       if (_showPhoneOn) {
-        return Image.asset('resources/Phone-on.png', width: 64, height: 64);
+        return Image.asset('resources/Phone-on.png', width: 72, height: 72);
       } else {
-        return Image.asset('resources/Phone-off.png', width: 60, height: 60);
+        return Image.asset('resources/Phone-off.png', width: 68, height: 68);
       }
     }
 
     switch (callState.status) {
       case CallStatus.connecting:
         // Show phone-on icon while connecting
-        return Image.asset('resources/Phone-on.png', width: 60, height: 60);
+        return Image.asset('resources/Phone-on.png', width: 68, height: 68);
       case CallStatus.active:
         // Show phone-off icon when not pressing, phone-on when pressing
         if (_isPressing) {
-          return Image.asset('resources/Phone-on.png', width: 60, height: 60);
+          return Image.asset('resources/Phone-on.png', width: 68, height: 68);
         } else {
-          return Image.asset('resources/Phone-off.png', width: 60, height: 60);
+          return Image.asset('resources/Phone-off.png', width: 68, height: 68);
         }
       default:
         return Icon(

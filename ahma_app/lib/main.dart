@@ -65,9 +65,9 @@ Future<void> _requestPermissions() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  static const double _mobileMinimumTextScaleFactor = 1.0;
-  static const double _tabletMinimumTextScaleFactor = 1.0;
-  static const double _desktopMinimumTextScaleFactor = 1.0;
+  static const double _mobileMinimumTextScaleFactor = 1.12;
+  static const double _tabletMinimumTextScaleFactor = 1.12;
+  static const double _desktopMinimumTextScaleFactor = 1.12;
 
   @override
   Widget build(BuildContext context) {
@@ -81,8 +81,7 @@ class MyApp extends StatelessWidget {
           mediaQuery.size,
         );
         final currentScaleFactor = mediaQuery.textScaler.scale(16) / 16;
-        final effectiveScaleFactor =
-            currentScaleFactor < minimumTextScaleFactor
+        final effectiveScaleFactor = currentScaleFactor < minimumTextScaleFactor
             ? minimumTextScaleFactor
             : currentScaleFactor;
 
