@@ -15,15 +15,6 @@ class AudioConfig {
       false; // Disabled for less processing lag
   static const bool autoGainControl = true; // Keep for consistent volume
 
-  // Playback settings
-  // 1.0 is normal. Native WebRTC supports values above 1.0 for gain.
-  // Keep this modest to avoid distortion/clipping.
-  static const double remoteAudioVolume = 2.0;
-
-  // Route calls through the loudspeaker by default on mobile devices.
-  static const bool speakerphoneOn = true;
-  static const bool forceSpeakerOutput = true;
-
   // WebRTC specific
   static const int jitterBufferTarget =
       50; // ms - lower = less lag, more jitter

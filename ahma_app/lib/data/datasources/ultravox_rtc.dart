@@ -143,8 +143,6 @@ class UltravoxRtcManager {
 
       print('[LiveKit] Connected to room');
 
-      await _configureAudioOutput();
-
       // Enable microphone and publish local audio (starts muted for PTT)
       await _enableMicrophone();
       if (_connectCompleter?.isCompleted == false) {
@@ -235,8 +233,6 @@ class UltravoxRtcManager {
           '[LiveKit] 🔊 Received remote audio track from ${event.participant.identity}',
         );
 
-        _applyRemoteAudioVolume(remoteAudioTrack);
-
         // Notify callback
         if (onRemoteStream != null) {
           onRemoteStream!(remoteAudioTrack);
@@ -281,35 +277,6 @@ class UltravoxRtcManager {
         print('[LiveKit] 📄 Raw data bytes: ${event.data}');
       }
     });
-  }
-
-  Future<void> _configureAudioOutput() async {
-    try {
-      await Hardware.instance.setSpeakerphoneOn(
-        AudioConfig.speakerphoneOn,
-        forceSpeakerOutput: AudioConfig.forceSpeakerOutput,
-      );
-      print(
-        '[LiveKit] Speakerphone default set: ${AudioConfig.speakerphoneOn}',
-      );
-    } catch (e) {
-      print('[LiveKit] Could not set speakerphone default: $e');
-    }
-  }
-
-  Future<void> _applyRemoteAudioVolume(
-    RemoteAudioTrack remoteAudioTrack,
-  ) async {
-    try {
-      await remoteAudioTrack.mediaStreamTrack.applyConstraints({
-        'volume': AudioConfig.remoteAudioVolume,
-      });
-      print(
-        '[LiveKit] Remote audio volume set to ${AudioConfig.remoteAudioVolume}',
-      );
-    } catch (e) {
-      print('[LiveKit] Could not set remote audio volume: $e');
-    }
   }
 
   /// Handle client tool invocations sent over the LiveKit data channel.
