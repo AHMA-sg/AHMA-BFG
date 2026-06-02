@@ -65,9 +65,8 @@ Future<void> _requestPermissions() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  static const double _mobileMinimumTextScaleFactor = 1.12;
-  static const double _tabletMinimumTextScaleFactor = 1.12;
-  static const double _desktopMinimumTextScaleFactor = 1.12;
+  static const double _minimumTextScaleFactor = 1.08;
+  static const double _maximumTextScaleFactor = 1.12;
 
   @override
   Widget build(BuildContext context) {
@@ -77,13 +76,11 @@ class MyApp extends StatelessWidget {
       theme: AhmaTheme.lightTheme,
       builder: (context, child) {
         final mediaQuery = MediaQuery.of(context);
-        final minimumTextScaleFactor = _minimumTextScaleForViewport(
-          mediaQuery.size,
-        );
         final currentScaleFactor = mediaQuery.textScaler.scale(16) / 16;
-        final effectiveScaleFactor = currentScaleFactor < minimumTextScaleFactor
-            ? minimumTextScaleFactor
-            : currentScaleFactor;
+        final effectiveScaleFactor = currentScaleFactor.clamp(
+          _minimumTextScaleFactor,
+          _maximumTextScaleFactor,
+        );
 
         return MediaQuery(
           data: mediaQuery.copyWith(
@@ -96,18 +93,5 @@ class MyApp extends StatelessWidget {
           ? const UnityHomeScreen()
           : const AhmaMainScreen(),
     );
-  }
-
-  double _minimumTextScaleForViewport(Size viewportSize) {
-    final viewportWidth = viewportSize.width;
-    final viewportHeight = viewportSize.height;
-
-    if (viewportWidth <= 480) {
-      return _mobileMinimumTextScaleFactor;
-    }
-    if (viewportWidth <= 768 && viewportHeight <= 950) {
-      return _tabletMinimumTextScaleFactor;
-    }
-    return _desktopMinimumTextScaleFactor;
   }
 }

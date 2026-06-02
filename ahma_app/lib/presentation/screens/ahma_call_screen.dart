@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
+import 'dart:math' as math;
 import '../../core/theme/ahma_theme.dart';
 import '../providers/call_provider.dart';
 import 'profile_screen.dart';
@@ -90,6 +91,9 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
   }
 
   Widget _buildTopBar() {
+    final viewportWidth = MediaQuery.of(context).size.width;
+    final isPhoneViewport = viewportWidth <= 480;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 6),
       child: Stack(
@@ -100,7 +104,7 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
             child: Text(
               'AHMA',
               style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                fontSize: 34,
+                fontSize: isPhoneViewport ? 30 : 34,
                 fontWeight: FontWeight.w700,
                 color: AhmaTheme.ahmaRed,
                 letterSpacing: 0.3,
@@ -157,10 +161,31 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
   }
 
   Widget _buildMainContent(CallState callState) {
-    return Center(child: _buildPushToTalkArea(callState));
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isPhoneViewport = MediaQuery.of(context).size.width <= 480;
+        final baseOrbSize = isPhoneViewport ? 300.0 : 340.0;
+        final availableOrbSize = math.min(
+          constraints.maxWidth - 32,
+          constraints.maxHeight - 56,
+        );
+        final orbScale = math.max(
+          0.78,
+          math.min(1.0, availableOrbSize / baseOrbSize),
+        );
+
+        return Center(
+          child: _buildPushToTalkArea(callState, baseOrbSize, orbScale),
+        );
+      },
+    );
   }
 
-  Widget _buildPushToTalkArea(CallState callState) {
+  Widget _buildPushToTalkArea(
+    CallState callState,
+    double baseOrbSize,
+    double orbScale,
+  ) {
     final isActive = callState.status == CallStatus.active;
     final isConnecting = callState.status == CallStatus.connecting;
 
@@ -176,9 +201,9 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
           onTapCancel: (!_callStarted || isActive)
               ? () => _stopRecording()
               : null,
-          child: _buildPrimaryActionOrb(callState),
+          child: _buildPrimaryActionOrb(callState, baseOrbSize, orbScale),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8 * orbScale),
 
         // Connection bar or kopi fill animation
         if (isConnecting) _buildConnectionBar(),
@@ -187,17 +212,27 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
     );
   }
 
-  Widget _buildPrimaryActionOrb(CallState callState) {
+  Widget _buildPrimaryActionOrb(
+    CallState callState,
+    double baseOrbSize,
+    double orbScale,
+  ) {
+    final outerSize = baseOrbSize * orbScale;
+    final middleSize = outerSize * (278 / 340);
+    final innerSize = outerSize * (228 / 340);
+    final promptSize = (baseOrbSize <= 300 ? 18.0 : 20.0) * orbScale;
+    final iconBoost = baseOrbSize <= 300 ? 0.94 : 1.0;
+
     return SizedBox(
-      width: 340,
-      height: 340,
+      width: outerSize,
+      height: outerSize,
       child: Stack(
         alignment: Alignment.center,
         children: [
           AnimatedContainer(
             duration: const Duration(milliseconds: 180),
-            width: 340,
-            height: 340,
+            width: outerSize,
+            height: outerSize,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: _getOrbOuterColor(callState),
@@ -205,8 +240,8 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
           ),
           AnimatedContainer(
             duration: const Duration(milliseconds: 180),
-            width: 278,
-            height: 278,
+            width: middleSize,
+            height: middleSize,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: _getOrbMiddleColor(callState),
@@ -214,8 +249,8 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
           ),
           AnimatedContainer(
             duration: const Duration(milliseconds: 180),
-            width: 228,
-            height: 228,
+            width: innerSize,
+            height: innerSize,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: _getOrbInnerColor(callState),
@@ -234,14 +269,14 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
                 Text(
                   _getOrbPrompt(callState),
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    fontSize: 20,
+                    fontSize: promptSize,
                     color: _getOrbPromptColor(callState),
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.2,
                   ),
                 ),
-                const SizedBox(height: 20),
-                _buildButtonIcon(callState),
+                SizedBox(height: 18 * orbScale),
+                _buildButtonIcon(callState, orbScale * iconBoost),
               ],
             ),
           ),
@@ -393,26 +428,30 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
     }
   }
 
-  Widget _buildButtonIcon(CallState callState) {
+  Widget _buildButtonIcon(CallState callState, double scale) {
+    Image scaledPhone(String asset, double size) {
+      return Image.asset(asset, width: size * scale, height: size * scale);
+    }
+
     if (!_callStarted) {
       // Show phone-off icon before call starts, phone-on when pressing
       if (_showPhoneOn) {
-        return Image.asset('resources/Phone-on.png', width: 72, height: 72);
+        return scaledPhone('resources/Phone-on.png', 72);
       } else {
-        return Image.asset('resources/Phone-off.png', width: 68, height: 68);
+        return scaledPhone('resources/Phone-off.png', 68);
       }
     }
 
     switch (callState.status) {
       case CallStatus.connecting:
         // Show phone-on icon while connecting
-        return Image.asset('resources/Phone-on.png', width: 68, height: 68);
+        return scaledPhone('resources/Phone-on.png', 68);
       case CallStatus.active:
         // Show phone-off icon when not pressing, phone-on when pressing
         if (_isPressing) {
-          return Image.asset('resources/Phone-on.png', width: 68, height: 68);
+          return scaledPhone('resources/Phone-on.png', 68);
         } else {
-          return Image.asset('resources/Phone-off.png', width: 68, height: 68);
+          return scaledPhone('resources/Phone-off.png', 68);
         }
       default:
         return Icon(
