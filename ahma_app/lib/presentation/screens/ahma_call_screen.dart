@@ -111,23 +111,35 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
               ),
             ),
           ),
-          GestureDetector(
-            onTap: _handleBackToProfile,
-            child: Container(
-              width: 26,
-              height: 26,
-              decoration: BoxDecoration(
-                color: AhmaTheme.ahmaRed.withOpacity(0.08),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: AhmaTheme.ahmaRed.withOpacity(0.18),
-                  width: 1,
+          Semantics(
+            button: true,
+            label: 'End call and go back',
+            child: GestureDetector(
+              onTap: _handleBackToProfile,
+              behavior: HitTestBehavior.opaque,
+              // 44x44 minimum touch target; the visible circle stays 26x26.
+              child: SizedBox(
+                width: 44,
+                height: 44,
+                child: Center(
+                  child: Container(
+                    width: 26,
+                    height: 26,
+                    decoration: BoxDecoration(
+                      color: AhmaTheme.ahmaRed.withOpacity(0.08),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AhmaTheme.ahmaRed.withOpacity(0.18),
+                        width: 1,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.arrow_back_rounded,
+                      size: 14,
+                      color: AhmaTheme.ahmaRed,
+                    ),
+                  ),
                 ),
-              ),
-              child: const Icon(
-                Icons.arrow_back_rounded,
-                size: 14,
-                color: AhmaTheme.ahmaRed,
               ),
             ),
           ),

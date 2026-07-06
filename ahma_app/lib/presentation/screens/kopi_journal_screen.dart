@@ -108,9 +108,9 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
             ),
           ),
 
-          // Walk count
+          // Journey count — home screen and nav both say "journeys".
           Text(
-            '${walkCount} walks',
+            '${walkCount} journeys',
             style: AhmaTheme.labelTextStyle.copyWith(
               fontSize: 12.0 * phoneScale,
               color: AhmaTheme.mocha.withValues(alpha: 0.6),
@@ -497,8 +497,11 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
             duration: const Duration(milliseconds: 800),
             curve: Curves.easeInOutCubic,
             constraints: BoxConstraints(
-              minWidth: (isExpanded ? 200 : 120) * phoneScale,
-              maxWidth: (isExpanded ? 280 : 150) * phoneScale,
+              // Collapsed cards were capped at 150 and the title's Expanded
+              // forced the card to that cap, ellipsizing subtitles like
+              // "just talking · 22 min". Widen so realistic entries fit.
+              minWidth: (isExpanded ? 200 : 130) * phoneScale,
+              maxWidth: (isExpanded ? 280 : 230) * phoneScale,
             ),
             padding: EdgeInsets.symmetric(
               horizontal: (isExpanded ? 12 : 8) * phoneScale,
@@ -631,8 +634,8 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
                 child: Text(
                   walk.title,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontSize: 10 * phoneScale,
-                    color: AhmaTheme.mocha.withOpacity(0.8),
+                    fontSize: 12 * phoneScale,
+                    color: AhmaTheme.mochaMuted,
                     fontWeight: FontWeight.w300,
                     letterSpacing: walk.isFuture ? 0.04 : 0.0,
                   ),
@@ -682,9 +685,9 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
               child: Text(
                 '${update.timestamp.day}/${update.timestamp.month}', // Date as title
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  fontSize: 10,
+                  fontSize: 12,
                   fontWeight: FontWeight.w300,
-                  color: AhmaTheme.mocha.withOpacity(0.8),
+                  color: AhmaTheme.mochaMuted,
                   letterSpacing: 0.0,
                 ),
               ),
@@ -701,7 +704,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
         Text(
           '${_formatNeed(update.classification.primaryNeed)} · 5 min', // Topic with duration
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            fontSize: 9, // Match collapsed subtitle size (13.5 is scaled down)
+            fontSize: 12, // Match collapsed subtitle readability
             fontWeight: FontWeight.w300,
             color: AhmaTheme.sageGreen, // Match collapsed subtitle color
             letterSpacing: 0.0,
@@ -716,7 +719,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
           Text(
             'Tasks',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontSize: 9,
+              fontSize: 11,
               fontWeight: FontWeight.w600,
               color: AhmaTheme.sageGreen,
             ),
@@ -742,8 +745,8 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
                           task.taskName,
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(
-                                fontSize: 8,
-                                color: AhmaTheme.mocha.withOpacity(0.7),
+                                fontSize: 11,
+                                color: AhmaTheme.mochaMuted,
                               ),
                         ),
                       ),
@@ -760,7 +763,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
           Text(
             'Resources',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontSize: 9,
+              fontSize: 11,
               fontWeight: FontWeight.w600,
               color: AhmaTheme.palePink,
             ),
@@ -786,8 +789,8 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
                           resource.title,
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(
-                                fontSize: 8,
-                                color: AhmaTheme.mocha.withOpacity(0.7),
+                                fontSize: 11,
+                                color: AhmaTheme.mochaMuted,
                               ),
                         ),
                       ),

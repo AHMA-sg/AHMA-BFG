@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// AHMA Design System Theme
-/// 
+///
 /// Based on the design language:
 /// - Aesthetic: clean, hand-drawn, watercolor, kopitiam, japanese, pastel
 /// - Colors: sage green, pale pink, mocha, mid tones, AHMA red
@@ -13,7 +13,16 @@ class AhmaTheme {
   static const Color mocha = Color(0xFF2E2620);
   static const Color mid = Color(0xFFC1B1A1);
   static const Color ahmaRed = Color(0xFF800000);
-  
+
+  // De-emphasized text. Use these instead of ad-hoc mocha.withOpacity(...)
+  // so muted text stays one consistent, contrast-checked color everywhere.
+  // mochaMuted ≈ mocha @0.72 over the cream surfaces: ~5.4:1 contrast, meets
+  // WCAG AA for normal text. Use for secondary/meta copy that must be read.
+  static const Color mochaMuted = Color(0xFF645D55);
+  // mochaFaint is decorative only (hints, dividers, disabled) — below AA,
+  // never use it for text a user needs to read.
+  static const Color mochaFaint = Color(0xFF8A8078);
+
   // Background colors
   static const Color background = Color(0xFFF2EBE1);
   static const Color backgroundInner = Color(0xFFF7F2EC);
@@ -39,7 +48,7 @@ class AhmaTheme {
         background: background,
         error: ahmaRed,
       ),
-      
+
       // Text theme
       textTheme: const TextTheme(
         // Loud font - Caprasimo
@@ -61,7 +70,7 @@ class AhmaTheme {
           color: mocha,
           letterSpacing: 0.6,
         ),
-        
+
         // Serif font - Fraunces
         headlineLarge: TextStyle(
           fontFamily: frauncesFont,
@@ -91,7 +100,7 @@ class AhmaTheme {
           color: mocha,
           height: 1.45,
         ),
-        
+
         // Calm font - League Spartan
         titleLarge: TextStyle(
           fontFamily: leagueSpartanFont,
@@ -114,7 +123,7 @@ class AhmaTheme {
           color: sageGreen,
           letterSpacing: 0.7,
         ),
-        
+
         // Mono font - Share Tech Mono
         labelSmall: TextStyle(
           fontFamily: shareTechMonoFont,
@@ -129,20 +138,17 @@ class AhmaTheme {
           letterSpacing: 0.6,
         ),
       ),
-      
+
       // Card theme
       cardTheme: CardThemeData(
         color: cardColor,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
-          side: BorderSide(
-            color: mocha.withOpacity(0.07),
-            width: 1,
-          ),
+          side: BorderSide(color: mocha.withOpacity(0.07), width: 1),
         ),
       ),
-      
+
       // Button themes
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -155,37 +161,28 @@ class AhmaTheme {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         ),
       ),
-      
+
       // Input decoration theme
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: cardColor,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide(
-            color: mocha.withOpacity(0.07),
-            width: 1,
-          ),
+          borderSide: BorderSide(color: mocha.withOpacity(0.07), width: 1),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide(
-            color: mocha.withOpacity(0.07),
-            width: 1,
-          ),
+          borderSide: BorderSide(color: mocha.withOpacity(0.07), width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide(
-            color: sageGreen.withOpacity(0.3),
-            width: 1,
-          ),
+          borderSide: BorderSide(color: sageGreen.withOpacity(0.3), width: 1),
         ),
       ),
-      
+
       // Scaffold theme
       scaffoldBackgroundColor: background,
-      
+
       // App bar theme
       appBarTheme: const AppBarTheme(
         backgroundColor: background,
@@ -206,19 +203,13 @@ class AhmaTheme {
   static BoxDecoration get cardDecoration => BoxDecoration(
     color: cardColor,
     borderRadius: BorderRadius.circular(18),
-    border: Border.all(
-      color: mocha.withOpacity(0.07),
-      width: 1,
-    ),
+    border: Border.all(color: mocha.withOpacity(0.07), width: 1),
   );
 
   static BoxDecoration get pillDecoration => BoxDecoration(
     color: cardColor,
     borderRadius: BorderRadius.circular(20),
-    border: Border.all(
-      color: mocha.withOpacity(0.12),
-      width: 1,
-    ),
+    border: Border.all(color: mocha.withOpacity(0.12), width: 1),
   );
 
   static TextStyle get labelTextStyle => const TextStyle(

@@ -114,43 +114,47 @@ class AhmaBottomNav extends StatelessWidget {
     final ringSize = isPhoneViewport ? (isShortViewport ? 54.0 : 60.0) : 88.0;
     final iconSize = isPhoneViewport ? (isShortViewport ? 25.0 : 29.0) : 44.0;
 
-    return GestureDetector(
-      onTap: () => onTabChanged(AhmaNavTab.call),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: buttonSize,
-            height: buttonSize,
-            decoration: BoxDecoration(
-              color: AhmaTheme.sageGreen,
-              shape: BoxShape.circle,
-            ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Container(
-                  width: ringSize,
-                  height: ringSize,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AhmaTheme.sageGreen.withOpacity(0.25),
-                      width: 2.2,
+    return Semantics(
+      button: true,
+      label: 'Call AHMA',
+      child: GestureDetector(
+        onTap: () => onTabChanged(AhmaNavTab.call),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: buttonSize,
+              height: buttonSize,
+              decoration: BoxDecoration(
+                color: AhmaTheme.sageGreen,
+                shape: BoxShape.circle,
+              ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    width: ringSize,
+                    height: ringSize,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AhmaTheme.sageGreen.withOpacity(0.25),
+                        width: 2.2,
+                      ),
                     ),
                   ),
-                ),
-                Image.asset(
-                  'resources/Phone-on.png', // Changed from ahma logo
-                  width: iconSize,
-                  height: iconSize,
-                ),
-              ],
+                  Image.asset(
+                    'resources/Phone-on.png', // Changed from ahma logo
+                    width: iconSize,
+                    height: iconSize,
+                  ),
+                ],
+              ),
             ),
-          ),
-          // Removed 'ahma' text
-        ],
+            // Removed 'ahma' text
+          ],
+        ),
       ),
     );
   }

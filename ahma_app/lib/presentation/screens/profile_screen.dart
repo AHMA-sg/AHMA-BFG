@@ -148,11 +148,14 @@ class _ProfileContent extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Center(
-                          child: IgnorePointer(
-                            child: Opacity(
-                              opacity: 0.98,
-                              child: HouseAnimationCinematic(
-                                height: houseHeight,
+                          // Decorative brand art — hide from screen readers.
+                          child: ExcludeSemantics(
+                            child: IgnorePointer(
+                              child: Opacity(
+                                opacity: 0.98,
+                                child: HouseAnimationCinematic(
+                                  height: houseHeight,
+                                ),
                               ),
                             ),
                           ),
@@ -203,11 +206,14 @@ class _ProfileContent extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Center(
-                          child: IgnorePointer(
-                            child: Opacity(
-                              opacity: 0.9,
-                              child: HouseAnimationCinematic(
-                                height: houseHeight,
+                          // Decorative brand art — hide from screen readers.
+                          child: ExcludeSemantics(
+                            child: IgnorePointer(
+                              child: Opacity(
+                                opacity: 0.9,
+                                child: HouseAnimationCinematic(
+                                  height: houseHeight,
+                                ),
                               ),
                             ),
                           ),
@@ -577,6 +583,7 @@ class _PastJourneysCard extends StatelessWidget {
                   'resources/Kopi.png',
                   width: s(26),
                   height: s(26),
+                  excludeFromSemantics: true,
                 ),
               ),
               SizedBox(width: s(12)),
@@ -643,7 +650,11 @@ class _AffirmationCard extends StatelessWidget {
           SizedBox(
             width: s(52),
             height: s(52),
-            child: Image.asset('resources/full-cup.png', fit: BoxFit.contain),
+            child: Image.asset(
+              'resources/full-cup.png',
+              fit: BoxFit.contain,
+              excludeFromSemantics: true,
+            ),
           ),
           SizedBox(width: s(12)),
           Expanded(child: _AffirmationCopy(scale: scale)),

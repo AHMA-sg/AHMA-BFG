@@ -66,7 +66,10 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   static const double _minimumTextScaleFactor = 1.0;
-  static const double _maximumTextScaleFactor = 1.06;
+  // Layouts must tolerate at least 1.3x — the floor for supporting OS-level
+  // large-text accessibility settings. Do not lower this to protect a layout;
+  // fix the layout instead.
+  static const double _maximumTextScaleFactor = 1.3;
 
   @override
   Widget build(BuildContext context) {
