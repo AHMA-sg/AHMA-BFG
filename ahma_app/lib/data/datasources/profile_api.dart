@@ -80,7 +80,15 @@ class ProfileApiUnavailableException extends ProfileApiException {
 class ProfileApi {
   late final Dio _dio;
 
-  ProfileApi({Dio? dio}) {
+  /// Optional session-token source. When it yields a value, every request
+  /// carries `Authorization: Bearer <token>`. Today's backend ignores the
+  /// header (local dev runs unauthenticated); it exists so the client
+  /// already speaks the production wire shape — real auth later swaps the
+  /// token source, not the API client.
+  final Future<String?> Function()? _bearerToken;
+
+  ProfileApi({Dio? dio, Future<String?> Function()? bearerToken})
+    : _bearerToken = bearerToken {
     _dio =
         dio ??
         Dio(
@@ -93,6 +101,20 @@ class ProfileApi {
             validateStatus: (_) => true,
           ),
         );
+
+    if (_bearerToken != null) {
+      _dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) async {
+            final token = await _bearerToken();
+            if (token != null && token.isNotEmpty) {
+              options.headers['Authorization'] = 'Bearer $token';
+            }
+            handler.next(options);
+          },
+        ),
+      );
+    }
 
     if (kDebugMode) {
       _dio.interceptors.add(
@@ -136,6 +158,42 @@ class ProfileApi {
       expectedStatus: 200,
     );
     return _profileFrom(data);
+  }
+
+  /// PATCH /api/profile/:userId — partial update; only the fields set on
+  /// [patch] change. Returns the full updated profile.
+  Future<UserProfile> updateProfile(
+    String userId,
+    ProfilePatchRequest patch,
+  ) async {
+    final data = await _request(
+      () => _dio.patch('/api/profile/$userId', data: patch.toJson()),
+      expectedStatus: 200,
+    );
+    return _profileFrom(data);
+  }
+
+  /// POST /api/profile/resolve — looks up the userId owning [email] and/or
+  /// [phone]. The login stub's stand-in for token→identity resolution.
+  ///
+  /// Throws [ProfileNotFoundException] when no profile owns the contact —
+  /// the caller's signal to run onboarding.
+  Future<String> resolveUserId({String? email, String? phone}) async {
+    final data = await _request(
+      () => _dio.post(
+        '/api/profile/resolve',
+        // Send both keys explicitly (same contract as create).
+        data: {'email': email, 'phone': phone},
+      ),
+      expectedStatus: 200,
+    );
+    final userId = data['userId'];
+    if (userId is! String || userId.isEmpty) {
+      throw const ProfileApiUnavailableException(
+        detail: 'Profile resolve response was malformed.',
+      );
+    }
+    return userId;
   }
 
   /// GET /api/profile/:userId/context

@@ -5,7 +5,9 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'presentation/screens/unity_home_screen.dart';
 import 'presentation/screens/ahma_main_screen.dart';
+import 'presentation/screens/login_screen.dart';
 import 'presentation/screens/profile_gate.dart';
+import 'presentation/providers/auth_provider.dart';
 import 'core/config/env_file_loader.dart';
 import 'core/theme/ahma_theme.dart';
 
@@ -93,14 +95,47 @@ class MyApp extends StatelessWidget {
           child: child ?? const SizedBox.shrink(),
         );
       },
-      // Profile gate sits above both home-screen variants: it verifies the
-      // saved local userId against the profile backend (or runs onboarding)
-      // before entering the main AHMA experience.
-      home: ProfileGate(
-        app: USE_UNITY_HOME_SCREEN
-            ? const UnityHomeScreen()
-            : const AhmaMainScreen(),
-      ),
+      // Auth sits above the profile gate: no session -> login screen;
+      // with a session, the gate verifies the identity against the profile
+      // backend (or runs onboarding) before the main AHMA experience.
+      home: const RootGate(),
     );
+  }
+}
+
+/// Routes by auth status. The profile gate is only mounted once a session
+/// exists, so each login re-runs the full launch verification.
+class RootGate extends ConsumerWidget {
+  const RootGate({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final status = ref.watch(authProvider.select((auth) => auth.status));
+
+    switch (status) {
+      case AuthStatus.restoring:
+        return const Scaffold(
+          backgroundColor: AhmaTheme.background,
+          body: Center(
+            child: SizedBox(
+              width: 32,
+              height: 32,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                valueColor: AlwaysStoppedAnimation<Color>(AhmaTheme.sageGreen),
+              ),
+            ),
+          ),
+        );
+      case AuthStatus.loggedOut:
+      case AuthStatus.signingIn:
+        return const LoginScreen();
+      case AuthStatus.loggedIn:
+        return ProfileGate(
+          app: USE_UNITY_HOME_SCREEN
+              ? const UnityHomeScreen()
+              : const AhmaMainScreen(),
+        );
+    }
   }
 }

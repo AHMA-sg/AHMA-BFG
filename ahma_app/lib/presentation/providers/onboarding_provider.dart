@@ -4,6 +4,7 @@ import '../../core/utils/uuid_v4.dart';
 import '../../data/datasources/local_identity_store.dart';
 import '../../data/datasources/profile_api.dart';
 import '../../data/models/profile_models.dart';
+import 'auth_provider.dart';
 import 'profile_provider.dart';
 
 /// The 8 onboarding questions, asked one at a time, in this fixed order.
@@ -166,12 +167,22 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
   final LocalIdentityStore _identity;
   final void Function(UserProfile profile) _onCompleted;
 
+  /// [initialContact] pre-seeds the contact answer (the email used at the
+  /// stub login), so Q2 shows it pre-filled — the user confirms or edits it
+  /// rather than retyping the credential they just signed in with.
   OnboardingNotifier(
     this._api,
     this._identity, {
     required void Function(UserProfile profile) onCompleted,
+    String? initialContact,
   }) : _onCompleted = onCompleted,
-       super(const OnboardingState()) {
+       super(
+         OnboardingState(
+           answers: initialContact == null
+               ? const {}
+               : {OnboardingField.contact: initialContact},
+         ),
+       ) {
     loadOptions();
   }
 
@@ -510,5 +521,8 @@ final onboardingProvider =
         ref.watch(localIdentityStoreProvider),
         onCompleted: (profile) =>
             ref.read(profileGateProvider.notifier).completeOnboarding(profile),
+        // Pre-fill Q2 with the email used at login (read, not watch: the
+        // intake shouldn't restart if auth state changes mid-flow).
+        initialContact: ref.read(authProvider).email,
       );
     });

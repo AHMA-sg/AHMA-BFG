@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/ahma_theme.dart';
 import '../providers/profile_provider.dart';
 import '../widgets/house_animation.dart';
+import 'account_screen.dart';
 import 'ahma_call_screen.dart';
 import 'kopi_journal_screen.dart';
 
@@ -380,22 +381,32 @@ class _ProfileHero extends StatelessWidget {
                 ],
               ),
             ),
-            Container(
-              width: s(64),
-              height: s(64),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.28),
-                border: Border.all(color: Colors.white.withOpacity(0.5)),
+            // Top-right avatar opens the account page (view/edit profile,
+            // log out).
+            Material(
+              color: Colors.white.withOpacity(0.28),
+              shape: CircleBorder(
+                side: BorderSide(color: Colors.white.withOpacity(0.5)),
               ),
-              child: Center(
-                child: Text(
-                  displayName.isNotEmpty
-                      ? displayName[0].toUpperCase()
-                      : 'A',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontSize: t(24),
-                    color: AhmaTheme.ahmaRed.withOpacity(0.72),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const AccountScreen()),
+                ),
+                child: SizedBox(
+                  width: s(64),
+                  height: s(64),
+                  child: Center(
+                    child: Text(
+                      displayName.isNotEmpty
+                          ? displayName[0].toUpperCase()
+                          : 'A',
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(
+                            fontSize: t(24),
+                            color: AhmaTheme.ahmaRed.withOpacity(0.72),
+                          ),
+                    ),
                   ),
                 ),
               ),
