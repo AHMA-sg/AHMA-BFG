@@ -4,11 +4,26 @@ import '../../data/datasources/local_identity_store.dart';
 import '../../data/datasources/profile_api.dart';
 import '../../data/models/profile_models.dart';
 
-final profileApiProvider = Provider<ProfileApi>((ref) => ProfileApi());
-
 final localIdentityStoreProvider = Provider<LocalIdentityStore>(
   (ref) => LocalIdentityStore(),
 );
+
+final profileApiProvider = Provider<ProfileApi>((ref) {
+  final identity = ref.watch(localIdentityStoreProvider);
+  return ProfileApi(
+    // Stub session token: the saved userId (or the login email before a
+    // profile exists) stands in for a real IdP token. The local backend
+    // ignores the header; production middleware will verify it.
+    bearerToken: () async =>
+        await identity.readUserId() ?? await identity.readLoginEmail(),
+  );
+});
+
+/// Backend option catalog (labels for raw option values). Fetched once and
+/// cached; invalidate to retry after a failure.
+final profileOptionsProvider = FutureProvider<ProfileOptions>((ref) {
+  return ref.watch(profileApiProvider).getOptions();
+});
 
 /// Where the app should be at launch.
 enum ProfileGateStatus {
@@ -96,6 +111,26 @@ class ProfileGateNotifier extends StateNotifier<ProfileGateState> {
   /// Called by onboarding after a confirmed 201 create.
   void completeOnboarding(UserProfile profile) {
     state = ProfileGateState(status: ProfileGateStatus.ready, profile: profile);
+  }
+
+  /// Partial profile update (PATCH). On success the in-memory profile is
+  /// replaced, so profile-derived UI (dashboard greeting, account page)
+  /// refreshes immediately. Typed [ProfileApiException]s propagate to the
+  /// caller for inline error mapping.
+  Future<UserProfile> updateProfile(ProfilePatchRequest patch) async {
+    final current = state.profile;
+    if (state.status != ProfileGateStatus.ready || current == null) {
+      throw StateError('updateProfile called before the gate is ready');
+    }
+
+    final updated = await _api.updateProfile(current.userId, patch);
+    if (mounted) {
+      state = ProfileGateState(
+        status: ProfileGateStatus.ready,
+        profile: updated,
+      );
+    }
+    return updated;
   }
 }
 

@@ -4,6 +4,8 @@
 /// - GET  /api/profile/options            -> ProfileOptions
 /// - POST /api/profile                    -> ProfileCreateRequest / UserProfile
 /// - GET  /api/profile/:userId            -> UserProfile
+/// - PATCH /api/profile/:userId           -> ProfilePatchRequest / UserProfile
+/// - POST /api/profile/resolve            -> contact lookup, returns userId
 /// - GET  /api/profile/:userId/context    -> ProfileContextData
 ///
 /// Option-backed fields carry raw option `value`s (e.g. `emotional_burnout`),
@@ -226,6 +228,51 @@ class ProfileContextData {
       'financialStrainSeverity': financialStrainSeverity,
     };
   }
+}
+
+/// Body for PATCH /api/profile/:userId — a PARTIAL update.
+///
+/// Only fields explicitly set here are sent; the backend leaves everything
+/// else untouched. `userId` is immutable and must never appear in the body
+/// (the backend errors `immutable` if it disagrees with the path).
+///
+/// Contact rule (`require_one`): after the patch, at least one of
+/// email/phone must remain non-empty. Setting a contact to null clears it.
+class ProfilePatchRequest {
+  final Map<String, dynamic> _fields = {};
+
+  bool get isEmpty => _fields.isEmpty;
+
+  void setDisplayName(String value) => _fields['displayName'] = value;
+
+  /// null clears the email (subject to `require_one`).
+  void setEmail(String? value) => _fields['email'] = value;
+
+  /// null clears the phone (subject to `require_one`).
+  void setPhone(String? value) => _fields['phone'] = value;
+
+  /// `relationship` (option value) or `displayName`.
+  void setCareRecipientField(String field, String value) {
+    (_fields.putIfAbsent('careRecipient', () => <String, dynamic>{})
+            as Map<String, dynamic>)[field] =
+        value;
+  }
+
+  /// One of the option-backed caregiverContext scalars
+  /// (caregivingDuration / primaryCaregivingChallenge / primarySupportNeed /
+  /// financialStrainSeverity).
+  void setCaregiverContextField(String field, String value) {
+    (_fields.putIfAbsent('caregiverContext', () => <String, dynamic>{})
+            as Map<String, dynamic>)[field] =
+        value;
+  }
+
+  Map<String, dynamic> toJson() => {
+    for (final entry in _fields.entries)
+      entry.key: entry.value is Map<String, dynamic>
+          ? Map<String, dynamic>.from(entry.value as Map<String, dynamic>)
+          : entry.value,
+  };
 }
 
 /// Body for POST /api/profile (create-only, v1 required fields exactly —
