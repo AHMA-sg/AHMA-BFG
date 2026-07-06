@@ -1,10 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/call_model.dart';
+import '../../data/models/profile_models.dart';
 import '../../data/datasources/ultravox_api.dart';
 import '../../data/datasources/ultravox_rtc.dart';
 import '../../data/datasources/backend_api.dart';
 import '../../core/config/env_config.dart';
+import 'profile_provider.dart';
 
 /// Call state
 class CallState {
@@ -42,20 +44,35 @@ class CallNotifier extends StateNotifier<CallState> {
   final UltravoxApi _api;
   final UltravoxRtcManager _rtc;
   final BackendApi _backend;
+  final Future<String?> Function()? _resolveUserId;
 
-  CallNotifier(this._api, this._rtc, this._backend) : super(const CallState());
+  CallNotifier(
+    this._api,
+    this._rtc,
+    this._backend, {
+    Future<String?> Function()? resolveUserId,
+  }) : _resolveUserId = resolveUserId,
+       super(const CallState());
 
-  /// Start a voice call
+  /// Start a voice call.
+  ///
+  /// [profileContext] (from GET /api/profile/:userId/context) personalizes
+  /// the greeting and call metadata; [userName] / [careRecipientName]
+  /// default from it when not passed explicitly.
   Future<void> startCall({
     String? userName,
     String? careRecipientName,
     String? caregiverType,
+    ProfileContextData? profileContext,
   }) async {
     try {
       _validateUltravoxConfig();
       state = state.copyWith(status: CallStatus.connecting, error: null);
 
       print('[Call] Starting call');
+
+      userName ??= profileContext?.displayName;
+      careRecipientName ??= profileContext?.careRecipientName;
 
       // Create call via backend on web to avoid browser CORS and API key leaks.
       // Tools are configured on the agent.
@@ -65,6 +82,7 @@ class CallNotifier extends StateNotifier<CallState> {
         if (userName != null) 'userName': userName,
         if (careRecipientName != null) 'careRecipientName': careRecipientName,
         if (caregiverType != null) 'caregiverType': caregiverType,
+        if (profileContext != null) ...profileContext.toCallMetadata(),
       };
       final firstSpeakerSettings = {
         'agent': {
@@ -126,8 +144,9 @@ class CallNotifier extends StateNotifier<CallState> {
     String? caregiverType,
   ) {
     if (userName != null && careRecipientName != null) {
-      // Full context greeting
-      return 'Hello $userName, this is Ah Ma. I understand you\'re caring for your $careRecipientName. How are you doing today?';
+      // Full context greeting — careRecipientName is the recipient's own
+      // name from the profile (e.g. "Priya"), not a relationship word.
+      return 'Hello $userName, this is Ah Ma. I understand you\'re caring for $careRecipientName. How are you doing today?';
     } else if (userName != null) {
       // Name only
       return 'Hello $userName, this is Ah Ma. How are you doing today?';
@@ -227,9 +246,12 @@ class CallNotifier extends StateNotifier<CallState> {
           ? 'elevated' // If still in assess, might be elevated
           : 'regular';
 
+      // Saved profile userId (falls back for pre-onboarding edge cases).
+      final userId = (await _resolveUserId?.call()) ?? 'default_user';
+
       final result = await _backend.sendTranscript(
         callId: call.callId,
-        userId: 'default_user', // TODO: Get from auth provider
+        userId: userId,
         transcript: call.transcript,
         stressLevel: stressLevel,
         metadata: {'finalStage': call.stage.toString()},
@@ -262,5 +284,6 @@ final callProvider = StateNotifierProvider<CallNotifier, CallState>((ref) {
       },
     ),
     BackendApi(),
+    resolveUserId: () => ref.read(localIdentityStoreProvider).readUserId(),
   );
 });

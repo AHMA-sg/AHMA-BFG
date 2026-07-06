@@ -5,6 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'presentation/screens/unity_home_screen.dart';
 import 'presentation/screens/ahma_main_screen.dart';
+import 'presentation/screens/profile_gate.dart';
 import 'core/config/env_file_loader.dart';
 import 'core/theme/ahma_theme.dart';
 
@@ -89,9 +90,14 @@ class MyApp extends StatelessWidget {
           child: child ?? const SizedBox.shrink(),
         );
       },
-      home: USE_UNITY_HOME_SCREEN
-          ? const UnityHomeScreen()
-          : const AhmaMainScreen(),
+      // Profile gate sits above both home-screen variants: it verifies the
+      // saved local userId against the profile backend (or runs onboarding)
+      // before entering the main AHMA experience.
+      home: ProfileGate(
+        app: USE_UNITY_HOME_SCREEN
+            ? const UnityHomeScreen()
+            : const AhmaMainScreen(),
+      ),
     );
   }
 }
