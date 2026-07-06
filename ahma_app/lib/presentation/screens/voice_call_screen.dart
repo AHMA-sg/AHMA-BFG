@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/call_provider.dart';
+import '../providers/profile_provider.dart';
 import '../../data/models/call_model.dart';
 
 class VoiceCallScreen extends ConsumerStatefulWidget {
@@ -18,15 +19,25 @@ class _VoiceCallScreenState extends ConsumerState<VoiceCallScreen> {
     super.initState();
     // Start call when screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // TODO: Get user info from auth provider
-      // final user = ref.read(authProvider);
-
-      ref.read(callProvider.notifier).startCall(
-        userName: 'Sam',  // Example: Pass actual user name from auth
-        careRecipientName: 'Mum',  // Example: Get from user profile
-        caregiverType: 'family',  // Example: family, professional, volunteer
-      );
+      _startProfileAwareCall();
     });
+  }
+
+  /// Starts the call personalized with profile data: prefers the call
+  /// context endpoint, falls back to the loaded profile, then to a
+  /// generic greeting.
+  Future<void> _startProfileAwareCall() async {
+    final profileContext = await ref.read(profileContextProvider.future);
+    if (!mounted) return;
+
+    final profile = ref.read(profileGateProvider).profile;
+    ref.read(callProvider.notifier).startCall(
+      userName: profileContext?.displayName ?? profile?.displayName,
+      careRecipientName: profileContext?.careRecipientName ??
+          profile?.careRecipient.displayName,
+      caregiverType: 'family',
+      profileContext: profileContext,
+    );
   }
 
   void _startTalking() {

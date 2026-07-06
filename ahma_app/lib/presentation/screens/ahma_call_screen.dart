@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import '../../core/theme/ahma_theme.dart';
 import '../providers/call_provider.dart';
+import '../providers/profile_provider.dart';
 import 'profile_screen.dart';
 
 /// AHMA Call Screen
@@ -324,14 +325,7 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
           });
           _connectionBarController.forward();
 
-          ref
-              .read(callProvider.notifier)
-              .startCall(
-                userName: 'Sam', // Example: Pass actual user name from auth
-                careRecipientName: 'Mum', // Example: Get from user profile
-                caregiverType:
-                    'family', // Example: family, professional, volunteer
-              );
+          _startProfileAwareCall();
         }
       });
     } else {
@@ -339,6 +333,23 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
       _kopiFillController.repeat(reverse: true);
       ref.read(callProvider.notifier).startAudioCapture();
     }
+  }
+
+  /// Starts the call personalized with profile data: prefers the call
+  /// context endpoint, falls back to the loaded profile, then to a
+  /// generic greeting.
+  Future<void> _startProfileAwareCall() async {
+    final profileContext = await ref.read(profileContextProvider.future);
+    if (!mounted) return;
+
+    final profile = ref.read(profileGateProvider).profile;
+    ref.read(callProvider.notifier).startCall(
+      userName: profileContext?.displayName ?? profile?.displayName,
+      careRecipientName: profileContext?.careRecipientName ??
+          profile?.careRecipient.displayName,
+      caregiverType: 'family',
+      profileContext: profileContext,
+    );
   }
 
   void _stopRecording() {

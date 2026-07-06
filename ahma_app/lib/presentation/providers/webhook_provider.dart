@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
+import '../../data/datasources/local_identity_store.dart';
 import '../../data/datasources/webhook_handler_web.dart'
     if (dart.library.io) '../../data/datasources/webhook_handler.dart';
 import '../../core/config/env_config.dart';
@@ -43,11 +44,15 @@ Future<void> _registerWebhookWithBackend() async {
     print('[Webhook]    URL: $webhookUrl');
     print('[Webhook]    Backend: $backendUrl');
 
+    // Saved profile userId (falls back for pre-onboarding edge cases).
+    final userId =
+        await LocalIdentityStore().readUserId() ?? 'default_user';
+
     final dio = Dio();
     final response = await dio.post(
       '$backendUrl/api/flutter/webhook/register',
       data: {
-        'userId': 'default_user', // TODO: Get from auth provider
+        'userId': userId,
         'webhookUrl': webhookUrl,
       },
     );

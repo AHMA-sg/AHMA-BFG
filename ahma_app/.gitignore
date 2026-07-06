@@ -144,3 +144,6 @@ Desktop.ini
 **/Obj/
 **/Logs/
 **/UserSettings/
+
+# Local profile backend runner state (clone, venv, Postgres compose, run state)
+.local/
