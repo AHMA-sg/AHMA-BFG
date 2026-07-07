@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/ahma_theme.dart';
+import '../providers/profile_provider.dart';
 import '../widgets/house_animation.dart';
+import 'account_screen.dart';
 import 'ahma_call_screen.dart';
 import 'kopi_journal_screen.dart';
 
@@ -25,6 +27,10 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Profile-derived greeting (replaces the old hardcoded "Sam").
+    final displayName =
+        ref.watch(profileGateProvider).profile?.displayName ?? 'friend';
+
     final content = LayoutBuilder(
       builder: (context, constraints) {
         final isPhoneViewport = constraints.maxWidth <= 480;
@@ -49,6 +55,7 @@ class ProfileScreen extends ConsumerWidget {
           scale: scale,
           compact: compact,
           veryCompact: veryCompact,
+          displayName: displayName,
           onOpenCallJourney: () => _openCallJourney(context),
           onOpenPastJourneys: () => _openPastJourneys(context),
         );
@@ -90,6 +97,7 @@ class _ProfileContent extends StatelessWidget {
   final double scale;
   final bool compact;
   final bool veryCompact;
+  final String displayName;
   final VoidCallback onOpenCallJourney;
   final VoidCallback onOpenPastJourneys;
 
@@ -97,6 +105,7 @@ class _ProfileContent extends StatelessWidget {
     required this.scale,
     required this.compact,
     required this.veryCompact,
+    required this.displayName,
     required this.onOpenCallJourney,
     required this.onOpenPastJourneys,
   });
@@ -124,6 +133,7 @@ class _ProfileContent extends StatelessWidget {
             scale: scale,
             compact: compact,
             veryCompact: veryCompact,
+            displayName: displayName,
             onOpenCallJourney: onOpenCallJourney,
             onOpenPastJourneys: onOpenPastJourneys,
           ),
@@ -148,11 +158,14 @@ class _ProfileContent extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Center(
-                          child: IgnorePointer(
-                            child: Opacity(
-                              opacity: 0.98,
-                              child: HouseAnimationCinematic(
-                                height: houseHeight,
+                          // Decorative brand art — hide from screen readers.
+                          child: ExcludeSemantics(
+                            child: IgnorePointer(
+                              child: Opacity(
+                                opacity: 0.98,
+                                child: HouseAnimationCinematic(
+                                  height: houseHeight,
+                                ),
                               ),
                             ),
                           ),
@@ -203,11 +216,14 @@ class _ProfileContent extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Center(
-                          child: IgnorePointer(
-                            child: Opacity(
-                              opacity: 0.9,
-                              child: HouseAnimationCinematic(
-                                height: houseHeight,
+                          // Decorative brand art — hide from screen readers.
+                          child: ExcludeSemantics(
+                            child: IgnorePointer(
+                              child: Opacity(
+                                opacity: 0.9,
+                                child: HouseAnimationCinematic(
+                                  height: houseHeight,
+                                ),
                               ),
                             ),
                           ),
@@ -300,6 +316,7 @@ class _ProfileHero extends StatelessWidget {
   final double scale;
   final bool compact;
   final bool veryCompact;
+  final String displayName;
   final VoidCallback onOpenCallJourney;
   final VoidCallback onOpenPastJourneys;
 
@@ -307,6 +324,7 @@ class _ProfileHero extends StatelessWidget {
     required this.scale,
     required this.compact,
     required this.veryCompact,
+    required this.displayName,
     required this.onOpenCallJourney,
     required this.onOpenPastJourneys,
   });
@@ -363,20 +381,32 @@ class _ProfileHero extends StatelessWidget {
                 ],
               ),
             ),
-            Container(
-              width: s(64),
-              height: s(64),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.28),
-                border: Border.all(color: Colors.white.withOpacity(0.5)),
+            // Top-right avatar opens the account page (view/edit profile,
+            // log out).
+            Material(
+              color: Colors.white.withOpacity(0.28),
+              shape: CircleBorder(
+                side: BorderSide(color: Colors.white.withOpacity(0.5)),
               ),
-              child: Center(
-                child: Text(
-                  'S',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontSize: t(24),
-                    color: AhmaTheme.ahmaRed.withOpacity(0.72),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const AccountScreen()),
+                ),
+                child: SizedBox(
+                  width: s(64),
+                  height: s(64),
+                  child: Center(
+                    child: Text(
+                      displayName.isNotEmpty
+                          ? displayName[0].toUpperCase()
+                          : 'A',
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(
+                            fontSize: t(24),
+                            color: AhmaTheme.ahmaRed.withOpacity(0.72),
+                          ),
+                    ),
                   ),
                 ),
               ),
@@ -394,7 +424,7 @@ class _ProfileHero extends StatelessWidget {
             children: [
               const TextSpan(text: 'Good morning, '),
               TextSpan(
-                text: 'Sam',
+                text: displayName,
                 style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                   fontSize: t(compact ? 22 : 24),
                   color: AhmaTheme.mocha.withOpacity(0.95),
@@ -577,6 +607,7 @@ class _PastJourneysCard extends StatelessWidget {
                   'resources/Kopi.png',
                   width: s(26),
                   height: s(26),
+                  excludeFromSemantics: true,
                 ),
               ),
               SizedBox(width: s(12)),
@@ -643,7 +674,11 @@ class _AffirmationCard extends StatelessWidget {
           SizedBox(
             width: s(52),
             height: s(52),
-            child: Image.asset('resources/full-cup.png', fit: BoxFit.contain),
+            child: Image.asset(
+              'resources/full-cup.png',
+              fit: BoxFit.contain,
+              excludeFromSemantics: true,
+            ),
           ),
           SizedBox(width: s(12)),
           Expanded(child: _AffirmationCopy(scale: scale)),
