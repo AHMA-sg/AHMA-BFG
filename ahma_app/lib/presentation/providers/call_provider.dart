@@ -108,7 +108,11 @@ class CallNotifier extends StateNotifier<CallState> {
       // Connect WebRTC
       await _rtc.connect(call.joinUrl);
 
-      state = state.copyWith(status: CallStatus.active, call: call);
+      state = state.copyWith(
+        status: CallStatus.active,
+        call: call,
+        isMuted: true,
+      );
 
       print('[Call] Started call: ${call.callId}');
       if (userName != null) {
@@ -178,7 +182,11 @@ class CallNotifier extends StateNotifier<CallState> {
 
       // Update state
       final updatedCall = state.call!.copyWith(transcript: messages);
-      state = state.copyWith(status: CallStatus.ended, call: updatedCall);
+      state = state.copyWith(
+        status: CallStatus.ended,
+        call: updatedCall,
+        isMuted: true,
+      );
 
       // TODO: Send transcript to Flask backend
       await _sendTranscriptToBackend(updatedCall);

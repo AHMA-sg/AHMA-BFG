@@ -1,7 +1,9 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 import 'dart:math' as math;
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../data/models/profile_models.dart';
 import '../../core/theme/ahma_theme.dart';
 import '../providers/call_provider.dart';
 import '../providers/profile_provider.dart';
@@ -30,7 +32,6 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
   bool _isPressing = false;
   bool _callStarted = false;
   bool _showPhoneOn = false;
-  Timer? _callStartTimer;
 
   @override
   void initState() {
@@ -59,19 +60,22 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
       ),
     );
 
-    // Call will be started manually when user presses and holds button
+    // Call will be started manually when the user taps the button.
   }
 
   @override
   void dispose() {
     _kopiFillController.dispose();
     _connectionBarController.dispose();
-    _callStartTimer?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<CallState>(callProvider, (_, next) {
+      _syncCallAnimations(next);
+    });
+
     final callState = ref.watch(callProvider);
 
     return Scaffold(
@@ -200,20 +204,19 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
     double orbScale,
   ) {
     final isActive = callState.status == CallStatus.active;
-    final isConnecting = callState.status == CallStatus.connecting;
+    final isConnecting =
+        callState.status == CallStatus.connecting ||
+        (_callStarted && callState.status == CallStatus.idle);
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Push-to-talk button
+        // Call / mute toggle button
         GestureDetector(
-          onTapDown: (!_callStarted || isActive)
-              ? (_) => _startRecording()
+          onTap: (!_callStarted || isActive)
+              ? () => _handlePrimaryActionTap(callState)
               : null,
-          onTapUp: (!_callStarted || isActive) ? (_) => _stopRecording() : null,
-          onTapCancel: (!_callStarted || isActive)
-              ? () => _stopRecording()
-              : null,
+          behavior: HitTestBehavior.opaque,
           child: _buildPrimaryActionOrb(callState, baseOrbSize, orbScale),
         ),
         SizedBox(height: 8 * orbScale),
@@ -299,39 +302,62 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
   }
 
   Widget _buildKopiFillBar() {
-    return SizedBox(
-      width: 86,
-      height: 18,
-      child: CustomPaint(painter: _KopiFillPainter(_kopiFillAnimation.value)),
+    return AnimatedBuilder(
+      animation: _kopiFillAnimation,
+      builder: (context, child) {
+        return SizedBox(
+          width: 86,
+          height: 18,
+          child: CustomPaint(
+            painter: _KopiFillPainter(_kopiFillAnimation.value),
+          ),
+        );
+      },
     );
   }
 
-  void _startRecording() {
-    setState(() {
-      _isPressing = true;
-    });
+  void _syncCallAnimations(CallState callState) {
+    if (callState.status != CallStatus.connecting &&
+        _connectionBarController.isAnimating) {
+      _connectionBarController.stop();
+      _connectionBarController.reset();
+    }
 
+    if (callState.status != CallStatus.active || callState.isMuted) {
+      if (_kopiFillController.isAnimating) {
+        _kopiFillController.stop();
+        _kopiFillController.reset();
+      }
+      return;
+    }
+
+    if (!_kopiFillController.isAnimating) {
+      _kopiFillController.repeat(reverse: true);
+    }
+  }
+
+  void _handlePrimaryActionTap(CallState callState) {
     if (!_callStarted) {
-      // Show phone-on icon immediately
       setState(() {
+        _isPressing = true;
+        _callStarted = true;
         _showPhoneOn = true;
       });
+      _connectionBarController.repeat();
 
-      // Start the call after 2 seconds
-      _callStartTimer = Timer(const Duration(seconds: 2), () {
-        if (mounted && _isPressing) {
-          setState(() {
-            _callStarted = true;
-          });
-          _connectionBarController.forward();
+      _startProfileAwareCall();
+      return;
+    }
 
-          _startProfileAwareCall();
-        }
-      });
-    } else {
-      // Start audio capture for existing call
+    if (callState.status != CallStatus.active) return;
+
+    if (callState.isMuted) {
       _kopiFillController.repeat(reverse: true);
       ref.read(callProvider.notifier).startAudioCapture();
+    } else {
+      _kopiFillController.stop();
+      _kopiFillController.reset();
+      ref.read(callProvider.notifier).stopAudioCapture();
     }
   }
 
@@ -339,34 +365,26 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
   /// context endpoint, falls back to the loaded profile, then to a
   /// generic greeting.
   Future<void> _startProfileAwareCall() async {
-    final profileContext = await ref.read(profileContextProvider.future);
+    ProfileContextData? profileContext;
+    try {
+      profileContext = await ref.read(profileContextProvider.future);
+    } catch (e) {
+      debugPrint('[Call] Profile context unavailable, using local profile: $e');
+    }
+
     if (!mounted) return;
 
     final profile = ref.read(profileGateProvider).profile;
-    ref.read(callProvider.notifier).startCall(
-      userName: profileContext?.displayName ?? profile?.displayName,
-      careRecipientName: profileContext?.careRecipientName ??
-          profile?.careRecipient.displayName,
-      caregiverType: 'family',
-      profileContext: profileContext,
-    );
-  }
-
-  void _stopRecording() {
-    setState(() {
-      _isPressing = false;
-      _showPhoneOn = false;
-    });
-
-    // Cancel the call start timer if user releases before 2 seconds
-    _callStartTimer?.cancel();
-    _callStartTimer = null;
-
-    if (_callStarted && ref.read(callProvider).status == CallStatus.active) {
-      _kopiFillController.stop();
-      _kopiFillController.reset();
-      ref.read(callProvider.notifier).stopAudioCapture();
-    }
+    ref
+        .read(callProvider.notifier)
+        .startCall(
+          userName: profileContext?.displayName ?? profile?.displayName,
+          careRecipientName:
+              profileContext?.careRecipientName ??
+              profile?.careRecipient.displayName,
+          caregiverType: 'family',
+          profileContext: profileContext,
+        );
   }
 
   Color _getOrbOuterColor(CallState callState) {
@@ -377,10 +395,11 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
     }
 
     switch (callState.status) {
+      case CallStatus.idle:
       case CallStatus.connecting:
         return AhmaTheme.sageGreen.withOpacity(0.18);
       case CallStatus.active:
-        return _isPressing
+        return !callState.isMuted
             ? AhmaTheme.sageGreen.withOpacity(0.22)
             : Colors.white.withOpacity(0.08);
       default:
@@ -396,10 +415,11 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
     }
 
     switch (callState.status) {
+      case CallStatus.idle:
       case CallStatus.connecting:
         return AhmaTheme.sageGreen.withOpacity(0.14);
       case CallStatus.active:
-        return _isPressing
+        return !callState.isMuted
             ? AhmaTheme.sageGreen.withOpacity(0.18)
             : Colors.white.withOpacity(0.12);
       default:
@@ -413,10 +433,13 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
     }
 
     switch (callState.status) {
+      case CallStatus.idle:
       case CallStatus.connecting:
         return const Color(0xFFF1F6EC);
       case CallStatus.active:
-        return _isPressing ? const Color(0xFFE6F0DB) : const Color(0xFFFAF5EE);
+        return !callState.isMuted
+            ? const Color(0xFFE6F0DB)
+            : const Color(0xFFFAF5EE);
       default:
         return const Color(0xFFF4EFE8);
     }
@@ -424,14 +447,15 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
 
   String _getOrbPrompt(CallState callState) {
     if (!_callStarted) {
-      return 'hold to call';
+      return 'tap to call';
     }
 
     switch (callState.status) {
+      case CallStatus.idle:
       case CallStatus.connecting:
         return 'connecting';
       case CallStatus.active:
-        return _isPressing ? 'release' : 'hold to speak';
+        return callState.isMuted ? 'tap to speak' : 'tap to mute';
       default:
         return 'call ended';
     }
@@ -443,6 +467,7 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
     }
 
     switch (callState.status) {
+      case CallStatus.idle:
       case CallStatus.connecting:
       case CallStatus.active:
         return AhmaTheme.sageGreen;
@@ -466,12 +491,13 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
     }
 
     switch (callState.status) {
+      case CallStatus.idle:
       case CallStatus.connecting:
         // Show phone-on icon while connecting
         return scaledPhone('resources/Phone-on.png', 68);
       case CallStatus.active:
-        // Show phone-off icon when not pressing, phone-on when pressing
-        if (_isPressing) {
+        // Show phone-on icon while the mic is live.
+        if (!callState.isMuted) {
           return scaledPhone('resources/Phone-on.png', 68);
         } else {
           return scaledPhone('resources/Phone-off.png', 68);
