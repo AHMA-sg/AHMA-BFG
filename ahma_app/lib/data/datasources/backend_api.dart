@@ -204,6 +204,16 @@ class BackendApi {
       );
 
       return CallModel.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      final status = e.response?.statusCode;
+      final detail = _detailFromResponse(e.response?.data) ?? e.message;
+      final message = [
+        'Call proxy error',
+        if (status != null) ' ($status)',
+        if (detail != null && detail.isNotEmpty) ': $detail',
+      ].join();
+      print('Error creating proxied Ultravox call: $message');
+      throw StateError(message);
     } catch (e) {
       print('Error creating proxied Ultravox call: $e');
       rethrow;

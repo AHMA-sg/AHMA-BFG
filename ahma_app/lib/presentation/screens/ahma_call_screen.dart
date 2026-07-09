@@ -204,6 +204,10 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
     double orbScale,
   ) {
     final isActive = callState.status == CallStatus.active;
+    final canStartCall =
+        !_callStarted ||
+        callState.status == CallStatus.error ||
+        callState.status == CallStatus.ended;
     final isConnecting =
         callState.status == CallStatus.connecting ||
         (_callStarted && callState.status == CallStatus.idle);
@@ -213,7 +217,7 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
       children: [
         // Call / mute toggle button
         GestureDetector(
-          onTap: (!_callStarted || isActive)
+          onTap: (canStartCall || isActive)
               ? () => _handlePrimaryActionTap(callState)
               : null,
           behavior: HitTestBehavior.opaque,
@@ -224,6 +228,8 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
         // Connection bar or kopi fill animation
         if (isConnecting) _buildConnectionBar(),
         if (isActive) _buildKopiFillBar(),
+        if (callState.status == CallStatus.error)
+          _buildCallErrorMessage(callState),
       ],
     );
   }
@@ -328,6 +334,14 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
         _kopiFillController.stop();
         _kopiFillController.reset();
       }
+      if ((callState.status == CallStatus.error ||
+              callState.status == CallStatus.ended) &&
+          (_isPressing || _showPhoneOn)) {
+        setState(() {
+          _isPressing = false;
+          _showPhoneOn = false;
+        });
+      }
       return;
     }
 
@@ -337,7 +351,9 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
   }
 
   void _handlePrimaryActionTap(CallState callState) {
-    if (!_callStarted) {
+    if (!_callStarted ||
+        callState.status == CallStatus.error ||
+        callState.status == CallStatus.ended) {
       setState(() {
         _isPressing = true;
         _callStarted = true;
@@ -456,7 +472,9 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
         return 'connecting';
       case CallStatus.active:
         return callState.isMuted ? 'tap to speak' : 'tap to mute';
-      default:
+      case CallStatus.error:
+        return 'try again';
+      case CallStatus.ended:
         return 'call ended';
     }
   }
@@ -471,6 +489,8 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
       case CallStatus.connecting:
       case CallStatus.active:
         return AhmaTheme.sageGreen;
+      case CallStatus.error:
+        return AhmaTheme.ahmaRed;
       default:
         return AhmaTheme.mocha.withOpacity(0.6);
     }
@@ -502,6 +522,8 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
         } else {
           return scaledPhone('resources/Phone-off.png', 68);
         }
+      case CallStatus.error:
+        return scaledPhone('resources/Phone-off.png', 68);
       default:
         return Icon(
           Icons.phone_disabled,
@@ -524,6 +546,51 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
         );
       },
     );
+  }
+
+  Widget _buildCallErrorMessage(CallState callState) {
+    final detail = _formatCallError(callState.error);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 280),
+        child: Text(
+          detail ?? "Couldn't connect. Tap to try again.",
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            fontSize: 13,
+            height: 1.25,
+            color: AhmaTheme.ahmaRed.withOpacity(0.72),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  String? _formatCallError(String? error) {
+    final raw = error?.trim();
+    if (raw == null || raw.isEmpty) return null;
+
+    if (raw.contains('Missing AHMA_AGENT_ID')) {
+      return 'Missing AHMA agent ID. Check the frontend env and redeploy.';
+    }
+
+    if (raw.contains('Missing ULTRAVOX_API_KEY')) {
+      return 'Missing Ultravox API key on the call proxy.';
+    }
+
+    if (raw.contains('404')) {
+      return "Call proxy wasn't found. Check the deployed /api/ultravox route.";
+    }
+
+    if (raw.contains('TimeoutException') ||
+        raw.toLowerCase().contains('timed out')) {
+      return "Couldn't connect in time. Tap to try again.";
+    }
+
+    return "Couldn't connect. Tap to try again.";
   }
 }
 

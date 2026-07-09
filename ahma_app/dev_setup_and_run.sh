@@ -469,7 +469,17 @@ run_flutter() {
   (cd "$APP_DIR" && flutter pub get) || fail "flutter pub get failed."
 
   info "Launching Flutter app (device: $FLUTTER_DEVICE)"
-  (cd "$APP_DIR" && flutter run -d "$FLUTTER_DEVICE")
+  local flutter_args=(run -d "$FLUTTER_DEVICE")
+  if [[ -f "$APP_DIR/.env" ]]; then
+    # Desktop debug apps can be denied runtime reads of project files by macOS.
+    # Dart defines are injected by the Flutter tool before launch, so secrets
+    # stay local and the app does not need to read .env at runtime.
+    flutter_args+=(--dart-define-from-file=.env)
+  else
+    warn "No ahma_app/.env found; Flutter will use bundled .env.example defaults."
+  fi
+
+  (cd "$APP_DIR" && flutter "${flutter_args[@]}")
 }
 
 # ---------------------------------------------------------------------------

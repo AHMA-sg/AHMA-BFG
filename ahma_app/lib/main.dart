@@ -8,6 +8,7 @@ import 'presentation/screens/ahma_main_screen.dart';
 import 'presentation/screens/login_screen.dart';
 import 'presentation/screens/profile_gate.dart';
 import 'presentation/providers/auth_provider.dart';
+import 'core/config/env_config.dart';
 import 'core/config/env_file_loader.dart';
 import 'core/theme/ahma_theme.dart';
 import 'data/datasources/google_services_store.dart';
@@ -22,9 +23,15 @@ Future<void> main() async {
   // Load environment variables
   await dotenv.load(fileName: '.env.example', isOptional: true);
   final exampleEnv = Map<String, String>.from(dotenv.env);
-  final localEnv = await loadLocalEnvFile();
-  if (localEnv.isNotEmpty) {
-    dotenv.testLoad(fileInput: '', mergeWith: {...exampleEnv, ...localEnv});
+  final hasInjectedCallEnv =
+      EnvConfig.ultravoxApiKey.isNotEmpty && EnvConfig.ahmaAgentId.isNotEmpty;
+  if (hasInjectedCallEnv) {
+    debugPrint('[Env] Using injected Dart defines for call configuration');
+  } else {
+    final localEnv = await loadLocalEnvFile();
+    if (localEnv.isNotEmpty) {
+      dotenv.testLoad(fileInput: '', mergeWith: {...exampleEnv, ...localEnv});
+    }
   }
 
   // Request microphone permission (required for voice calls)
