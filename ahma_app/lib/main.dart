@@ -10,6 +10,7 @@ import 'presentation/screens/profile_gate.dart';
 import 'presentation/providers/auth_provider.dart';
 import 'core/config/env_file_loader.dart';
 import 'core/theme/ahma_theme.dart';
+import 'data/datasources/google_services_store.dart';
 
 // Toggle between Unity and example blended home screens
 // Set to true for Unity, false for example blended
@@ -28,6 +29,7 @@ Future<void> main() async {
 
   // Request microphone permission (required for voice calls)
   await _requestPermissions();
+  await GoogleServicesStore().captureOAuthRedirectFromCurrentUrl();
 
   runApp(const ProviderScope(child: MyApp()));
 }

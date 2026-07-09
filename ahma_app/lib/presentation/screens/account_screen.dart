@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/ahma_theme.dart';
 import '../../core/utils/contact_format.dart';
+import '../../data/datasources/backend_api.dart';
 import '../../data/datasources/profile_api.dart';
 import '../../data/models/profile_models.dart';
 import '../providers/auth_provider.dart';
@@ -33,10 +34,20 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   String? _primaryChallenge;
   String? _primarySupportNeed;
   String? _financialStrain;
+  bool _checkingGoogle = true;
+  bool _calendarConnected = false;
+  bool _gmailConnected = false;
+  bool _gmailConfigured = false;
+  String? _googleStatusMessage;
 
   /// Backend dotted field path -> inline message.
   Map<String, String> _fieldErrors = {};
   String? _formError;
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
   @override
   void dispose() {
@@ -73,6 +84,59 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   }
 
   static String? _valueOrNull(String value) => value.isEmpty ? null : value;
+
+  Future<void> _refreshGoogleStatus(UserProfile profile) async {
+    setState(() {
+      _checkingGoogle = true;
+      _googleStatusMessage = null;
+    });
+
+    try {
+      final backend = BackendApi();
+      final calendar = await backend.getCalendarStatus(userId: profile.userId);
+      final gmail = await backend.getGmailStatus();
+      if (!mounted) return;
+      setState(() {
+        _checkingGoogle = false;
+        _calendarConnected = calendar.connected;
+        _gmailConnected = gmail.connected;
+        _gmailConfigured = gmail.configured;
+        _googleStatusMessage =
+            calendar.message ?? gmail.message ?? _googleStatusMessage;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _checkingGoogle = false;
+        _googleStatusMessage =
+            "We couldn't check Google services. Try again in a moment.";
+      });
+    }
+  }
+
+  Future<void> _connectCalendar(UserProfile profile) async {
+    try {
+      await BackendApi().startGoogleOAuth(
+        service: 'calendar',
+        userId: profile.userId,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _googleStatusMessage =
+            "We couldn't start Google Calendar sign-in. Check backend OAuth setup.";
+      });
+    }
+  }
+
+  Future<void> _disconnectCalendar(UserProfile profile) async {
+    await BackendApi().disconnectCalendar(userId: profile.userId);
+    if (!mounted) return;
+    setState(() {
+      _calendarConnected = false;
+      _googleStatusMessage = 'Google Calendar disconnected on this device.';
+    });
+  }
 
   void _cancelEditing() {
     setState(() {
@@ -178,9 +242,9 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         _editing = false;
         _saving = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Your details are saved.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Your details are saved.')));
     } on ProfileValidationException catch (e) {
       _showBackendFieldErrors(e.fieldErrors);
     } on ContactAlreadyExistsException catch (e) {
@@ -274,6 +338,10 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     final profile = ref.watch(profileGateProvider).profile;
     final optionsAsync = ref.watch(profileOptionsProvider);
 
+    if (profile != null && _checkingGoogle) {
+      Future.microtask(() => _refreshGoogleStatus(profile));
+    }
+
     return Scaffold(
       backgroundColor: AhmaTheme.background,
       appBar: AppBar(
@@ -295,16 +363,12 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                   : null,
               icon: const Icon(Icons.edit_rounded, size: 18),
               label: const Text('Edit'),
-              style: TextButton.styleFrom(
-                foregroundColor: AhmaTheme.sageGreen,
-              ),
+              style: TextButton.styleFrom(foregroundColor: AhmaTheme.sageGreen),
             ),
           if (_editing)
             TextButton(
               onPressed: _saving ? null : _cancelEditing,
-              style: TextButton.styleFrom(
-                foregroundColor: AhmaTheme.sageGreen,
-              ),
+              style: TextButton.styleFrom(foregroundColor: AhmaTheme.sageGreen),
               child: const Text('Cancel'),
             ),
         ],
@@ -359,10 +423,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         _SectionCard(
           title: 'Caring for',
           children: [
-            _InfoRow(
-              label: 'Name',
-              value: profile.careRecipient.displayName,
-            ),
+            _InfoRow(label: 'Name', value: profile.careRecipient.displayName),
             _InfoRow(
               label: 'Relationship',
               value: label(
@@ -407,6 +468,78 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                 'caregiverContext',
                 'financialStrainSeverity',
                 profile.caregiverContext.financialStrainSeverity,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        _SectionCard(
+          title: 'Connected services',
+          children: [
+            _InfoRow(
+              label: 'Google Calendar',
+              value: _checkingGoogle
+                  ? 'Checking...'
+                  : (_calendarConnected ? 'Connected' : 'Not connected'),
+            ),
+            _InfoRow(
+              label: 'AHMA Gmail',
+              value: _checkingGoogle
+                  ? 'Checking...'
+                  : (_gmailConnected
+                        ? 'Connected'
+                        : (_gmailConfigured
+                              ? 'Needs reconnection'
+                              : 'Not set up')),
+            ),
+            if (_googleStatusMessage != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4, bottom: 10),
+                child: Text(
+                  _googleStatusMessage!,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontSize: 13.5,
+                    color: AhmaTheme.mocha.withValues(alpha: 0.68),
+                    height: 1.3,
+                  ),
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.only(top: 4, bottom: 10),
+              child: Wrap(
+                spacing: 10,
+                runSpacing: 8,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: _checkingGoogle
+                        ? null
+                        : (_calendarConnected
+                              ? () => _disconnectCalendar(profile)
+                              : () => _connectCalendar(profile)),
+                    icon: Icon(
+                      _calendarConnected
+                          ? Icons.link_off_rounded
+                          : Icons.calendar_month_rounded,
+                      size: 18,
+                    ),
+                    label: Text(
+                      _calendarConnected
+                          ? 'Disconnect Calendar'
+                          : 'Connect Calendar',
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AhmaTheme.sageGreen,
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Refresh Google service status',
+                    onPressed: _checkingGoogle
+                        ? null
+                        : () => _refreshGoogleStatus(profile),
+                    icon: const Icon(Icons.refresh_rounded),
+                    color: AhmaTheme.sageGreen,
+                  ),
+                ],
               ),
             ),
           ],
@@ -504,8 +637,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               options: options.caregivingDurationOptions,
               enabled: !_saving,
               errorText: _fieldErrors['caregiverContext.caregivingDuration'],
-              onChanged: (value) =>
-                  setState(() => _caregivingDuration = value),
+              onChanged: (value) => setState(() => _caregivingDuration = value),
             ),
             _LabeledDropdown(
               label: 'Hardest part right now',
@@ -522,8 +654,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               options: options.primarySupportNeedOptions,
               enabled: !_saving,
               errorText: _fieldErrors['caregiverContext.primarySupportNeed'],
-              onChanged: (value) =>
-                  setState(() => _primarySupportNeed = value),
+              onChanged: (value) => setState(() => _primarySupportNeed = value),
             ),
             _LabeledDropdown(
               label: 'Financial strain',
@@ -785,9 +916,7 @@ class _NoticeBanner extends StatelessWidget {
           if (actionLabel != null && onAction != null)
             TextButton(
               onPressed: onAction,
-              style: TextButton.styleFrom(
-                foregroundColor: AhmaTheme.sageGreen,
-              ),
+              style: TextButton.styleFrom(foregroundColor: AhmaTheme.sageGreen),
               child: Text(actionLabel!),
             ),
         ],

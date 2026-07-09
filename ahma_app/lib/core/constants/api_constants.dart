@@ -10,6 +10,16 @@ class ApiConstants {
   static const String backendChat = '/api/ahma/chat';
   static const String backendTranscript = '/api/ultravox/transcript';
   static const String backendToolRequest = '/api/ultravox/tool-request';
+  static const String googleAuthUrl = '/api/google/auth-url';
+  static const String googleCalendarStatus = '/api/google/calendar/status';
+  static const String googleCalendarEventsList =
+      '/api/google/calendar/events/list';
+  static const String googleCalendarEventsCreate =
+      '/api/google/calendar/events/create';
+  static const String googleCalendarDisconnect =
+      '/api/google/calendar/disconnect';
+  static const String googleGmailStatus = '/api/google/gmail/status';
+  static const String googleGmailSend = '/api/google/gmail/send';
 
   // Audio configuration
   static const int sampleRate = 48000; // 48kHz

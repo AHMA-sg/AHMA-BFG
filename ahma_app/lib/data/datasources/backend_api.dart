@@ -2,10 +2,13 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../../core/config/env_config.dart';
 import '../../core/constants/api_constants.dart';
+import '../../core/utils/web_redirect.dart';
 import '../models/call_model.dart';
+import 'google_services_store.dart';
 
 class BackendApi {
   late final Dio _dio;
+  final GoogleServicesStore _googleStore = GoogleServicesStore();
 
   BackendApi() {
     final baseUrl = _resolveBaseUrl();
@@ -270,9 +273,11 @@ class BackendApi {
     String? callId,
   }) async {
     try {
+      final toolParameters = Map<String, dynamic>.from(parameters);
+
       final data = {
         'toolName': toolName,
-        'parameters': parameters,
+        'parameters': toolParameters,
         if (callId != null) 'callId': callId,
       };
 
@@ -286,6 +291,94 @@ class BackendApi {
       print('Error sending tool request: $e');
       rethrow;
     }
+  }
+
+  Future<void> startGoogleOAuth({
+    required String service,
+    required String userId,
+  }) async {
+    final returnUri = Uri.base.replace(fragment: '');
+    final response = await _dio.post(
+      ApiConstants.googleAuthUrl,
+      data: {
+        'service': service,
+        'userId': userId,
+        'returnUrl': returnUri.toString(),
+      },
+    );
+
+    final authorizationUrl = response.data['authorizationUrl'] as String?;
+    if (authorizationUrl == null || authorizationUrl.isEmpty) {
+      throw StateError('Backend did not return a Google authorization URL.');
+    }
+
+    redirectToUrl(authorizationUrl);
+  }
+
+  Future<GoogleCalendarStatus> getCalendarStatus({
+    required String userId,
+  }) async {
+    final response = await _dio.post(
+      ApiConstants.googleCalendarStatus,
+      data: {'userId': userId},
+      options: Options(validateStatus: (_) => true),
+    );
+
+    final data = response.data as Map<String, dynamic>;
+    final connected = data['connected'] == true;
+
+    return GoogleCalendarStatus(
+      connected: connected,
+      message: data['message']?.toString() ?? data['error']?.toString(),
+    );
+  }
+
+  Future<Map<String, dynamic>> createCalendarEvent({
+    required String userId,
+    required Map<String, dynamic> event,
+  }) async {
+    final response = await _dio.post(
+      ApiConstants.googleCalendarEventsCreate,
+      data: {'userId': userId, 'event': event},
+    );
+
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> disconnectCalendar({
+    required String userId,
+  }) async {
+    final response = await _dio.post(
+      ApiConstants.googleCalendarDisconnect,
+      data: {'userId': userId},
+    );
+    await _googleStore.clearCalendarCredentials();
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<GoogleGmailStatus> getGmailStatus() async {
+    final response = await _dio.get(
+      ApiConstants.googleGmailStatus,
+      options: Options(validateStatus: (_) => true),
+    );
+    final data = response.data as Map<String, dynamic>;
+    return GoogleGmailStatus(
+      configured: data['configured'] == true,
+      connected: data['connected'] == true,
+      message: data['message']?.toString() ?? data['error']?.toString(),
+    );
+  }
+
+  Future<Map<String, dynamic>> sendGmail({
+    required String to,
+    required String subject,
+    required String body,
+  }) async {
+    final response = await _dio.post(
+      ApiConstants.googleGmailSend,
+      data: {'to': to, 'subject': subject, 'body': body},
+    );
+    return response.data as Map<String, dynamic>;
   }
 }
 
@@ -309,4 +402,23 @@ class BackendHealthCheckResult {
 
     return '$statusCode $label';
   }
+}
+
+class GoogleCalendarStatus {
+  final bool connected;
+  final String? message;
+
+  const GoogleCalendarStatus({required this.connected, this.message});
+}
+
+class GoogleGmailStatus {
+  final bool configured;
+  final bool connected;
+  final String? message;
+
+  const GoogleGmailStatus({
+    required this.configured,
+    required this.connected,
+    this.message,
+  });
 }
