@@ -74,7 +74,8 @@ class CallNotifier extends StateNotifier<CallState> {
       userName ??= profileContext?.displayName;
       careRecipientName ??= profileContext?.careRecipientName;
 
-      // Create call via backend on web to avoid browser CORS and API key leaks.
+      // Create calls through the backend on web because browsers block the
+      // Ultravox REST API preflight and would expose the API key.
       // Tools are configured on the agent.
       final metadata = {
         'app': 'ahma_flutter',

@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 class GoogleServicesStore {
   static const String _calendarCredentialsKey = 'google_calendar_credentials';
   static const String _calendarConnectedKey = 'google_calendar_connected';
+  static const String _lastOAuthStatusKey = 'google_oauth_last_status';
+  static const String _lastOAuthErrorKey = 'google_oauth_last_error';
 
   @Deprecated('Calendar credentials are now stored by the backend.')
   Future<Map<String, dynamic>?> readCalendarCredentials() async {
@@ -25,6 +27,18 @@ class GoogleServicesStore {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_calendarCredentialsKey);
     await prefs.remove(_calendarConnectedKey);
+    await prefs.remove(_lastOAuthStatusKey);
+    await prefs.remove(_lastOAuthErrorKey);
+  }
+
+  Future<String?> readLastOAuthStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_lastOAuthStatusKey);
+  }
+
+  Future<String?> readLastOAuthError() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_lastOAuthErrorKey);
   }
 
   Future<bool> hasCalendarCredentials() async {
@@ -39,8 +53,20 @@ class GoogleServicesStore {
       return false;
     }
 
-    final params = Uri.splitQueryString(fragment);
-    if (params['google_oauth_status'] != 'success') {
+    final normalizedFragment = fragment.startsWith('&')
+        ? fragment.substring(1)
+        : fragment;
+    final params = Uri.splitQueryString(normalizedFragment);
+    final status = params['google_oauth_status'];
+    if (status != 'success') {
+      final prefs = await SharedPreferences.getInstance();
+      if (status != null) {
+        await prefs.setString(_lastOAuthStatusKey, status);
+      }
+      final error = params['error'];
+      if (error != null && error.isNotEmpty) {
+        await prefs.setString(_lastOAuthErrorKey, error);
+      }
       return false;
     }
 
@@ -48,6 +74,8 @@ class GoogleServicesStore {
     if (service == 'calendar' || service == 'all') {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_calendarConnectedKey, true);
+      await prefs.setString(_lastOAuthStatusKey, status!);
+      await prefs.remove(_lastOAuthErrorKey);
       return true;
     }
 

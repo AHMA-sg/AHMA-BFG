@@ -307,15 +307,13 @@ class BackendApi {
     required String service,
     required String userId,
   }) async {
-    final returnUri = Uri.base.replace(fragment: '');
-    final response = await _dio.post(
-      ApiConstants.googleAuthUrl,
-      data: {
-        'service': service,
-        'userId': userId,
-        'returnUrl': returnUri.toString(),
-      },
-    );
+    final data = {
+      'service': service,
+      'userId': userId,
+      if (kIsWeb) 'returnUrl': Uri.base.removeFragment().toString(),
+    };
+
+    final response = await _dio.post(ApiConstants.googleAuthUrl, data: data);
 
     final authorizationUrl = response.data['authorizationUrl'] as String?;
     if (authorizationUrl == null || authorizationUrl.isEmpty) {

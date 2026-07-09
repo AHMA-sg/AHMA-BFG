@@ -64,13 +64,37 @@ class AuthNotifier extends StateNotifier<AuthState> {
     final userId = await _identity.readUserId();
     if (!mounted) return;
 
-    // Any persisted session marker (email from a login, or a userId from a
-    // pre-login build) restores the session; the profile gate re-verifies
-    // the identity against the backend as usual.
-    if (email != null || userId != null) {
+    // A saved userId is the normal restore path; the profile gate verifies it.
+    if (userId != null) {
       state = AuthState(status: AuthStatus.loggedIn, email: email);
-    } else {
+      return;
+    }
+
+    if (email == null) {
       state = const AuthState(status: AuthStatus.loggedOut);
+      return;
+    }
+
+    // Older/local sessions can have login_email without profile_user_id.
+    // Repair that session by resolving the email before the profile gate runs,
+    // otherwise the gate sees no identity and sends an existing user through
+    // onboarding again.
+    try {
+      final resolvedUserId = await _api.resolveUserId(email: email);
+      await _identity.saveUserId(resolvedUserId);
+      if (!mounted) return;
+      _ref.read(profileGateProvider.notifier).retry();
+      state = AuthState(status: AuthStatus.loggedIn, email: email);
+    } on ProfileNotFoundException {
+      if (!mounted) return;
+      state = AuthState(status: AuthStatus.loggedIn, email: email);
+    } catch (_) {
+      if (!mounted) return;
+      state = const AuthState(
+        status: AuthStatus.loggedOut,
+        errorMessage:
+            "We couldn't reach the profile service to restore your session.",
+      );
     }
   }
 

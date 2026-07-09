@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/ahma_theme.dart';
 import '../../core/utils/contact_format.dart';
 import '../../data/datasources/backend_api.dart';
+import '../../data/datasources/google_services_store.dart';
 import '../../data/datasources/profile_api.dart';
 import '../../data/models/profile_models.dart';
 import '../providers/auth_provider.dart';
@@ -35,10 +36,12 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   String? _primarySupportNeed;
   String? _financialStrain;
   bool _checkingGoogle = true;
+  bool _googleRefreshScheduled = false;
   bool _calendarConnected = false;
   bool _gmailConnected = false;
   bool _gmailConfigured = false;
   String? _googleStatusMessage;
+  String? _googleRefreshUserId;
 
   /// Backend dotted field path -> inline message.
   Map<String, String> _fieldErrors = {};
@@ -86,6 +89,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   static String? _valueOrNull(String value) => value.isEmpty ? null : value;
 
   Future<void> _refreshGoogleStatus(UserProfile profile) async {
+    _googleRefreshUserId = profile.userId;
     setState(() {
       _checkingGoogle = true;
       _googleStatusMessage = null;
@@ -95,15 +99,28 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       final backend = BackendApi();
       final calendar = await backend.getCalendarStatus(userId: profile.userId);
       final gmail = await backend.getGmailStatus();
+      final googleStore = GoogleServicesStore();
+      final lastOAuthStatus = await googleStore.readLastOAuthStatus();
+      final lastOAuthError = await googleStore.readLastOAuthError();
       if (!mounted) return;
       setState(() {
         _checkingGoogle = false;
         _calendarConnected = calendar.connected;
         _gmailConnected = gmail.connected;
         _gmailConfigured = gmail.configured;
-        _googleStatusMessage =
-            calendar.message ?? gmail.message ?? _googleStatusMessage;
+        if (calendar.connected) {
+          _googleStatusMessage = 'Google Calendar connected.';
+        } else if (lastOAuthStatus == 'error') {
+          _googleStatusMessage =
+              'Google Calendar sign-in did not complete'
+              '${lastOAuthError == null ? '.' : ': $lastOAuthError'}';
+        } else {
+          _googleStatusMessage =
+              calendar.message ?? gmail.message ?? _googleStatusMessage;
+        }
       });
+      _googleRefreshScheduled = false;
+      _googleRefreshUserId = null;
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -111,6 +128,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         _googleStatusMessage =
             "We couldn't check Google services. Try again in a moment.";
       });
+      _googleRefreshScheduled = false;
+      _googleRefreshUserId = null;
     }
   }
 
@@ -338,7 +357,11 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     final profile = ref.watch(profileGateProvider).profile;
     final optionsAsync = ref.watch(profileOptionsProvider);
 
-    if (profile != null && _checkingGoogle) {
+    if (profile != null &&
+        _checkingGoogle &&
+        !_googleRefreshScheduled &&
+        _googleRefreshUserId != profile.userId) {
+      _googleRefreshScheduled = true;
       Future.microtask(() => _refreshGoogleStatus(profile));
     }
 

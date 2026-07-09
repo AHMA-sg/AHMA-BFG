@@ -263,8 +263,9 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     // contact_already_exists / a validation_error routed us back to an earlier
     // question). In that correction case, resubmit immediately instead of
     // making the user re-tap through the already-answered later questions.
-    final isComplete =
-        OnboardingField.values.every((f) => answers.containsKey(f));
+    final isComplete = OnboardingField.values.every(
+      (f) => answers.containsKey(f),
+    );
 
     if (state.isLastQuestion || isComplete) {
       state = state.copyWith(answers: answers, inlineError: null);
@@ -345,13 +346,14 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     } on ProfileValidationException catch (e) {
       _handleFieldErrors(e.fieldErrors);
     } on ContactAlreadyExistsException {
-      _jumpToQuestion(
-        OnboardingField.contact,
-        'That contact is already registered on this local backend. '
-        'You can use a different email or phone number — or run '
-        './setup_and_run.sh --reset-profile-data to wipe local profile '
-        'data and start fresh.',
-      );
+      final recovered = await _completeWithExistingContact(request);
+      if (!recovered && mounted) {
+        _jumpToQuestion(
+          OnboardingField.contact,
+          'That contact is already registered. Sign in with that same '
+          'contact, or use a different email or phone number.',
+        );
+      }
     } on DuplicateUserIdException {
       // Second duplicate in a row — fall through to a generic retry.
       _showSubmitError(
@@ -407,6 +409,24 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
       primarySupportNeed: supportNeed,
       financialStrainSeverity: strain,
     );
+  }
+
+  Future<bool> _completeWithExistingContact(
+    ProfileCreateRequest request,
+  ) async {
+    try {
+      final userId = await _api.resolveUserId(
+        email: request.email,
+        phone: request.phone,
+      );
+      final profile = await _api.getProfile(userId);
+      await _identity.saveUserId(profile.userId);
+      if (!mounted) return true;
+      _onCompleted(profile);
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   /// Routes backend field errors to the owning question with warm copy.
