@@ -1,11 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/utils/contact_format.dart';
+import '../../data/datasources/auth_api.dart';
 import '../../data/datasources/local_identity_store.dart';
-import '../../data/datasources/profile_api.dart';
 import 'profile_provider.dart';
 
-/// Where the app is in the (stubbed) auth lifecycle.
+final authApiProvider = Provider<AuthApi>((ref) => AuthApi());
+
+/// Where the app is in the OTP auth lifecycle.
 enum AuthStatus {
   /// Reading the persisted session at cold start.
   restoring,
@@ -13,44 +15,56 @@ enum AuthStatus {
   /// No session — show the login screen.
   loggedOut,
 
-  /// Login submitted; resolving the email against the profile backend.
-  signingIn,
+  /// A sign-in code request is in flight.
+  requestingCode,
 
-  /// Session established — hand off to the profile gate.
+  /// A code has been requested — show the code-entry screen.
+  awaitingCode,
+
+  /// A code is being verified.
+  verifying,
+
+  /// First-time user is filling out their profile (pre-session).
+  onboarding,
+
+  /// Session established (JWT stored) — hand off to the profile gate.
   loggedIn,
 }
 
 class AuthState {
   final AuthStatus status;
 
-  /// The email used at login. Seeds the onboarding contact question for
-  /// first-time users and is persisted as the session marker.
+  /// The email the code was sent to. Seeds onboarding's contact question and
+  /// is the subject the code verifies against.
   final String? email;
 
-  /// Inline error for the login screen, or null.
+  /// Inline error for the current screen, or null.
   final String? errorMessage;
 
-  const AuthState({required this.status, this.email, this.errorMessage});
+  /// Neutral guidance (e.g. "profile created, enter your code"), or null.
+  final String? infoMessage;
+
+  const AuthState({
+    required this.status,
+    this.email,
+    this.errorMessage,
+    this.infoMessage,
+  });
 
   const AuthState.restoring() : this(status: AuthStatus.restoring);
 }
 
-/// Simulated auth, deliberately shaped like a real `AuthRepository`:
-/// `signIn(credential) -> session`, `restore()`, `signOut()`.
+/// OTP email auth. The flow the backend forces:
 ///
-/// There is NO real authentication — the email is a stand-in for a verified
-/// token subject (`sub`). Sign-in resolves the email to a `userId` via
-/// `POST /api/profile/resolve` (the stub's token→identity resolution):
+/// - Returning user: [requestCode] -> code emailed -> [verifyCode] -> JWT.
+/// - New user: [startSignup] -> onboarding creates the profile (open) ->
+///   [completeSignup] emails a code for that now-existing account ->
+///   [verifyCode] -> JWT whose `sub` matches the created profile.
 ///
-/// - resolved            -> save session, straight to the app
-/// - profile_not_found   -> save session without identity; the profile gate
-///                          runs onboarding with the email pre-filled
-/// - backend unreachable -> stay logged out with a retriable inline error
-///
-/// Real auth later replaces the body of [signIn] (IdP token exchange) and
-/// the session source — the states and call sites stay as they are.
+/// The verified JWT is the session; `/me` resolves identity from it, so there
+/// is no id-in-path and no IDOR surface.
 class AuthNotifier extends StateNotifier<AuthState> {
-  final ProfileApi _api;
+  final AuthApi _api;
   final LocalIdentityStore _identity;
   final Ref _ref;
 
@@ -60,109 +74,208 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> _restore() async {
-    final email = await _identity.readLoginEmail();
-    final userId = await _identity.readUserId();
+    final token = await _identity.readToken();
     if (!mounted) return;
 
-    // A saved userId is the normal restore path; the profile gate verifies it.
-    if (userId != null) {
-      state = AuthState(status: AuthStatus.loggedIn, email: email);
+    if (token == null || _isExpired(await _identity.readTokenExpiresAt())) {
+      // No token, or a stale one: start clean so no half-session lingers.
+      if (token != null) await _identity.clearSession();
+      if (!mounted) return;
+      state = const AuthState(status: AuthStatus.loggedOut);
       return;
     }
 
+    // A live token is the normal restore path; the profile gate verifies it
+    // against `/me` and signs out if the backend rejects it.
+    final email = await _identity.readLoginEmail();
+    if (!mounted) return;
+    state = AuthState(status: AuthStatus.loggedIn, email: email);
+  }
+
+  /// Request a sign-in code for [rawEmail]. Moves to the code-entry screen on
+  /// success. [infoMessage] carries neutral context (e.g. after signup).
+  Future<void> requestCode(String rawEmail, {String? infoMessage}) async {
+    final email = normalizeEmail(rawEmail);
+    if (email == null) {
+      state = AuthState(
+        status: AuthStatus.loggedOut,
+        email: state.email,
+        errorMessage: "That email doesn't look right — mind checking it?",
+      );
+      return;
+    }
+
+    state = AuthState(status: AuthStatus.requestingCode, email: email);
+
+    try {
+      await _api.requestCode(email);
+      if (!mounted) return;
+      state = AuthState(
+        status: AuthStatus.awaitingCode,
+        email: email,
+        infoMessage: infoMessage,
+      );
+    } on AuthValidationException {
+      if (!mounted) return;
+      state = AuthState(
+        status: AuthStatus.loggedOut,
+        email: email,
+        errorMessage: "That email doesn't look right — mind checking it?",
+      );
+    } on AuthRateLimitedException {
+      // They may already hold a valid earlier code — let them enter it.
+      if (!mounted) return;
+      state = AuthState(
+        status: AuthStatus.awaitingCode,
+        email: email,
+        infoMessage:
+            'You have requested a few codes. Enter the latest one, or wait '
+            'a bit before asking for another.',
+      );
+    } catch (_) {
+      if (!mounted) return;
+      state = AuthState(
+        status: AuthStatus.loggedOut,
+        email: email,
+        errorMessage:
+            "We couldn't reach the sign-in service. "
+            'If you run the app locally, start it with '
+            'dev_setup_and_run.sh and try again.',
+      );
+    }
+  }
+
+  /// Re-send a code to the email already in flight.
+  Future<void> resendCode() async {
+    final email = state.email;
+    if (email == null) {
+      state = const AuthState(status: AuthStatus.loggedOut);
+      return;
+    }
+    await requestCode(email, infoMessage: 'A new code is on its way.');
+  }
+
+  /// Exchange the entered [rawCode] for a session JWT.
+  Future<void> verifyCode(String rawCode) async {
+    final email = state.email;
     if (email == null) {
       state = const AuthState(status: AuthStatus.loggedOut);
       return;
     }
 
-    // Older/local sessions can have login_email without profile_user_id.
-    // Repair that session by resolving the email before the profile gate runs,
-    // otherwise the gate sees no identity and sends an existing user through
-    // onboarding again.
+    final code = rawCode.trim();
+    if (code.length != 6 || int.tryParse(code) == null) {
+      state = AuthState(
+        status: AuthStatus.awaitingCode,
+        email: email,
+        errorMessage: 'Enter the 6-digit code we emailed you.',
+      );
+      return;
+    }
+
+    state = AuthState(status: AuthStatus.verifying, email: email);
+
     try {
-      final resolvedUserId = await _api.resolveUserId(email: email);
-      await _identity.saveUserId(resolvedUserId);
+      final session = await _api.verifyCode(email, code);
+      await _identity.saveSession(
+        token: session.token,
+        userId: session.userId,
+        email: email,
+        expiresAt: session.expiresAt,
+      );
       if (!mounted) return;
+      // Re-run the launch gate against the new session BEFORE revealing it.
       _ref.read(profileGateProvider.notifier).retry();
       state = AuthState(status: AuthStatus.loggedIn, email: email);
-    } on ProfileNotFoundException {
+    } on InvalidCodeException {
       if (!mounted) return;
-      state = AuthState(status: AuthStatus.loggedIn, email: email);
+      state = AuthState(
+        status: AuthStatus.awaitingCode,
+        email: email,
+        errorMessage: "That code didn't work — check it or request a new one.",
+      );
     } catch (_) {
       if (!mounted) return;
-      state = const AuthState(
-        status: AuthStatus.loggedOut,
+      state = AuthState(
+        status: AuthStatus.awaitingCode,
+        email: email,
         errorMessage:
-            "We couldn't reach the profile service to restore your session.",
+            "We couldn't reach the sign-in service. Try that code again in "
+            'a moment.',
       );
     }
   }
 
-  /// Login with an email — the stub credential. Any provider button funnels
-  /// here with a fabricated address.
-  Future<void> signIn(String rawEmail) async {
-    final email = normalizeEmail(rawEmail);
-    if (email == null) {
-      state = const AuthState(
-        status: AuthStatus.loggedOut,
-        errorMessage: "That email doesn't look right — mind checking it?",
-      );
-      return;
-    }
+  /// Enter the first-time signup flow (conversational onboarding). No session
+  /// exists yet — onboarding creates the profile, then [completeSignup] runs.
+  void startSignup() {
+    state = AuthState(status: AuthStatus.onboarding, email: state.email);
+  }
 
-    state = AuthState(status: AuthStatus.signingIn, email: email);
-
-    try {
-      final userId = await _api.resolveUserId(email: email);
-      await _identity.saveUserId(userId);
-    } on ProfileNotFoundException {
-      // First-time login: no profile owns this email yet. Make sure no
-      // stale identity survives so the gate routes into onboarding.
-      await _identity.clearUserId();
-    } on ProfileValidationException {
-      if (!mounted) return;
-      state = const AuthState(
-        status: AuthStatus.loggedOut,
-        errorMessage: "That email doesn't look right — mind checking it?",
-      );
-      return;
-    } catch (_) {
-      // Unreachable backend, 5xx, malformed response… login needs the
-      // resolve round-trip, so surface a retriable error.
-      if (!mounted) return;
+  /// Called by onboarding after a confirmed profile create. The account now
+  /// exists, so a code CAN be emailed; route into verification.
+  Future<void> completeSignup(String? email) async {
+    if (email == null || email.trim().isEmpty) {
+      // Phone-only signup: OTP is email-based, so there is nothing to send.
       state = const AuthState(
         status: AuthStatus.loggedOut,
         errorMessage:
-            "We couldn't reach the profile service to sign you in. "
-            'If you run the app locally, start it with '
-            'dev_setup_and_run.sh and try again.',
+            'Add an email to your profile to receive a sign-in code. '
+            'Phone-only sign-in is coming soon.',
       );
       return;
     }
-
-    await _identity.saveLoginEmail(email);
-    if (!mounted) return;
-
-    // Re-run the launch gate against the (possibly new) identity BEFORE
-    // revealing it, so it never flashes a previous session's state.
-    _ref.read(profileGateProvider.notifier).retry();
-    state = AuthState(status: AuthStatus.loggedIn, email: email);
+    await requestCode(
+      email,
+      infoMessage:
+          "Your profile is ready. Enter the code we just emailed to finish "
+          'signing in.',
+    );
   }
 
-  /// Clears the session and returns to the login screen. The next login
-  /// re-resolves identity from the backend, so the same email lands back
-  /// in the same profile.
+  /// The entered contact already has an account (create returned a conflict):
+  /// route them to sign in with a code instead of creating a duplicate.
+  Future<void> signInExisting(String? email) async {
+    if (email == null || email.trim().isEmpty) {
+      state = const AuthState(
+        status: AuthStatus.loggedOut,
+        errorMessage:
+            'That contact is already registered. Sign in with the email on '
+            'that account.',
+      );
+      return;
+    }
+    await requestCode(
+      email,
+      infoMessage:
+          "You already have an account. Enter the code we just emailed to "
+          'sign in.',
+    );
+  }
+
+  /// Abandon signup / code entry and return to the login screen.
+  void backToLogin() {
+    state = AuthState(status: AuthStatus.loggedOut, email: state.email);
+  }
+
+  /// Clears the session and returns to the login screen.
   Future<void> signOut() async {
-    await _identity.clearUserId();
-    await _identity.clearLoginEmail();
+    await _identity.clearSession();
     if (!mounted) return;
     state = const AuthState(status: AuthStatus.loggedOut);
+  }
+
+  static bool _isExpired(String? iso) {
+    if (iso == null || iso.isEmpty) return false;
+    final expiry = DateTime.tryParse(iso);
+    if (expiry == null) return false;
+    return expiry.toUtc().isBefore(DateTime.now().toUtc());
   }
 }
 
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   return AuthNotifier(
-    ref.watch(profileApiProvider),
+    ref.watch(authApiProvider),
     ref.watch(localIdentityStoreProvider),
     ref,
   );

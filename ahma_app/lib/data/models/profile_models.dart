@@ -1,12 +1,11 @@
 /// Models for the AHMA profile API (backend_v2 on PROFILE_API_URL).
 ///
 /// Wire shapes are pinned by the backend contract:
-/// - GET  /api/profile/options            -> ProfileOptions
-/// - POST /api/profile                    -> ProfileCreateRequest / UserProfile
-/// - GET  /api/profile/:userId            -> UserProfile
-/// - PATCH /api/profile/:userId           -> ProfilePatchRequest / UserProfile
-/// - POST /api/profile/resolve            -> contact lookup, returns userId
-/// - GET  /api/profile/:userId/context    -> ProfileContextData
+/// - GET  /api/profile/options    -> ProfileOptions
+/// - POST /api/profile            -> ProfileCreateRequest / UserProfile
+/// - GET  /api/profile/me         -> UserProfile
+/// - PATCH /api/profile/me        -> ProfilePatchRequest / UserProfile
+/// - GET  /api/profile/me/context -> ProfileContextData
 ///
 /// Option-backed fields carry raw option `value`s (e.g. `emotional_burnout`),
 /// never labels. Use [ProfileOptions.labelFor] to render human-readable text.
