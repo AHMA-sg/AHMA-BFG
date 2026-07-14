@@ -11,9 +11,6 @@ class EnvConfig {
   static const String _backendApiUrl = String.fromEnvironment(
     'BACKEND_API_URL',
   );
-  static const String _backendApiKey = String.fromEnvironment(
-    'BACKEND_API_KEY',
-  );
   static const String _profileApiUrl = String.fromEnvironment(
     'PROFILE_API_URL',
   );
@@ -63,7 +60,6 @@ class EnvConfig {
     'BACKEND_API_URL',
     fallback: kIsWeb ? '' : 'http://localhost:5001',
   );
-  static String get backendApiKey => _value(_backendApiKey, 'BACKEND_API_KEY');
 
   // AHMA Profile API (backend_v2 on :5002 — separate from the legacy :5001
   // voice/webhook/transcript backend above).
