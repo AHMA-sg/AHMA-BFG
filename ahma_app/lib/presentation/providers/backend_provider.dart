@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/action_plan.dart';
 import '../../data/datasources/local_db_web.dart'
     if (dart.library.io) '../../data/datasources/local_db.dart';
+import '../../data/datasources/backend_api.dart';
+import '../../data/datasources/local_identity_store.dart';
 
 /// Backend update state
 class BackendState {
@@ -35,9 +37,17 @@ class BackendState {
 /// Backend provider - manages action plans and updates from backend
 class BackendNotifier extends StateNotifier<BackendState> {
   final LocalDatabase _localDb;
+  final BackendApi _backendApi;
+  final LocalIdentityStore _identityStore;
 
-  BackendNotifier(this._localDb) : super(const BackendState()) {
-    _loadFromLocalStorage();
+  BackendNotifier(this._localDb, this._backendApi, this._identityStore)
+    : super(const BackendState()) {
+    _loadInitialUpdates();
+  }
+
+  Future<void> _loadInitialUpdates() async {
+    await _loadFromLocalStorage();
+    await refreshFromBackend();
   }
 
   /// Load action plans from local storage on initialization
@@ -62,6 +72,34 @@ class BackendNotifier extends StateNotifier<BackendState> {
         isLoading: false,
         error: 'Failed to load action plans',
       );
+    }
+  }
+
+  /// Hydrate web and newly installed clients from durable Postgres storage.
+  Future<void> refreshFromBackend() async {
+    final userId = await _identityStore.readUserId();
+    if (userId == null || userId.isEmpty) return;
+
+    try {
+      final remoteUpdates = await _backendApi.getSummaries(userId: userId);
+      for (final update in remoteUpdates.reversed) {
+        await _localDb.saveActionPlan(update);
+      }
+      final localOnly = state.updates.where(
+        (local) =>
+            !remoteUpdates.any((remote) => remote.callId == local.callId),
+      );
+      final combined = [...remoteUpdates, ...localOnly]
+        ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      state = state.copyWith(
+        updates: combined,
+        latestUpdate: combined.isEmpty ? null : combined.first,
+        isLoading: false,
+      );
+      print('[Backend] Loaded ${remoteUpdates.length} summaries from backend');
+    } catch (e) {
+      // Keep locally cached entries visible if the API is temporarily offline.
+      print('[Backend] Could not refresh summaries from backend: $e');
     }
   }
 
@@ -162,6 +200,7 @@ class BackendNotifier extends StateNotifier<BackendState> {
   /// Reload from database (useful after external changes)
   Future<void> reload() async {
     await _loadFromLocalStorage();
+    await refreshFromBackend();
   }
 }
 
@@ -175,5 +214,5 @@ final backendProvider = StateNotifierProvider<BackendNotifier, BackendState>((
   ref,
 ) {
   final localDb = ref.watch(localDatabaseProvider);
-  return BackendNotifier(localDb);
+  return BackendNotifier(localDb, BackendApi(), LocalIdentityStore());
 });

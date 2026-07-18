@@ -4,6 +4,7 @@ import '../../core/config/env_config.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/utils/web_redirect.dart';
 import '../models/call_model.dart';
+import '../models/action_plan.dart';
 import 'google_services_store.dart';
 
 class BackendApi {
@@ -274,6 +275,22 @@ class BackendApi {
       print('Error sending transcript: $e');
       rethrow;
     }
+  }
+
+  /// Fetch durable journal summaries from the backend Postgres store.
+  Future<List<BackendUpdate>> getSummaries({
+    required String userId,
+    int limit = 50,
+  }) async {
+    final response = await _dio.get(
+      '/api/summaries',
+      queryParameters: {'userId': userId, 'limit': limit},
+    );
+    final data = response.data as Map<String, dynamic>;
+    final summaries = data['summaries'] as List<dynamic>? ?? const [];
+    return summaries
+        .map((item) => BackendUpdate.fromJson(item as Map<String, dynamic>))
+        .toList();
   }
 
   /// Send tool request to backend during call

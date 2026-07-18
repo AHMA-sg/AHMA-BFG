@@ -1,11 +1,13 @@
 /// Action Plan model from backend webhook
 class ActionPlan {
+  final String summary;
   final List<CalendarEvent> calendarEvents;
   final List<TodoistTask> todoistTasks;
   final List<Resource> resources;
   final String reasoning;
 
   const ActionPlan({
+    this.summary = '',
     required this.calendarEvents,
     required this.todoistTasks,
     required this.resources,
@@ -14,15 +16,19 @@ class ActionPlan {
 
   factory ActionPlan.fromJson(Map<String, dynamic> json) {
     return ActionPlan(
-      calendarEvents: (json['calendar_events'] as List<dynamic>?)
+      summary: json['summary'] as String? ?? json['reasoning'] as String? ?? '',
+      calendarEvents:
+          (json['calendar_events'] as List<dynamic>?)
               ?.map((e) => CalendarEvent.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
-      todoistTasks: (json['todoist_tasks'] as List<dynamic>?)
+      todoistTasks:
+          (json['todoist_tasks'] as List<dynamic>?)
               ?.map((e) => TodoistTask.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
-      resources: (json['resources'] as List<dynamic>?)
+      resources:
+          (json['resources'] as List<dynamic>?)
               ?.map((e) => Resource.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
@@ -32,6 +38,7 @@ class ActionPlan {
 
   Map<String, dynamic> toJson() {
     return {
+      'summary': summary,
       'calendar_events': calendarEvents.map((e) => e.toJson()).toList(),
       'todoist_tasks': todoistTasks.map((e) => e.toJson()).toList(),
       'resources': resources.map((e) => e.toJson()).toList(),
@@ -107,7 +114,8 @@ class TodoistTask {
       taskName: json['task_name'] as String? ?? '',
       taskDue: json['task_due'] as String? ?? '',
       priority: json['priority'] as int? ?? 2,
-      labels: (json['labels'] as List<dynamic>?)
+      labels:
+          (json['labels'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           [],
@@ -184,15 +192,29 @@ class BackendUpdate {
       type: json['type'] as String? ?? 'action_plan_ready',
       userId: json['userId'] as String? ?? '',
       callId: json['callId'] as String? ?? '',
-      timestamp: DateTime.tryParse(json['timestamp'] as String? ?? '') ??
+      timestamp:
+          DateTime.tryParse(json['timestamp'] as String? ?? '') ??
           DateTime.now(),
       classification: Classification.fromJson(
-          json['classification'] as Map<String, dynamic>? ?? {}),
+        json['classification'] as Map<String, dynamic>? ?? {},
+      ),
       actionPlan: ActionPlan.fromJson(
-          json['action_plan'] as Map<String, dynamic>? ?? {}),
-      stats:
-          UpdateStats.fromJson(json['stats'] as Map<String, dynamic>? ?? {}),
+        json['action_plan'] as Map<String, dynamic>? ?? {},
+      ),
+      stats: UpdateStats.fromJson(json['stats'] as Map<String, dynamic>? ?? {}),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'type': type,
+      'userId': userId,
+      'callId': callId,
+      'timestamp': timestamp.toIso8601String(),
+      'classification': classification.toJson(),
+      'action_plan': actionPlan.toJson(),
+      'stats': stats.toJson(),
+    };
   }
 }
 
