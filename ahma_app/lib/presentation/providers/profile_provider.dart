@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/datasources/local_identity_store.dart';
 import '../../data/datasources/profile_api.dart';
 import '../../data/models/profile_models.dart';
+import 'auth_provider.dart';
 
 final localIdentityStoreProvider = Provider<LocalIdentityStore>(
   (ref) => LocalIdentityStore(),
@@ -11,11 +12,9 @@ final localIdentityStoreProvider = Provider<LocalIdentityStore>(
 final profileApiProvider = Provider<ProfileApi>((ref) {
   final identity = ref.watch(localIdentityStoreProvider);
   return ProfileApi(
-    // Stub session token: the saved userId (or the login email before a
-    // profile exists) stands in for a real IdP token. The local backend
-    // ignores the header; production middleware will verify it.
-    bearerToken: () async =>
-        await identity.readUserId() ?? await identity.readLoginEmail(),
+    // The OTP-issued JWT authenticates every `/me` request. `create` and
+    // `options` are open and tolerate a null token (pre-signup onboarding).
+    bearerToken: () async => identity.readToken(),
   );
 });
 
@@ -27,14 +26,11 @@ final profileOptionsProvider = FutureProvider<ProfileOptions>((ref) {
 
 /// Where the app should be at launch.
 enum ProfileGateStatus {
-  /// Reading the saved userId / fetching the profile.
+  /// Fetching the profile for the current session.
   checking,
 
-  /// No local identity — run conversational onboarding.
-  onboarding,
-
-  /// Profile service unreachable/misconfigured with a saved identity.
-  /// Identity is KEPT; the user can retry.
+  /// Profile service unreachable/misconfigured with a live session.
+  /// The session is KEPT; the user can retry.
   unreachable,
 
   /// Profile loaded — enter the main AHMA experience.
@@ -52,17 +48,17 @@ class ProfileGateState {
 }
 
 /// Launch gate for the profile lifecycle (sits above both home-screen
-/// variants):
+/// variants). Only mounted once auth holds a valid session, so identity comes
+/// from the JWT — the gate just fetches `/me`:
 ///
-/// - no saved userId          -> onboarding
-/// - GET /api/profile/:id 200 -> ready
-/// - JSON 404 profile_not_found -> clear identity, onboarding
-/// - anything else            -> unreachable (retriable, identity kept)
+/// - GET /api/profile/me 200          -> ready
+/// - 404 profile_not_found / 401      -> stale session, sign out to the login
+/// - anything else                    -> unreachable (retriable, session kept)
 class ProfileGateNotifier extends StateNotifier<ProfileGateState> {
   final ProfileApi _api;
-  final LocalIdentityStore _identity;
+  final Ref _ref;
 
-  ProfileGateNotifier(this._api, this._identity)
+  ProfileGateNotifier(this._api, this._ref)
     : super(const ProfileGateState.checking()) {
     _initialize();
   }
@@ -70,31 +66,24 @@ class ProfileGateNotifier extends StateNotifier<ProfileGateState> {
   Future<void> _initialize() async {
     state = const ProfileGateState.checking();
 
-    final userId = await _identity.readUserId();
-    if (!mounted) return;
-
-    if (userId == null) {
-      state = const ProfileGateState(status: ProfileGateStatus.onboarding);
-      return;
-    }
-
     try {
-      final profile = await _api.getProfile(userId);
+      final profile = await _api.getMe();
       if (!mounted) return;
       state = ProfileGateState(
         status: ProfileGateStatus.ready,
         profile: profile,
       );
+    } on ProfileUnauthorizedException {
+      // Token missing/expired/rejected: drop the session back to the login.
+      await _ref.read(authProvider.notifier).signOut();
     } on ProfileNotFoundException {
-      // The only case where local identity is cleared: the backend
-      // explicitly said this profile does not exist (e.g. after
-      // --reset-profile-data wiped the local database).
-      await _identity.clearUserId();
-      if (!mounted) return;
-      state = const ProfileGateState(status: ProfileGateStatus.onboarding);
+      // The account+profile are created atomically, so a 404 for a valid
+      // session means the data was wiped underneath us. Sign out; the user
+      // can create a fresh profile.
+      await _ref.read(authProvider.notifier).signOut();
     } catch (_) {
-      // Connection refused, timeout, 5xx, non-JSON 404, parse failure…
-      // Keep the identity and offer retry — never onboard on outage.
+      // Connection refused, timeout, 5xx, non-JSON, parse failure…
+      // Keep the session and offer retry — never sign out on an outage.
       if (!mounted) return;
       state = const ProfileGateState(
         status: ProfileGateStatus.unreachable,
@@ -108,22 +97,16 @@ class ProfileGateNotifier extends StateNotifier<ProfileGateState> {
 
   Future<void> retry() => _initialize();
 
-  /// Called by onboarding after a confirmed 201 create.
-  void completeOnboarding(UserProfile profile) {
-    state = ProfileGateState(status: ProfileGateStatus.ready, profile: profile);
-  }
-
-  /// Partial profile update (PATCH). On success the in-memory profile is
+  /// Partial profile update (PATCH /me). On success the in-memory profile is
   /// replaced, so profile-derived UI (dashboard greeting, account page)
   /// refreshes immediately. Typed [ProfileApiException]s propagate to the
   /// caller for inline error mapping.
   Future<UserProfile> updateProfile(ProfilePatchRequest patch) async {
-    final current = state.profile;
-    if (state.status != ProfileGateStatus.ready || current == null) {
+    if (state.status != ProfileGateStatus.ready || state.profile == null) {
       throw StateError('updateProfile called before the gate is ready');
     }
 
-    final updated = await _api.updateProfile(current.userId, patch);
+    final updated = await _api.updateMe(patch);
     if (mounted) {
       state = ProfileGateState(
         status: ProfileGateStatus.ready,
@@ -136,27 +119,21 @@ class ProfileGateNotifier extends StateNotifier<ProfileGateState> {
 
 final profileGateProvider =
     StateNotifierProvider<ProfileGateNotifier, ProfileGateState>((ref) {
-      return ProfileGateNotifier(
-        ref.watch(profileApiProvider),
-        ref.watch(localIdentityStoreProvider),
-      );
+      return ProfileGateNotifier(ref.watch(profileApiProvider), ref);
     });
 
-/// Call-time profile context (GET /api/profile/:userId/context).
+/// Call-time profile context (GET /api/profile/me/context).
 ///
 /// Returns null when the gate is not ready or the context fetch fails —
 /// call flows degrade gracefully to the base profile / generic greeting.
 final profileContextProvider = FutureProvider<ProfileContextData?>((ref) async {
   final gate = ref.watch(profileGateProvider);
-  final profile = gate.profile;
-  if (gate.status != ProfileGateStatus.ready || profile == null) {
+  if (gate.status != ProfileGateStatus.ready || gate.profile == null) {
     return null;
   }
 
   try {
-    return await ref
-        .watch(profileApiProvider)
-        .getProfileContext(profile.userId);
+    return await ref.watch(profileApiProvider).getMeContext();
   } catch (_) {
     return null;
   }

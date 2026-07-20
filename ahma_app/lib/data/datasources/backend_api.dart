@@ -18,8 +18,6 @@ class BackendApi {
         baseUrl: baseUrl,
         headers: {
           'Content-Type': 'application/json',
-          if (EnvConfig.backendApiKey.isNotEmpty)
-            'X-API-Key': EnvConfig.backendApiKey,
         },
         connectTimeout: const Duration(seconds: 30),
         receiveTimeout: const Duration(seconds: 30),

@@ -3,13 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/ahma_theme.dart';
 import '../providers/profile_provider.dart';
-import 'onboarding_screen.dart';
 
-/// Launch gate that sits above both home-screen variants.
+/// Launch gate that sits above both home-screen variants. Mounted only once a
+/// session JWT exists, so identity comes from the token (`/me`).
 ///
-/// - checking     -> lightweight splash while the saved userId is verified
-/// - onboarding   -> conversational profile intake
-/// - unreachable  -> retriable error (identity kept — R11)
+/// - checking     -> lightweight splash while `/me` is fetched
+/// - unreachable  -> retriable error (session kept — R11)
 /// - ready        -> the main AHMA experience ([app])
 class ProfileGate extends ConsumerWidget {
   /// The main app experience shown once a profile is confirmed.
@@ -24,8 +23,6 @@ class ProfileGate extends ConsumerWidget {
     switch (gate.status) {
       case ProfileGateStatus.checking:
         return const _GateSplash();
-      case ProfileGateStatus.onboarding:
-        return const OnboardingScreen();
       case ProfileGateStatus.unreachable:
         return _GateUnreachable(
           message:

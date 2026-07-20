@@ -4,13 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/ahma_theme.dart';
 import '../providers/auth_provider.dart';
 
-/// Simulated login — the first screen of the app.
+/// Sign-in entry point: enter an email and we send a one-time code.
 ///
-/// There is no real authentication: the email is the stub credential. It is
-/// resolved against the profile backend (POST /api/profile/resolve) — a
-/// known email lands straight in its profile, an unknown one routes into
-/// onboarding with the email pre-filled. The provider buttons funnel into
-/// the same path with fabricated demo addresses.
+/// Returning users get a code straight away. New users tap "Create your
+/// profile" to onboard first (which provisions their account), then verify a
+/// code to finish signing in.
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -22,24 +20,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    // Carry a known email (e.g. after a failed verify) back into the field.
+    final email = ref.read(authProvider).email;
+    if (email != null) _emailController.text = email;
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     super.dispose();
   }
 
-  void _continueWithEmail() {
-    ref.read(authProvider.notifier).signIn(_emailController.text);
+  void _sendCode() {
+    ref.read(authProvider.notifier).requestCode(_emailController.text);
   }
 
-  void _continueWithProvider(String demoEmail) {
-    _emailController.text = demoEmail;
-    ref.read(authProvider.notifier).signIn(demoEmail);
+  void _createProfile() {
+    ref.read(authProvider.notifier).startSignup();
   }
 
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authProvider);
-    final busy = auth.status == AuthStatus.signingIn;
+    final busy = auth.status == AuthStatus.requestingCode;
 
     return Scaffold(
       backgroundColor: AhmaTheme.background,
@@ -74,8 +79,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: 40),
                   Text(
-                    "Sign in to continue — we'll bring you right back to "
-                    'your care profile.',
+                    "Sign in to continue — we'll email you a one-time code and "
+                    'bring you right back to your care profile.',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontSize: 18,
                       color: AhmaTheme.mocha,
@@ -89,7 +94,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     keyboardType: TextInputType.emailAddress,
                     autocorrect: false,
                     textInputAction: TextInputAction.done,
-                    onSubmitted: (_) => _continueWithEmail(),
+                    onSubmitted: (_) => _sendCode(),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontSize: 17,
                       color: AhmaTheme.mocha,
@@ -113,7 +118,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ],
                   const SizedBox(height: 16),
                   ElevatedButton(
-                    onPressed: busy ? null : _continueWithEmail,
+                    onPressed: busy ? null : _sendCode,
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size.fromHeight(54),
                     ),
@@ -128,46 +133,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                             ),
                           )
-                        : const Text('Continue'),
+                        : const Text('Email me a sign-in code'),
                   ),
-                  const SizedBox(height: 28),
-                  Row(
-                    children: [
-                      const Expanded(child: Divider()),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Text(
-                          'or continue with',
-                          style: AhmaTheme.labelTextStyle.copyWith(
-                            fontSize: 12,
-                            color: AhmaTheme.mocha.withValues(alpha: 0.55),
-                          ),
-                        ),
+                  const SizedBox(height: 24),
+                  TextButton(
+                    onPressed: busy ? null : _createProfile,
+                    child: Text(
+                      'New to AHMA? Create your profile',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontSize: 15,
+                        color: AhmaTheme.ahmaRed,
+                        fontWeight: FontWeight.w600,
                       ),
-                      const Expanded(child: Divider()),
-                    ],
+                    ),
                   ),
-                  const SizedBox(height: 20),
-                  _ProviderButton(
-                    icon: Icons.g_mobiledata_rounded,
-                    label: 'Sign in with Google',
-                    enabled: !busy,
-                    onPressed: () =>
-                        _continueWithProvider('google.demo@ahma.dev'),
-                  ),
-                  const SizedBox(height: 12),
-                  _ProviderButton(
-                    icon: Icons.apple_rounded,
-                    label: 'Sign in with Apple',
-                    enabled: !busy,
-                    onPressed: () =>
-                        _continueWithProvider('apple.demo@ahma.dev'),
-                  ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 16),
                   Text(
-                    'Demo sign-in: no password needed. Your email links you '
-                    'to your care profile — the same email signs you back '
-                    'in on any device.',
+                    "We'll email a 6-digit code to confirm it's you. The same "
+                    'email signs you back in on any device.',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontSize: 12.5,
@@ -180,37 +163,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _ProviderButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool enabled;
-  final VoidCallback onPressed;
-
-  const _ProviderButton({
-    required this.icon,
-    required this.label,
-    required this.enabled,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return OutlinedButton.icon(
-      onPressed: enabled ? onPressed : null,
-      icon: Icon(icon, size: 24, color: AhmaTheme.mocha),
-      label: Text(label),
-      style: OutlinedButton.styleFrom(
-        minimumSize: const Size.fromHeight(52),
-        foregroundColor: AhmaTheme.mocha,
-        side: BorderSide(color: AhmaTheme.sageGreen.withValues(alpha: 0.45)),
-        textStyle: Theme.of(
-          context,
-        ).textTheme.titleMedium?.copyWith(fontSize: 16),
       ),
     );
   }

@@ -6,6 +6,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'presentation/screens/unity_home_screen.dart';
 import 'presentation/screens/ahma_main_screen.dart';
 import 'presentation/screens/login_screen.dart';
+import 'presentation/screens/code_verify_screen.dart';
+import 'presentation/screens/onboarding_screen.dart';
 import 'presentation/screens/profile_gate.dart';
 import 'presentation/providers/auth_provider.dart';
 import 'core/config/env_config.dart';
@@ -112,8 +114,8 @@ class MyApp extends StatelessWidget {
   }
 }
 
-/// Routes by auth status. The profile gate is only mounted once a session
-/// exists, so each login re-runs the full launch verification.
+/// Routes by auth status. The profile gate is only mounted once a session JWT
+/// exists, so each sign-in re-runs the full launch verification.
 class RootGate extends ConsumerWidget {
   const RootGate({super.key});
 
@@ -137,8 +139,13 @@ class RootGate extends ConsumerWidget {
           ),
         );
       case AuthStatus.loggedOut:
-      case AuthStatus.signingIn:
+      case AuthStatus.requestingCode:
         return const LoginScreen();
+      case AuthStatus.awaitingCode:
+      case AuthStatus.verifying:
+        return const CodeVerifyScreen();
+      case AuthStatus.onboarding:
+        return const OnboardingScreen();
       case AuthStatus.loggedIn:
         return ProfileGate(
           app: USE_UNITY_HOME_SCREEN

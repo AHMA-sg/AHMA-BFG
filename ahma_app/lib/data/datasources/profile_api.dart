@@ -75,16 +75,21 @@ class ProfileApiUnavailableException extends ProfileApiException {
       );
 }
 
+/// 401 `unauthorized` — the Bearer token is missing, invalid, or expired.
+/// The caller's signal that the session is stale and must be re-established.
+class ProfileUnauthorizedException extends ProfileApiException {
+  const ProfileUnauthorizedException({super.statusCode})
+    : super(code: 'unauthorized', message: 'Session expired. Sign in again.');
+}
+
 /// Dio client for the AHMA profile API (backend_v2 on PROFILE_API_URL,
 /// default http://localhost:5002). Separate from the legacy :5001 backend.
 class ProfileApi {
   late final Dio _dio;
 
-  /// Optional session-token source. When it yields a value, every request
-  /// carries `Authorization: Bearer <token>`. Today's backend ignores the
-  /// header (local dev runs unauthenticated); it exists so the client
-  /// already speaks the production wire shape — real auth later swaps the
-  /// token source, not the API client.
+  /// Session-token source. When it yields a value, every request carries
+  /// `Authorization: Bearer <token>`. The `/me` routes require it; `create`
+  /// and `options` are open and tolerate its absence.
   final Future<String?> Function()? _bearerToken;
 
   ProfileApi({Dio? dio, Future<String?> Function()? bearerToken})
@@ -151,55 +156,30 @@ class ProfileApi {
     return _profileFrom(data);
   }
 
-  /// GET /api/profile/:userId
-  Future<UserProfile> getProfile(String userId) async {
+  /// GET /api/profile/me — the caller's own profile, resolved from the JWT
+  /// `sub`. Requires a valid Bearer token (401 -> [ProfileUnauthorizedException]).
+  Future<UserProfile> getMe() async {
     final data = await _request(
-      () => _dio.get('/api/profile/$userId'),
+      () => _dio.get('/api/profile/me'),
       expectedStatus: 200,
     );
     return _profileFrom(data);
   }
 
-  /// PATCH /api/profile/:userId — partial update; only the fields set on
-  /// [patch] change. Returns the full updated profile.
-  Future<UserProfile> updateProfile(
-    String userId,
-    ProfilePatchRequest patch,
-  ) async {
+  /// PATCH /api/profile/me — partial update of the caller's own profile; only
+  /// the fields set on [patch] change. Returns the full updated profile.
+  Future<UserProfile> updateMe(ProfilePatchRequest patch) async {
     final data = await _request(
-      () => _dio.patch('/api/profile/$userId', data: patch.toJson()),
+      () => _dio.patch('/api/profile/me', data: patch.toJson()),
       expectedStatus: 200,
     );
     return _profileFrom(data);
   }
 
-  /// POST /api/profile/resolve — looks up the userId owning [email] and/or
-  /// [phone]. The login stub's stand-in for token→identity resolution.
-  ///
-  /// Throws [ProfileNotFoundException] when no profile owns the contact —
-  /// the caller's signal to run onboarding.
-  Future<String> resolveUserId({String? email, String? phone}) async {
+  /// GET /api/profile/me/context — compact call-time context for the caller.
+  Future<ProfileContextData> getMeContext() async {
     final data = await _request(
-      () => _dio.post(
-        '/api/profile/resolve',
-        // Send both keys explicitly (same contract as create).
-        data: {'email': email, 'phone': phone},
-      ),
-      expectedStatus: 200,
-    );
-    final userId = data['userId'];
-    if (userId is! String || userId.isEmpty) {
-      throw const ProfileApiUnavailableException(
-        detail: 'Profile resolve response was malformed.',
-      );
-    }
-    return userId;
-  }
-
-  /// GET /api/profile/:userId/context
-  Future<ProfileContextData> getProfileContext(String userId) async {
-    final data = await _request(
-      () => _dio.get('/api/profile/$userId/context'),
+      () => _dio.get('/api/profile/me/context'),
       expectedStatus: 200,
     );
     final context = data['profileContext'];
@@ -261,6 +241,8 @@ class ProfileApi {
         switch (code) {
           case 'profile_not_found':
             return ProfileNotFoundException(statusCode: status);
+          case 'unauthorized':
+            return ProfileUnauthorizedException(statusCode: status);
           case 'validation_error':
             return ProfileValidationException(
               message: message,

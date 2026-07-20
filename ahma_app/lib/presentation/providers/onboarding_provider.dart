@@ -166,16 +166,23 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
   final ProfileApi _api;
   final LocalIdentityStore _identity;
   final void Function(UserProfile profile) _onCompleted;
+  final void Function(String? email) _onExistingContact;
 
-  /// [initialContact] pre-seeds the contact answer (the email used at the
-  /// stub login), so Q2 shows it pre-filled — the user confirms or edits it
-  /// rather than retyping the credential they just signed in with.
+  /// [initialContact] pre-seeds the contact answer (the email typed at login),
+  /// so Q2 shows it pre-filled — the user confirms or edits it rather than
+  /// retyping it.
+  ///
+  /// [onCompleted] fires after a confirmed create (the account now exists, so
+  /// auth can email a code). [onExistingContact] fires when create reports the
+  /// contact is already registered — the user should sign in, not re-create.
   OnboardingNotifier(
     this._api,
     this._identity, {
     required void Function(UserProfile profile) onCompleted,
+    required void Function(String? email) onExistingContact,
     String? initialContact,
   }) : _onCompleted = onCompleted,
+       _onExistingContact = onExistingContact,
        super(
          OnboardingState(
            answers: initialContact == null
@@ -346,12 +353,12 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     } on ProfileValidationException catch (e) {
       _handleFieldErrors(e.fieldErrors);
     } on ContactAlreadyExistsException {
-      final recovered = await _completeWithExistingContact(request);
+      final recovered = _completeWithExistingContact(request);
       if (!recovered && mounted) {
         _jumpToQuestion(
           OnboardingField.contact,
-          'That contact is already registered. Sign in with that same '
-          'contact, or use a different email or phone number.',
+          'That contact is already registered. Sign in with the email on that '
+          'account, or use a different email.',
         );
       }
     } on DuplicateUserIdException {
@@ -411,22 +418,16 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     );
   }
 
-  Future<bool> _completeWithExistingContact(
-    ProfileCreateRequest request,
-  ) async {
-    try {
-      final userId = await _api.resolveUserId(
-        email: request.email,
-        phone: request.phone,
-      );
-      final profile = await _api.getProfile(userId);
-      await _identity.saveUserId(profile.userId);
-      if (!mounted) return true;
-      _onCompleted(profile);
-      return true;
-    } catch (_) {
+  /// The contact already owns an account. There is no way to fetch that
+  /// profile without its session, so route the user to sign in with a code.
+  /// Only works for an email contact (OTP is email-based); a phone-only
+  /// conflict falls through to a "use your email" prompt.
+  bool _completeWithExistingContact(ProfileCreateRequest request) {
+    if (request.email == null || request.email!.isEmpty) {
       return false;
     }
+    _onExistingContact(request.email);
+    return true;
   }
 
   /// Routes backend field errors to the owning question with warm copy.
@@ -539,9 +540,13 @@ final onboardingProvider =
       return OnboardingNotifier(
         ref.watch(profileApiProvider),
         ref.watch(localIdentityStoreProvider),
+        // Account now exists -> email a code and move to verification.
         onCompleted: (profile) =>
-            ref.read(profileGateProvider.notifier).completeOnboarding(profile),
-        // Pre-fill Q2 with the email used at login (read, not watch: the
+            ref.read(authProvider.notifier).completeSignup(profile.email),
+        // Contact already registered -> sign in instead of creating a dupe.
+        onExistingContact: (email) =>
+            ref.read(authProvider.notifier).signInExisting(email),
+        // Pre-fill Q2 with the email typed at login (read, not watch: the
         // intake shouldn't restart if auth state changes mid-flow).
         initialContact: ref.read(authProvider).email,
       );
