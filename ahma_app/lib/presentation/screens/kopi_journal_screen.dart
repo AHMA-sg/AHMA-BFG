@@ -44,6 +44,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
   late List<WalkEntry> _walks;
   final Set<int> _expandedPlans = <int>{};
   BackendUpdate? _selectedJourney;
+  int _selectedJourneyPage = 0;
   double _detailDragDistance = 0;
 
   double _phoneScale(BuildContext context) {
@@ -447,10 +448,10 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
                   phoneScale,
                   key: const ValueKey('journey-timeline'),
                 )
-              : _buildJourneyQuoteCard(
+              : _buildJourneyDetail(
                   _selectedJourney!,
                   phoneScale,
-                  key: ValueKey('journey-quote-${_selectedJourney!.callId}'),
+                  key: ValueKey('journey-detail-${_selectedJourney!.callId}'),
                 ),
         );
       },
@@ -495,12 +496,14 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
     );
   }
 
-  Widget _buildJourneyQuoteCard(
+  Widget _buildJourneyDetail(
     BackendUpdate update,
     double phoneScale, {
     required Key key,
   }) {
     final quote = selectEmpoweringSummaryQuote([update.actionPlan.summary]);
+    final hasJourneyNote = quote.isFromSummary;
+    final showJourneyNote = hasJourneyNote && _selectedJourneyPage == 0;
 
     return GestureDetector(
       key: key,
@@ -512,7 +515,14 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
       onHorizontalDragEnd: (details) {
         final velocity = details.primaryVelocity ?? 0;
         if (_detailDragDistance > 60 || velocity > 350) {
-          _closeJourneyQuote();
+          if (_selectedJourneyPage == 1 && hasJourneyNote) {
+            setState(() => _selectedJourneyPage = 0);
+          } else {
+            _closeJourneyDetail();
+          }
+        } else if ((_detailDragDistance < -60 || velocity < -350) &&
+            showJourneyNote) {
+          setState(() => _selectedJourneyPage = 1);
         }
         _detailDragDistance = 0;
       },
@@ -572,7 +582,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
                           ),
                           IconButton(
                             tooltip: 'Back to journeys',
-                            onPressed: _closeJourneyQuote,
+                            onPressed: _closeJourneyDetail,
                             visualDensity: VisualDensity.compact,
                             icon: Icon(
                               Icons.close_rounded,
@@ -582,31 +592,35 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
                           ),
                         ],
                       ),
-                      SizedBox(height: 27 * phoneScale),
-                      Icon(
-                        Icons.format_quote_rounded,
-                        size: 28 * phoneScale,
-                        color: AhmaTheme.mocha.withOpacity(0.7),
-                      ),
-                      SizedBox(height: 12 * phoneScale),
-                      Text(
-                        quote.text,
-                        style: Theme.of(context).textTheme.headlineMedium
-                            ?.copyWith(
-                              fontSize: 16 * phoneScale,
-                              height: 1.55,
-                              fontWeight: FontWeight.w400,
-                              color: AhmaTheme.mocha.withOpacity(0.92),
-                            ),
-                      ),
-                      SizedBox(height: 30 * phoneScale),
-                      Text(
-                        'Swipe right to return',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontSize: 10 * phoneScale,
-                          color: AhmaTheme.mocha.withOpacity(0.42),
-                          letterSpacing: 0.35,
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 280),
+                        switchInCurve: Curves.easeOutCubic,
+                        switchOutCurve: Curves.easeInCubic,
+                        transitionBuilder: (child, animation) => FadeTransition(
+                          opacity: animation,
+                          child: SlideTransition(
+                            position: Tween<Offset>(
+                              begin: Offset(
+                                showJourneyNote ? -0.025 : 0.025,
+                                0,
+                              ),
+                              end: Offset.zero,
+                            ).animate(animation),
+                            child: child,
+                          ),
                         ),
+                        child: showJourneyNote
+                            ? _buildJourneyNoteContent(
+                                quote,
+                                phoneScale,
+                                key: const ValueKey('journey-note'),
+                              )
+                            : _buildFullSummaryContent(
+                                update.actionPlan.summary,
+                                phoneScale,
+                                hasJourneyNote: hasJourneyNote,
+                                key: const ValueKey('journey-full-summary'),
+                              ),
                       ),
                     ],
                   ),
@@ -619,9 +633,101 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
     );
   }
 
-  void _closeJourneyQuote() {
+  Widget _buildJourneyNoteContent(
+    SummaryQuote quote,
+    double phoneScale, {
+    required Key key,
+  }) {
+    return Column(
+      key: key,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(height: 27 * phoneScale),
+        Icon(
+          Icons.format_quote_rounded,
+          size: 28 * phoneScale,
+          color: AhmaTheme.mocha.withOpacity(0.7),
+        ),
+        SizedBox(height: 12 * phoneScale),
+        Text(
+          quote.text,
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            fontSize: 16 * phoneScale,
+            height: 1.55,
+            fontWeight: FontWeight.w400,
+            color: AhmaTheme.mocha.withOpacity(0.92),
+          ),
+        ),
+        SizedBox(height: 30 * phoneScale),
+        Text(
+          'Swipe left for the full summary',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            fontSize: 10 * phoneScale,
+            color: AhmaTheme.mocha.withOpacity(0.42),
+            letterSpacing: 0.35,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFullSummaryContent(
+    String summary,
+    double phoneScale, {
+    required bool hasJourneyNote,
+    required Key key,
+  }) {
+    return Column(
+      key: key,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(height: 23 * phoneScale),
+        Text(
+          'FULL CALL SUMMARY',
+          style: AhmaTheme.labelTextStyle.copyWith(
+            fontSize: 10 * phoneScale,
+            color: AhmaTheme.mocha.withOpacity(0.68),
+            letterSpacing: 0.85,
+          ),
+        ),
+        SizedBox(height: 15 * phoneScale),
+        Text(
+          summary,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            fontSize: 13 * phoneScale,
+            height: 1.58,
+            color: AhmaTheme.mocha.withOpacity(0.88),
+          ),
+        ),
+        SizedBox(height: 30 * phoneScale),
+        Text(
+          hasJourneyNote
+              ? 'Swipe right for your note'
+              : 'Swipe right to return',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            fontSize: 10 * phoneScale,
+            color: AhmaTheme.mocha.withOpacity(0.42),
+            letterSpacing: 0.35,
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _openJourneyDetail(BackendUpdate update) {
+    final quote = selectEmpoweringSummaryQuote([update.actionPlan.summary]);
+    setState(() {
+      _selectedJourney = update;
+      _selectedJourneyPage = quote.isFromSummary ? 0 : 1;
+    });
+  }
+
+  void _closeJourneyDetail() {
     if (!mounted) return;
-    setState(() => _selectedJourney = null);
+    setState(() {
+      _selectedJourney = null;
+      _selectedJourneyPage = 0;
+    });
   }
 
   Widget _buildTrailItem(dynamic item) {
@@ -640,7 +746,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
         Expanded(
           child: GestureDetector(
             onTap: isActionPlan
-                ? () => setState(() => _selectedJourney = walk.backendUpdate)
+                ? () => _openJourneyDetail(walk.backendUpdate!)
                 : null,
             child: AnimatedContainer(
               width: double.infinity,
