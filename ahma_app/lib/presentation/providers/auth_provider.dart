@@ -139,8 +139,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         email: email,
         errorMessage:
             "We couldn't reach the sign-in service. "
-            'If you run the app locally, start it with '
-            'dev_setup_and_run.sh and try again.',
+            'It may still be waking up, so please try again in a moment.',
       );
     }
   }
@@ -152,7 +151,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = const AuthState(status: AuthStatus.loggedOut);
       return;
     }
-    await requestCode(email, infoMessage: 'A new code is on its way.');
+    await requestCode(
+      email,
+      infoMessage:
+          'If an account exists for this email, a new code is on its way.',
+    );
   }
 
   /// Exchange the entered [rawCode] for a session JWT.

@@ -100,8 +100,10 @@ class ProfileApi {
           BaseOptions(
             baseUrl: EnvConfig.profileApiUrl,
             headers: {'Content-Type': 'application/json'},
-            connectTimeout: const Duration(seconds: 8),
-            receiveTimeout: const Duration(seconds: 15),
+            // Render's free tier can take 30-60 seconds to wake. Keep the
+            // browser request alive long enough for that first response.
+            connectTimeout: const Duration(seconds: 20),
+            receiveTimeout: const Duration(seconds: 75),
             // Map HTTP errors ourselves so 4xx/5xx bodies stay inspectable.
             validateStatus: (_) => true,
           ),
@@ -137,6 +139,7 @@ class ProfileApi {
     final data = await _request(
       () => _dio.get('/api/profile/options'),
       expectedStatus: 200,
+      retryOnTransientFailure: true,
     );
     final options = data['options'];
     if (options is! Map<String, dynamic>) {
@@ -162,6 +165,7 @@ class ProfileApi {
     final data = await _request(
       () => _dio.get('/api/profile/me'),
       expectedStatus: 200,
+      retryOnTransientFailure: true,
     );
     return _profileFrom(data);
   }
@@ -181,6 +185,7 @@ class ProfileApi {
     final data = await _request(
       () => _dio.get('/api/profile/me/context'),
       expectedStatus: 200,
+      retryOnTransientFailure: true,
     );
     final context = data['profileContext'];
     if (context is! Map<String, dynamic>) {
@@ -206,27 +211,43 @@ class ProfileApi {
   Future<Map<String, dynamic>> _request(
     Future<Response<dynamic>> Function() send, {
     required int expectedStatus,
+    bool retryOnTransientFailure = false,
   }) async {
-    Response<dynamic> response;
-    try {
-      response = await send();
-    } on DioException catch (e) {
-      throw ProfileApiUnavailableException(
-        statusCode: e.response?.statusCode,
-        detail: e.message,
-      );
+    for (var attempt = 0; attempt < 2; attempt++) {
+      Response<dynamic> response;
+      try {
+        response = await send();
+      } on DioException catch (e) {
+        if (retryOnTransientFailure && attempt == 0) {
+          await Future<void>.delayed(const Duration(seconds: 1));
+          continue;
+        }
+        throw ProfileApiUnavailableException(
+          statusCode: e.response?.statusCode,
+          detail: e.message,
+        );
+      }
+
+      final status = response.statusCode;
+      final data = response.data;
+
+      if (status == expectedStatus &&
+          data is Map<String, dynamic> &&
+          data['success'] == true) {
+        return data;
+      }
+
+      if (retryOnTransientFailure &&
+          attempt == 0 &&
+          const {502, 503, 504}.contains(status)) {
+        await Future<void>.delayed(const Duration(seconds: 1));
+        continue;
+      }
+
+      throw _errorFrom(status, data);
     }
 
-    final status = response.statusCode;
-    final data = response.data;
-
-    if (status == expectedStatus &&
-        data is Map<String, dynamic> &&
-        data['success'] == true) {
-      return data;
-    }
-
-    throw _errorFrom(status, data);
+    throw const ProfileApiUnavailableException();
   }
 
   ProfileApiException _errorFrom(int? status, Object? data) {

@@ -65,8 +65,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           icon: Icons.cloud_off_rounded,
           message:
               "We couldn't load what we need to get started. "
-              'Make sure the profile backend is running '
-              '(./setup_and_run.sh --with-profile-backend), then try again.',
+              'The service may still be waking up, which can take up to a '
+              'minute. Please try again.',
           actionLabel: 'Try again',
           onAction: () => ref.read(onboardingProvider.notifier).loadOptions(),
         );

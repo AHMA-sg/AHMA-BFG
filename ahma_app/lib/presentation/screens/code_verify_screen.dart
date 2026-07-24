@@ -56,7 +56,9 @@ class _CodeVerifyScreenState extends ConsumerState<CodeVerifyScreen> {
                   const SizedBox(height: 12),
                   Text.rich(
                     TextSpan(
-                      text: 'Enter the 6-digit code we sent to ',
+                      text:
+                          'If an account exists for this email, enter the '
+                          '6-digit code sent to ',
                       children: [
                         TextSpan(
                           text: email,
@@ -132,7 +134,8 @@ class _CodeVerifyScreenState extends ConsumerState<CodeVerifyScreen> {
                       TextButton(
                         onPressed: busy
                             ? null
-                            : () => ref.read(authProvider.notifier).resendCode(),
+                            : () =>
+                                  ref.read(authProvider.notifier).resendCode(),
                         child: const Text('Resend code'),
                       ),
                       TextButton(

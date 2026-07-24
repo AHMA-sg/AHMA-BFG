@@ -74,8 +74,10 @@ class AuthApi {
           BaseOptions(
             baseUrl: EnvConfig.profileApiUrl,
             headers: {'Content-Type': 'application/json'},
-            connectTimeout: const Duration(seconds: 8),
-            receiveTimeout: const Duration(seconds: 15),
+            // The auth API shares the free Render service with profiles, so
+            // the first request must tolerate a 30-60 second cold start.
+            connectTimeout: const Duration(seconds: 20),
+            receiveTimeout: const Duration(seconds: 75),
             validateStatus: (_) => true,
           ),
         );
@@ -166,7 +168,10 @@ class AuthApi {
           case 'invalid_code':
             return InvalidCodeException(statusCode: status);
           case 'validation_error':
-            return AuthValidationException(message: message, statusCode: status);
+            return AuthValidationException(
+              message: message,
+              statusCode: status,
+            );
           case 'rate_limited':
             return AuthRateLimitedException(statusCode: status);
           default:
