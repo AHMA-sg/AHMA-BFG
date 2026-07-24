@@ -11,8 +11,11 @@ and use:
 - Model tool name: `scheduleEvent`
 - Description and parameters: copy them from
   `lib/data/models/schedule_client_tool.json`
-- Timeout: `30s` (the default client-tool timeout is too short for the
-  authenticated Render → Google Calendar request)
+- Timeout: `2.5s`. Flutter acknowledges immediately, completes the authenticated
+  Render → Google Calendar request asynchronously, and injects the final result
+  into the live conversation.
+- Precomputable: disabled. This tool creates an event and must only run after
+  the user has confirmed the details.
 - Client execution: enabled (there is no HTTP URL)
 
 The required model parameters are `summary`, `startTime`, and `endTime`.
@@ -26,7 +29,10 @@ Add a second custom **Client** tool:
 - Model tool name: `contactSupport`
 - Description and parameters: copy them from
   `lib/data/models/contact_support_client_tool.json`
-- Timeout: `30s` (the default client-tool timeout is too short for Gmail)
+- Timeout: `2.5s`. Flutter acknowledges immediately, sends the email
+  asynchronously, and injects the final result into the live conversation.
+- Precomputable: disabled. This tool sends an email and must not run
+  speculatively.
 - Client execution: enabled (there is no HTTP URL)
 
 Its required parameters are `subject` and `message`. The backend deliberately
@@ -38,8 +44,15 @@ ignores any recipient supplied by the model and routes the email to
 Add `scheduleEvent` and `contactSupport` to the AHMA agent's selected tools,
 alongside the existing `navigate` client tool. Save/publish the agent version.
 
-If either tool already exists, edit it and set **Timeout** to `30s`; changing
-the JSON files in Flutter does not update an existing Ultravox dashboard tool.
+If either tool already exists, keep **Timeout** at `2.5s`, keep
+**Precomputable** disabled, replace its description with the updated checked-in
+description, and republish the agent. Changing the JSON files in Flutter does
+not update an existing Ultravox dashboard tool.
+
+Both tools use a two-part response. The immediate tool result says processing
+started and explicitly forbids claiming success. Flutter later sends a
+`user_text_message` containing `<prior_tool_result ...>` with the real backend
+result. The agent should only confirm completion after that second message.
 
 The checked-in stage responses retain `scheduleEvent` in `SCHEDULE` and
 `contactSupport` in `AHMA_GREETING` and `AHMA_RESOURCES`.

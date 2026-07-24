@@ -1,7 +1,8 @@
 {
   "modelToolName": "scheduleEvent",
-  "description": "Add a confirmed appointment, reminder, or wellbeing block to the signed-in caregiver's personal Google Calendar. Before calling, confirm the title, date, start time, and end time. Use ISO 8601 date-times with a Singapore offset, for example 2026-07-25T14:00:00+08:00.",
-  "timeout": "30s",
+  "description": "Start adding a confirmed appointment, reminder, or wellbeing block to the signed-in caregiver's personal Google Calendar. Before calling, confirm the title, date, start time, and end time. Use ISO 8601 date-times with a Singapore offset, for example 2026-07-25T14:00:00+08:00. The first tool response only confirms processing has started. Do not claim success until a later prior_tool_result message confirms completion.",
+  "timeout": "2.5s",
+  "precomputable": false,
   "dynamicParameters": [
     {
       "name": "summary",

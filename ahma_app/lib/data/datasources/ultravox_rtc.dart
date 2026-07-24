@@ -19,6 +19,7 @@ class UltravoxRtcManager {
   bool _userMuted = true;
   bool _remoteParticipantSpeaking = false;
   Future<void> _microphoneStateUpdate = Future<void>.value();
+  final Set<String> _backendToolsInFlight = <String>{};
 
   final Function(String)? onMessage;
   final Function(RemoteAudioTrack)? onRemoteStream;
@@ -341,12 +342,49 @@ class UltravoxRtcManager {
       } else if (toolName == BackendClientTools.scheduleToolName ||
           toolName == BackendClientTools.contactSupportToolName) {
         print('[LiveKit] 🔧 Handling $toolName backend client tool');
-        final result = await _backendClientTools.handle(
-          toolName!,
-          parameters,
-          callId: data['callId']?.toString(),
+        if (_backendToolsInFlight.contains(toolName)) {
+          _sendClientToolResult(
+            ClientToolResult(
+              result: jsonEncode({
+                'success': false,
+                'status': 'already-processing',
+                'responseText':
+                    'A $toolName request is already being processed. '
+                    'Tell the user it is still in progress and do not invoke '
+                    'the tool again yet.',
+              }),
+              responseType: 'tool-response',
+            ),
+            invocationId,
+            toolName: toolName,
+          );
+          return;
+        }
+
+        _backendToolsInFlight.add(toolName!);
+        _sendClientToolResult(
+          ClientToolResult(
+            result: jsonEncode({
+              'accepted': true,
+              'completed': false,
+              'status': 'processing',
+              'responseText':
+                  'The request has started. Tell the user you are working on '
+                  'it, but do not claim success. A follow-up result will '
+                  'arrive shortly.',
+            }),
+            responseType: 'tool-response',
+          ),
+          invocationId,
+          toolName: toolName,
         );
-        _sendClientToolResult(result, invocationId, toolName: toolName);
+        unawaited(
+          _completeBackendClientTool(
+            toolName,
+            parameters,
+            callId: data['callId']?.toString(),
+          ),
+        );
         onToolCall?.call(data);
       } else {
         print('[LiveKit] ⚠️  Unknown client tool: $toolName');
@@ -372,6 +410,53 @@ class UltravoxRtcManager {
         toolName: data['toolName'] as String?,
       );
     }
+  }
+
+  Future<void> _completeBackendClientTool(
+    String toolName,
+    Map<String, dynamic> parameters, {
+    String? callId,
+  }) async {
+    try {
+      final result = await _backendClientTools.handle(
+        toolName,
+        parameters,
+        callId: callId,
+      );
+      _sendUserTextMessage(
+        '<prior_tool_result toolName="$toolName">'
+        '${result.result}'
+        '</prior_tool_result>',
+      );
+    } catch (error) {
+      _sendUserTextMessage(
+        '<prior_tool_result toolName="$toolName">'
+        '${jsonEncode({'success': false, 'responseText': 'The request failed unexpectedly: $error. Apologise briefly '
+            'and do not claim it succeeded.'})}'
+        '</prior_tool_result>',
+      );
+    } finally {
+      _backendToolsInFlight.remove(toolName);
+    }
+  }
+
+  void _sendUserTextMessage(String message) {
+    if (_room == null) {
+      print('[LiveKit] ⚠️ No LiveKit room available for async tool result');
+      return;
+    }
+
+    final data = Uint8List.fromList(
+      utf8.encode(
+        jsonEncode({
+          'type': 'user_text_message',
+          'text': message,
+          'urgency': 'soon',
+        }),
+      ),
+    );
+    _room!.localParticipant?.publishData(data, reliable: true);
+    print('[LiveKit] 📤 Sent async tool completion message');
   }
 
   /// Send client tool result back to Ultravox via LiveKit data channel.
@@ -423,6 +508,7 @@ class UltravoxRtcManager {
     _localAudioTrack = null;
     _userMuted = true;
     _remoteParticipantSpeaking = false;
+    _backendToolsInFlight.clear();
     _microphoneStateUpdate = Future<void>.value();
 
     // Disconnect and dispose room
