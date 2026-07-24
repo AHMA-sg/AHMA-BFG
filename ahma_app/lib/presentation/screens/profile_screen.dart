@@ -18,6 +18,12 @@ const double _profileDesignHeight = 760;
 const double _profileCompactDesignHeight = 620;
 const double _profileTextScale = 0.96;
 
+String _greetingForLocalTime(DateTime now) {
+  if (now.hour < 12) return 'Good morning';
+  if (now.hour < 18) return 'Good afternoon';
+  return 'Good evening';
+}
+
 final _sessionSummaryQuoteProvider =
     StateNotifierProvider.family<
       _SessionSummaryQuoteNotifier,
@@ -424,6 +430,7 @@ class _ProfileHero extends StatelessWidget {
   Widget build(BuildContext context) {
     double s(double value) => value * scale;
     double t(double value) => s(value * _profileTextScale);
+    final greeting = _greetingForLocalTime(DateTime.now());
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -500,7 +507,7 @@ class _ProfileHero extends StatelessWidget {
               height: 1.1,
             ),
             children: [
-              const TextSpan(text: 'Good morning, '),
+              TextSpan(text: '$greeting, '),
               TextSpan(
                 text: displayName,
                 style: Theme.of(context).textTheme.headlineLarge?.copyWith(
