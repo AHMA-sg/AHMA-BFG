@@ -1,6 +1,7 @@
 {
   "modelToolName": "contactSupport",
   "description": "Send a concise follow-up request to the AHMA support team after the caregiver explicitly agrees. Do not use for emergencies, and do not claim the message was sent until the tool succeeds. Messages are temporarily routed to reach.ahma@gmail.com.",
+  "timeout": "30s",
   "dynamicParameters": [
     {
       "name": "subject",

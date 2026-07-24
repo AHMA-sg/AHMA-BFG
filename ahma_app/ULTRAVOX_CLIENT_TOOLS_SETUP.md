@@ -11,6 +11,8 @@ and use:
 - Model tool name: `scheduleEvent`
 - Description and parameters: copy them from
   `lib/data/models/schedule_client_tool.json`
+- Timeout: `30s` (the default client-tool timeout is too short for the
+  authenticated Render → Google Calendar request)
 - Client execution: enabled (there is no HTTP URL)
 
 The required model parameters are `summary`, `startTime`, and `endTime`.
@@ -24,6 +26,7 @@ Add a second custom **Client** tool:
 - Model tool name: `contactSupport`
 - Description and parameters: copy them from
   `lib/data/models/contact_support_client_tool.json`
+- Timeout: `30s` (the default client-tool timeout is too short for Gmail)
 - Client execution: enabled (there is no HTTP URL)
 
 Its required parameters are `subject` and `message`. The backend deliberately
@@ -34,6 +37,9 @@ ignores any recipient supplied by the model and routes the email to
 
 Add `scheduleEvent` and `contactSupport` to the AHMA agent's selected tools,
 alongside the existing `navigate` client tool. Save/publish the agent version.
+
+If either tool already exists, edit it and set **Timeout** to `30s`; changing
+the JSON files in Flutter does not update an existing Ultravox dashboard tool.
 
 The checked-in stage responses retain `scheduleEvent` in `SCHEDULE` and
 `contactSupport` in `AHMA_GREETING` and `AHMA_RESOURCES`.
