@@ -188,6 +188,7 @@ class ProfileContextData {
   final String caregivingDuration;
   final String primaryCaregivingChallenge;
   final String primarySupportNeed;
+  final String primarySupportNeedLabel;
   final String financialStrainSeverity;
 
   const ProfileContextData({
@@ -198,6 +199,7 @@ class ProfileContextData {
     required this.caregivingDuration,
     required this.primaryCaregivingChallenge,
     required this.primarySupportNeed,
+    this.primarySupportNeedLabel = '',
     required this.financialStrainSeverity,
   });
 
@@ -212,18 +214,26 @@ class ProfileContextData {
       primaryCaregivingChallenge:
           json['primaryCaregivingChallenge'] as String? ?? '',
       primarySupportNeed: json['primarySupportNeed'] as String? ?? '',
+      primarySupportNeedLabel:
+          json['primarySupportNeedLabel'] as String? ??
+          json['primarySupportNeed'] as String? ??
+          '',
       financialStrainSeverity: json['financialStrainSeverity'] as String? ?? '',
     );
   }
 
   /// Flat string map suitable for Ultravox call metadata.
   Map<String, String> toCallMetadata() {
+    final supportNeedForAgent = primarySupportNeedLabel.isNotEmpty
+        ? primarySupportNeedLabel
+        : primarySupportNeed;
     return {
       'userId': userId,
       'careRecipientRelationship': careRecipientRelationship,
       'caregivingDuration': caregivingDuration,
       'primaryCaregivingChallenge': primaryCaregivingChallenge,
-      'primarySupportNeed': primarySupportNeed,
+      'primarySupportNeed': supportNeedForAgent,
+      'primarySupportNeedValue': primarySupportNeed,
       'financialStrainSeverity': financialStrainSeverity,
     };
   }
