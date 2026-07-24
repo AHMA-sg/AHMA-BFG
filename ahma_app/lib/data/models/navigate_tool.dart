@@ -22,14 +22,28 @@ class NavigateTool {
     }
   }
 
-  static String _normalizeToolName(dynamic tool) {
-    final toolName = tool is Map<String, dynamic>
-        ? tool['toolName'] ?? tool['toolId'] ?? tool['name']
-        : tool;
+  static Map<String, dynamic> _formatSelectedTool(dynamic tool) {
+    if (tool is Map<String, dynamic>) {
+      final formattedTool = Map<String, dynamic>.from(tool);
+      final toolName =
+          formattedTool['toolName'] ??
+          formattedTool['toolId'] ??
+          formattedTool['name'];
 
-    return toolName == 'navigateStage'
+      if (toolName == 'navigateStage') {
+        formattedTool
+          ..remove('toolId')
+          ..remove('name')
+          ..['toolName'] = navigationToolName;
+      }
+
+      return formattedTool;
+    }
+
+    final toolName = tool == 'navigateStage'
         ? navigationToolName
-        : toolName.toString();
+        : tool.toString();
+    return {'toolName': toolName};
   }
 
   /// Load static responses from pure_client_tool.json
@@ -95,9 +109,7 @@ class NavigateTool {
       // Convert selectedTools to proper Ultravox format.
       // Stale configs may still say navigateStage; Ultravox is configured for navigate.
       final selectedTools = stageResponse['selectedTools'] as List<dynamic>;
-      final formattedTools = selectedTools
-          .map((tool) => {'toolName': _normalizeToolName(tool)})
-          .toList();
+      final formattedTools = selectedTools.map(_formatSelectedTool).toList();
 
       // Create the stage response as a JSON string.
       // Only include valid stage properties: systemPrompt, selectedTools.
