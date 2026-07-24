@@ -47,20 +47,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
   @override
   void initState() {
     super.initState();
-    _walks = [
-      const WalkEntry(
-        title: 'Tuesday evening',
-        subtitle: 'breathing · 8 min',
-        isActive: true,
-      ),
-      const WalkEntry(
-        title: 'Sunday, heavy heart',
-        subtitle: 'just talking · 22 min',
-        isPink: true,
-      ),
-      const WalkEntry(title: 'Thursday morning', subtitle: 'grounding · 5 min'),
-      const WalkEntry(title: 'first walk', subtitle: 'introduced · hello'),
-    ];
+    _walks = [];
   }
 
   @override
@@ -84,7 +71,11 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
   }
 
   Widget _buildTopBar() {
-    final walkCount = _walks.where((walk) => !walk.isFuture).length;
+    final summaryCount = ref.watch(
+      backendProvider.select((state) => state.updates.length),
+    );
+    final walkCount =
+        summaryCount + _walks.where((walk) => !walk.isFuture).length;
     final phoneScale = _phoneScale(context);
 
     return Padding(
@@ -392,7 +383,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
         final allTrailItems = <dynamic>[];
 
         // Add action plans first (newest at top)
-        final sortedActionPlans = List.from(actionPlans.take(3));
+        final sortedActionPlans = List<BackendUpdate>.from(actionPlans);
         sortedActionPlans.sort(
           (a, b) => b.timestamp.compareTo(a.timestamp),
         ); // Newest first
@@ -405,10 +396,9 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
           final callDuration =
               '5 min'; // TODO: Get actual call duration from data
 
-          final topic = _formatNeed(update.classification.primaryNeed);
           final actionPlanWalk = WalkEntry(
             title: dateStr, // Title is now the date
-            subtitle: '$topic · $callDuration', // Topic with duration
+            subtitle: 'Conversation summary · $callDuration',
             isActive: true,
             backendUpdate: update, // Store the update for expansion
           );
@@ -418,6 +408,20 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
 
         // Add existing walks after action plans
         allTrailItems.addAll(_walks);
+
+        if (allTrailItems.isEmpty) {
+          return Center(
+            child: Text(
+              backendState.isLoading
+                  ? 'Loading your journeys…'
+                  : 'Your conversation summaries will appear here.',
+              textAlign: TextAlign.center,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AhmaTheme.mochaMuted),
+            ),
+          );
+        }
 
         return SingleChildScrollView(
           child: ConstrainedBox(
@@ -702,7 +706,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
         const SizedBox(height: 2),
         // Topic with duration below date (exact match to collapsed subtitle)
         Text(
-          '${_formatNeed(update.classification.primaryNeed)} · 5 min', // Topic with duration
+          'Conversation summary',
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
             fontSize: 12, // Match collapsed subtitle readability
             fontWeight: FontWeight.w300,
@@ -713,6 +717,18 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
           overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 8),
+
+        if (plan.summary.isNotEmpty) ...[
+          Text(
+            plan.summary,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontSize: 12,
+              height: 1.45,
+              color: AhmaTheme.mochaMuted,
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
 
         // Tasks
         if (plan.todoistTasks.isNotEmpty) ...[

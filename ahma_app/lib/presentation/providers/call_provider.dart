@@ -2,11 +2,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/call_model.dart';
 import '../../data/models/profile_models.dart';
+import '../../data/models/action_plan.dart';
 import '../../data/datasources/ultravox_api.dart';
 import '../../data/datasources/ultravox_rtc.dart';
 import '../../data/datasources/backend_api.dart';
 import '../../core/config/env_config.dart';
 import 'profile_provider.dart';
+import 'backend_provider.dart';
 
 /// Call state
 class CallState {
@@ -45,13 +47,16 @@ class CallNotifier extends StateNotifier<CallState> {
   final UltravoxRtcManager _rtc;
   final BackendApi _backend;
   final Future<String?> Function()? _resolveUserId;
+  final Future<void> Function(BackendUpdate)? _onBackendUpdate;
 
   CallNotifier(
     this._api,
     this._rtc,
     this._backend, {
     Future<String?> Function()? resolveUserId,
+    Future<void> Function(BackendUpdate)? onBackendUpdate,
   }) : _resolveUserId = resolveUserId,
+       _onBackendUpdate = onBackendUpdate,
        super(const CallState());
 
   /// Start a voice call.
@@ -267,6 +272,10 @@ class CallNotifier extends StateNotifier<CallState> {
       );
 
       print('[Call] ✅ Backend response: ${result['message']}');
+      final updateJson = result['update'];
+      if (updateJson is Map<String, dynamic> && _onBackendUpdate != null) {
+        await _onBackendUpdate(BackendUpdate.fromJson(updateJson));
+      }
       if (result['actions'] != null) {
         print('[Call] 🎯 Actions taken: ${result['actions']}');
       }
@@ -294,5 +303,7 @@ final callProvider = StateNotifierProvider<CallNotifier, CallState>((ref) {
     ),
     BackendApi(),
     resolveUserId: () => ref.read(localIdentityStoreProvider).readUserId(),
+    onBackendUpdate: (update) =>
+        ref.read(backendProvider.notifier).processUpdate(update),
   );
 });
