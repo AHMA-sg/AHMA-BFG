@@ -153,7 +153,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     if (!mounted) return;
     setState(() {
       _calendarConnected = false;
-      _googleStatusMessage = 'Google Calendar disconnected on this device.';
+      _googleStatusMessage = 'Google Calendar disconnected.';
     });
   }
 

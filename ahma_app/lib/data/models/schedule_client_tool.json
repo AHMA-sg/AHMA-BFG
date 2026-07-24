@@ -1,0 +1,52 @@
+{
+  "modelToolName": "scheduleEvent",
+  "description": "Add a confirmed appointment, reminder, or wellbeing block to the signed-in caregiver's personal Google Calendar. Before calling, confirm the title, date, start time, and end time. Use ISO 8601 date-times with a Singapore offset, for example 2026-07-25T14:00:00+08:00.",
+  "dynamicParameters": [
+    {
+      "name": "summary",
+      "location": "PARAMETER_LOCATION_BODY",
+      "schema": {
+        "type": "string",
+        "description": "Short calendar event title"
+      },
+      "required": true
+    },
+    {
+      "name": "startTime",
+      "location": "PARAMETER_LOCATION_BODY",
+      "schema": {
+        "type": "string",
+        "description": "ISO 8601 event start with timezone offset"
+      },
+      "required": true
+    },
+    {
+      "name": "endTime",
+      "location": "PARAMETER_LOCATION_BODY",
+      "schema": {
+        "type": "string",
+        "description": "ISO 8601 event end with timezone offset"
+      },
+      "required": true
+    },
+    {
+      "name": "description",
+      "location": "PARAMETER_LOCATION_BODY",
+      "schema": {
+        "type": "string",
+        "description": "Optional helpful context for the event"
+      },
+      "required": false
+    },
+    {
+      "name": "location",
+      "location": "PARAMETER_LOCATION_BODY",
+      "schema": {
+        "type": "string",
+        "description": "Optional event location"
+      },
+      "required": false
+    }
+  ],
+  "client": {}
+}
