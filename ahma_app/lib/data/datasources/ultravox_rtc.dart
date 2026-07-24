@@ -15,6 +15,9 @@ class UltravoxRtcManager {
   LocalAudioTrack? _localAudioTrack;
   EventsListener<RoomEvent>? _roomListener;
   Completer<void>? _connectCompleter;
+  bool _userMuted = true;
+  bool _remoteParticipantSpeaking = false;
+  Future<void> _microphoneStateUpdate = Future<void>.value();
 
   final Function(String)? onMessage;
   final Function(RemoteAudioTrack)? onRemoteStream;
@@ -202,7 +205,8 @@ class UltravoxRtcManager {
       print('[LiveKit] Published local audio track');
 
       // Start muted for Push-to-Talk mode
-      await _localAudioTrack!.disable();
+      _userMuted = true;
+      await _queueMicrophoneStateUpdate();
       print('[LiveKit] Started in muted state (PTT mode)');
 
       // Verify track is published
@@ -238,6 +242,23 @@ class UltravoxRtcManager {
           onRemoteStream!(remoteAudioTrack);
         }
       }
+    });
+
+    // Prevent the agent's speaker output from returning through the microphone.
+    // ActiveSpeakersChangedEvent includes the local participant, so only remote
+    // participants affect this temporary mute.
+    _roomListener!.on<ActiveSpeakersChangedEvent>((event) {
+      final remoteParticipantSpeaking = event.speakers.any(
+        (participant) => participant is RemoteParticipant,
+      );
+      if (_remoteParticipantSpeaking == remoteParticipantSpeaking) return;
+
+      _remoteParticipantSpeaking = remoteParticipantSpeaking;
+      print(
+        '[LiveKit] ${remoteParticipantSpeaking ? '🔇 Muting' : '🎤 Restoring'} '
+        'microphone for remote speech',
+      );
+      unawaited(_queueMicrophoneStateUpdate());
     });
 
     // Listen for disconnection
@@ -378,6 +399,9 @@ class UltravoxRtcManager {
     // Stop local audio track
     await _localAudioTrack?.stop();
     _localAudioTrack = null;
+    _userMuted = true;
+    _remoteParticipantSpeaking = false;
+    _microphoneStateUpdate = Future<void>.value();
 
     // Disconnect and dispose room
     await _room?.disconnect();
@@ -390,30 +414,42 @@ class UltravoxRtcManager {
 
   /// Mute/unmute microphone
   Future<void> setMuted(bool muted) async {
-    if (_localAudioTrack != null) {
-      if (muted) {
-        await _localAudioTrack!.disable();
-      } else {
-        await _localAudioTrack!.enable();
-      }
-      print('[WebRTC] Muted: $muted');
-    }
+    _userMuted = muted;
+    await _queueMicrophoneStateUpdate();
+    print('[WebRTC] User muted: $muted');
   }
 
   /// Enable microphone (for Push-to-Talk)
   Future<void> enableMicrophone() async {
-    if (_localAudioTrack != null) {
-      await _localAudioTrack!.enable();
-      print('[WebRTC] Microphone enabled (PTT pressed)');
-    }
+    _userMuted = false;
+    await _queueMicrophoneStateUpdate();
+    print('[WebRTC] Microphone requested (PTT pressed)');
   }
 
   /// Disable microphone (for Push-to-Talk)
   Future<void> disableMicrophone() async {
-    if (_localAudioTrack != null) {
-      await _localAudioTrack!.disable();
-      print('[WebRTC] Microphone disabled (PTT released)');
-    }
+    _userMuted = true;
+    await _queueMicrophoneStateUpdate();
+    print('[WebRTC] Microphone disabled (PTT released)');
+  }
+
+  Future<void> _queueMicrophoneStateUpdate() {
+    _microphoneStateUpdate = _microphoneStateUpdate
+        .catchError((Object error, StackTrace stackTrace) {
+          print('[WebRTC] Previous microphone state update failed: $error');
+        })
+        .then((_) async {
+          final track = _localAudioTrack;
+          if (track == null) return;
+
+          final shouldEnable = !_userMuted && !_remoteParticipantSpeaking;
+          if (shouldEnable) {
+            await track.enable();
+          } else {
+            await track.disable();
+          }
+        });
+    return _microphoneStateUpdate;
   }
 
   bool get isConnected =>

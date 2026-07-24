@@ -7,12 +7,11 @@ class AudioConfig {
   // Audio buffer settings
   static const int bufferSize = 2000; // Smaller buffer = less latency
 
-  // Echo cancellation settings (reduced for less lag)
-  // Note: Ultravox handles echo cancellation on the server side
-  static const bool echoCancellation =
-      false; // Disabled - Ultravox handles this
-  static const bool noiseSuppression =
-      false; // Disabled for less processing lag
+  // Process microphone audio on-device before it is sent to Ultravox.
+  // Acoustic echo cancellation needs access to the device playback signal,
+  // so it cannot be delegated reliably to the server.
+  static const bool echoCancellation = true;
+  static const bool noiseSuppression = true;
   static const bool autoGainControl = true; // Keep for consistent volume
 
   // WebRTC specific
