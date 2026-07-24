@@ -25,6 +25,10 @@ final _sessionSummaryQuoteProvider =
       int
     >((ref, sessionSeed) => _SessionSummaryQuoteNotifier(sessionSeed));
 
+final _sessionHomeEntrancePlayedProvider = StateProvider.family<bool, int>(
+  (ref, sessionSeed) => false,
+);
+
 class _SessionSummaryQuoteNotifier extends StateNotifier<SummaryQuote?> {
   final int sessionSeed;
 
@@ -58,6 +62,20 @@ class ProfileScreen extends ConsumerWidget {
     final quoteSessionSeed = ref.watch(
       authProvider.select((state) => state.quoteSessionSeed),
     );
+    final entrancePlayed = ref.read(
+      _sessionHomeEntrancePlayedProvider(quoteSessionSeed),
+    );
+    final playEntranceAnimation = !entrancePlayed;
+    if (playEntranceAnimation) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref
+                .read(
+                  _sessionHomeEntrancePlayedProvider(quoteSessionSeed).notifier,
+                )
+                .state =
+            true;
+      });
+    }
     final sessionQuote = ref.watch(
       _sessionSummaryQuoteProvider(quoteSessionSeed),
     );
@@ -106,6 +124,7 @@ class ProfileScreen extends ConsumerWidget {
           displayName: displayName,
           journeyCount: journeyCount,
           summaryQuote: summaryQuote,
+          playEntranceAnimation: playEntranceAnimation,
           onOpenCallJourney: () => _openCallJourney(context),
           onOpenPastJourneys: () => _openPastJourneys(context),
         );
@@ -150,6 +169,7 @@ class _ProfileContent extends StatelessWidget {
   final String displayName;
   final int journeyCount;
   final SummaryQuote summaryQuote;
+  final bool playEntranceAnimation;
   final VoidCallback onOpenCallJourney;
   final VoidCallback onOpenPastJourneys;
 
@@ -160,6 +180,7 @@ class _ProfileContent extends StatelessWidget {
     required this.displayName,
     required this.journeyCount,
     required this.summaryQuote,
+    required this.playEntranceAnimation,
     required this.onOpenCallJourney,
     required this.onOpenPastJourneys,
   });
@@ -220,6 +241,7 @@ class _ProfileContent extends StatelessWidget {
                                 opacity: 0.98,
                                 child: HouseAnimationCinematic(
                                   height: houseHeight,
+                                  animate: playEntranceAnimation,
                                 ),
                               ),
                             ),
@@ -234,6 +256,7 @@ class _ProfileContent extends StatelessWidget {
                             scale: scale,
                             travelDistance:
                                 houseHeight * houseCinematicBeginYOffset,
+                            animate: playEntranceAnimation,
                           ),
                         ),
                       ),
@@ -261,6 +284,7 @@ class _ProfileContent extends StatelessWidget {
                         child: _WelcomeHomeText(
                           scale: scale,
                           travelDistance: 0,
+                          animate: playEntranceAnimation,
                         ),
                       ),
                     );
@@ -278,6 +302,7 @@ class _ProfileContent extends StatelessWidget {
                                 opacity: 0.9,
                                 child: HouseAnimationCinematic(
                                   height: houseHeight,
+                                  animate: playEntranceAnimation,
                                 ),
                               ),
                             ),
@@ -292,6 +317,7 @@ class _ProfileContent extends StatelessWidget {
                             scale: scale,
                             travelDistance:
                                 houseHeight * houseCinematicBeginYOffset,
+                            animate: playEntranceAnimation,
                           ),
                         ),
                       ),
@@ -309,8 +335,13 @@ class _ProfileContent extends StatelessWidget {
 class _WelcomeHomeText extends StatefulWidget {
   final double scale;
   final double travelDistance;
+  final bool animate;
 
-  const _WelcomeHomeText({required this.scale, required this.travelDistance});
+  const _WelcomeHomeText({
+    required this.scale,
+    required this.travelDistance,
+    required this.animate,
+  });
 
   @override
   State<_WelcomeHomeText> createState() => _WelcomeHomeTextState();
@@ -327,14 +358,17 @@ class _WelcomeHomeTextState extends State<_WelcomeHomeText>
     _controller = AnimationController(
       vsync: this,
       duration: houseCinematicDuration,
+      value: widget.animate ? 0 : 1,
     );
     _curve = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
 
-    Future.delayed(houseCinematicDelay, () {
-      if (mounted) {
-        _controller.forward();
-      }
-    });
+    if (widget.animate) {
+      Future.delayed(houseCinematicDelay, () {
+        if (mounted) {
+          _controller.forward();
+        }
+      });
+    }
   }
 
   @override
@@ -411,29 +445,16 @@ class _ProfileHero extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: s(4)),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.favorite_rounded,
-                        color: AhmaTheme.palePink.withOpacity(0.75),
-                        size: s(22),
-                      ),
-                      SizedBox(width: s(8)),
-                      Expanded(
-                        child: Text(
-                          'Your AI care resource companion',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(
-                                fontSize: t(15),
-                                color: AhmaTheme.mocha.withOpacity(0.64),
-                                fontWeight: FontWeight.w300,
-                                letterSpacing: 0.1,
-                              ),
-                        ),
-                      ),
-                    ],
+                  Text(
+                    'Your AI care resource companion',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontSize: t(15),
+                      color: AhmaTheme.mocha.withOpacity(0.64),
+                      fontWeight: FontWeight.w300,
+                      letterSpacing: 0.1,
+                    ),
                   ),
                 ],
               ),
@@ -575,6 +596,7 @@ class _CallJourneyCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
@@ -587,21 +609,6 @@ class _CallJourneyCard extends StatelessWidget {
                               ),
                           maxLines: veryCompact ? 2 : 3,
                           overflow: TextOverflow.ellipsis,
-                        ),
-                        SizedBox(height: s(compact ? 8 : 10)),
-                        ConstrainedBox(
-                          constraints: BoxConstraints(maxWidth: s(250)),
-                          child: Text(
-                            'Talk to your AI companion for care guidance and support.',
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(
-                                  fontSize: t(compact ? 12 : 12.5),
-                                  height: 1.35,
-                                  color: Colors.white.withOpacity(0.92),
-                                ),
-                            maxLines: veryCompact ? 2 : 4,
-                            overflow: TextOverflow.ellipsis,
-                          ),
                         ),
                       ],
                     ),
@@ -766,7 +773,7 @@ class _AffirmationCopy extends StatelessWidget {
       children: [
         Icon(
           Icons.format_quote_rounded,
-          color: const Color(0xFFFFC85A),
+          color: AhmaTheme.mocha.withOpacity(0.74),
           size: s(30),
         ),
         SizedBox(height: s(4)),

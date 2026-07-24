@@ -59,4 +59,30 @@ void main() {
     expect(repeated.text, first.text);
     expect(acrossSessions.length, greaterThan(1));
   });
+
+  test('does not treat the internal period in a.m. as a sentence ending', () {
+    final quote = selectEmpoweringSummaryQuote([
+      'At 8 a.m. you showed real courage by asking for help and making space '
+          'to rest.',
+    ]);
+
+    expect(
+      quote.text,
+      'At 8 a.m. you showed real courage by asking for help and making space '
+      'to rest.',
+    );
+    expect(quote.isFromSummary, isTrue);
+  });
+
+  test('does not treat the internal period in p.m. as a sentence ending', () {
+    final quote = selectEmpoweringSummaryQuote([
+      'By 6 p.m. you had made progress and protected time to rest.',
+    ]);
+
+    expect(
+      quote.text,
+      'By 6 p.m. you had made progress and protected time to rest.',
+    );
+    expect(quote.isFromSummary, isTrue);
+  });
 }

@@ -49,12 +49,14 @@ class HouseAnimationCinematic extends StatefulWidget {
   final VoidCallback? onTap;
   final String imagePath;
   final double height;
+  final bool animate;
 
   const HouseAnimationCinematic({
     super.key,
     this.onTap,
     this.imagePath = 'resources/Sh3.png',
     this.height = 200,
+    this.animate = true,
   });
 
   @override
@@ -75,6 +77,7 @@ class _HouseAnimationCinematicState extends State<HouseAnimationCinematic>
     _controller = AnimationController(
       vsync: this,
       duration: houseCinematicDuration, // Slower, cinematic
+      value: widget.animate ? 0 : 1,
     );
 
     // Slow camera descent - house rises from below
@@ -98,12 +101,14 @@ class _HouseAnimationCinematicState extends State<HouseAnimationCinematic>
       end: 1.0,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
-    // Start animation after 2 second delay (camera focusing)
-    Future.delayed(houseCinematicDelay, () {
-      if (mounted) {
-        _controller.forward();
-      }
-    });
+    if (widget.animate) {
+      // Start animation after 2 second delay (camera focusing).
+      Future.delayed(houseCinematicDelay, () {
+        if (mounted) {
+          _controller.forward();
+        }
+      });
+    }
   }
 
   @override

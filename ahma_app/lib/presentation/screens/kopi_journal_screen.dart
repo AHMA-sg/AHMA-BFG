@@ -1,7 +1,10 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/ahma_theme.dart';
+import '../../core/utils/summary_quote.dart';
 import '../../data/models/action_plan.dart';
 import '../providers/backend_provider.dart';
 
@@ -40,6 +43,8 @@ class KopiJournalScreen extends ConsumerStatefulWidget {
 class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
   late List<WalkEntry> _walks;
   final Set<int> _expandedPlans = <int>{};
+  BackendUpdate? _selectedJourney;
+  double _detailDragDistance = 0;
 
   double _phoneScale(BuildContext context) {
     return MediaQuery.of(context).size.width <= 480 ? 0.86 : 1.0;
@@ -142,6 +147,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildActionPlanItem(BackendUpdate update) {
     final isExpanded = _expandedPlans.contains(update.callId.hashCode);
     final plan = update.actionPlan;
@@ -359,6 +365,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
     });
   }
 
+  // ignore: unused_element
   void _toggleActionPlanExpansion(String callId) {
     setState(() {
       final planId = callId.hashCode;
@@ -419,68 +426,210 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
           );
         }
 
-        return SingleChildScrollView(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight: 255 * phoneScale,
-              maxHeight: MediaQuery.of(context).size.height * 0.6,
-            ),
-            child: Stack(
-              children: [
-                // Spiral line
-                Positioned(
-                  left: 4,
-                  top: 10 * phoneScale,
-                  bottom: 10 * phoneScale,
-                  child: Container(
-                    width: 1,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          AhmaTheme.sageGreen,
-                          AhmaTheme.palePink,
-                          AhmaTheme.mid,
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Let cards size themselves so larger text never overlaps.
-                Padding(
-                  padding: const EdgeInsets.only(top: 10, bottom: 10),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: allTrailItems
-                        .map(
-                          (item) => Padding(
-                            padding: EdgeInsets.only(bottom: 10 * phoneScale),
-                            child: _buildTrailItem(item),
-                          ),
-                        )
-                        .toList(),
-                  ),
-                ),
-              ],
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 360),
+          reverseDuration: const Duration(milliseconds: 280),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          transitionBuilder: (child, animation) => FadeTransition(
+            opacity: animation,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0.035, 0),
+                end: Offset.zero,
+              ).animate(animation),
+              child: child,
             ),
           ),
+          child: _selectedJourney == null
+              ? _buildJourneyTimeline(
+                  allTrailItems,
+                  phoneScale,
+                  key: const ValueKey('journey-timeline'),
+                )
+              : _buildJourneyQuoteCard(
+                  _selectedJourney!,
+                  phoneScale,
+                  key: ValueKey('journey-quote-${_selectedJourney!.callId}'),
+                ),
         );
       },
     );
+  }
+
+  Widget _buildJourneyTimeline(
+    List<dynamic> trailItems,
+    double phoneScale, {
+    required Key key,
+  }) {
+    return Stack(
+      key: key,
+      children: [
+        Positioned(
+          left: 4,
+          top: 10 * phoneScale,
+          bottom: 10 * phoneScale,
+          child: Container(
+            width: 1,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  AhmaTheme.sageGreen,
+                  AhmaTheme.palePink,
+                  AhmaTheme.mid,
+                ],
+              ),
+            ),
+          ),
+        ),
+        ListView.separated(
+          padding: EdgeInsets.symmetric(vertical: 10 * phoneScale),
+          physics: const BouncingScrollPhysics(),
+          itemCount: trailItems.length,
+          separatorBuilder: (_, _) => SizedBox(height: 10 * phoneScale),
+          itemBuilder: (_, index) => _buildTrailItem(trailItems[index]),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildJourneyQuoteCard(
+    BackendUpdate update,
+    double phoneScale, {
+    required Key key,
+  }) {
+    final quote = selectEmpoweringSummaryQuote([update.actionPlan.summary]);
+
+    return GestureDetector(
+      key: key,
+      behavior: HitTestBehavior.opaque,
+      onHorizontalDragStart: (_) => _detailDragDistance = 0,
+      onHorizontalDragUpdate: (details) {
+        _detailDragDistance += details.primaryDelta ?? 0;
+      },
+      onHorizontalDragEnd: (details) {
+        final velocity = details.primaryVelocity ?? 0;
+        if (_detailDragDistance > 60 || velocity > 350) {
+          _closeJourneyQuote();
+        }
+        _detailDragDistance = 0;
+      },
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(
+          8 * phoneScale,
+          8 * phoneScale,
+          8 * phoneScale,
+          24 * phoneScale,
+        ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(22 * phoneScale),
+              child: CustomPaint(
+                foregroundPainter: _PaperTexturePainter(),
+                child: Container(
+                  width: double.infinity,
+                  constraints: BoxConstraints(minHeight: 300 * phoneScale),
+                  padding: EdgeInsets.fromLTRB(
+                    30 * phoneScale,
+                    18 * phoneScale,
+                    18 * phoneScale,
+                    30 * phoneScale,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF7F0E4),
+                    borderRadius: BorderRadius.circular(22 * phoneScale),
+                    border: Border.all(
+                      color: AhmaTheme.mocha.withOpacity(0.11),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AhmaTheme.mocha.withOpacity(0.08),
+                        blurRadius: 18,
+                        offset: const Offset(0, 7),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              _formatJourneyDateTime(update.timestamp),
+                              style: AhmaTheme.labelTextStyle.copyWith(
+                                fontSize: 10.5 * phoneScale,
+                                color: AhmaTheme.sageGreen.withOpacity(0.86),
+                                letterSpacing: 0.7,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: 'Back to journeys',
+                            onPressed: _closeJourneyQuote,
+                            visualDensity: VisualDensity.compact,
+                            icon: Icon(
+                              Icons.close_rounded,
+                              size: 20 * phoneScale,
+                              color: AhmaTheme.mocha.withOpacity(0.6),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 27 * phoneScale),
+                      Icon(
+                        Icons.format_quote_rounded,
+                        size: 28 * phoneScale,
+                        color: AhmaTheme.mocha.withOpacity(0.7),
+                      ),
+                      SizedBox(height: 12 * phoneScale),
+                      Text(
+                        quote.text,
+                        style: Theme.of(context).textTheme.headlineMedium
+                            ?.copyWith(
+                              fontSize: 16 * phoneScale,
+                              height: 1.55,
+                              fontWeight: FontWeight.w400,
+                              color: AhmaTheme.mocha.withOpacity(0.92),
+                            ),
+                      ),
+                      SizedBox(height: 30 * phoneScale),
+                      Text(
+                        'Swipe right to return',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontSize: 10 * phoneScale,
+                          color: AhmaTheme.mocha.withOpacity(0.42),
+                          letterSpacing: 0.35,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _closeJourneyQuote() {
+    if (!mounted) return;
+    setState(() => _selectedJourney = null);
   }
 
   Widget _buildTrailItem(dynamic item) {
     final phoneScale = _phoneScale(context);
     final walk = item as WalkEntry;
     final isActionPlan = walk.backendUpdate != null;
-    final isExpanded =
-        isActionPlan &&
-        _expandedPlans.contains(walk.backendUpdate!.callId.hashCode);
 
     return Row(
-      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         // Node dot
@@ -488,44 +637,17 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
 
         SizedBox(width: 7 * phoneScale),
 
-        // Expandable node card
-        GestureDetector(
-          onTap: isActionPlan
-              ? () => _toggleActionPlanExpansion(walk.backendUpdate!.callId)
-              : null,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 260),
-            curve: Curves.easeInOutCubic,
-            constraints: BoxConstraints(
-              // Collapsed cards were capped at 150 and the title's Expanded
-              // forced the card to that cap, ellipsizing subtitles like
-              // "just talking · 22 min". Widen so realistic entries fit.
-              minWidth: (isExpanded ? 200 : 130) * phoneScale,
-              maxWidth: (isExpanded ? 300 : 270) * phoneScale,
-            ),
-            padding: EdgeInsets.symmetric(
-              horizontal: (isExpanded ? 12 : 8) * phoneScale,
-              vertical: (isExpanded ? 10 : 6) * phoneScale,
-            ),
-            decoration: BoxDecoration(
-              color: isExpanded && isActionPlan
-                  ? AhmaTheme.cardColor.withOpacity(
-                      0.1,
-                    ) // Subtle cream card fade in
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: isExpanded && isActionPlan
-                    ? AhmaTheme.mocha.withOpacity(0.05) // Subtle border fade in
-                    : Colors.transparent,
-                width: 1,
-              ),
-            ),
-            child: AnimatedSwitcher(
+        Expanded(
+          child: GestureDetector(
+            onTap: isActionPlan
+                ? () => setState(() => _selectedJourney = walk.backendUpdate)
+                : null,
+            child: AnimatedContainer(
+              width: double.infinity,
               duration: const Duration(milliseconds: 180),
-              child: isExpanded && isActionPlan
-                  ? _buildExpandedActionPlan(walk.backendUpdate!)
-                  : _buildNodeCard(walk, isActionPlan),
+              curve: Curves.easeOut,
+              padding: EdgeInsets.symmetric(vertical: 2 * phoneScale),
+              child: _buildNodeCard(walk, isActionPlan),
             ),
           ),
         ),
@@ -672,6 +794,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildExpandedActionPlan(BackendUpdate update) {
     final plan = update.actionPlan;
 
@@ -877,4 +1000,39 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
       );
     }
   }
+}
+
+class _PaperTexturePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final random = Random(24);
+    final speckPaint = Paint()
+      ..color = const Color(0xFF6D563D).withOpacity(0.035);
+    final fiberPaint = Paint()
+      ..color = const Color(0xFF8B7358).withOpacity(0.025)
+      ..strokeWidth = 0.6;
+
+    for (var i = 0; i < 95; i++) {
+      final point = Offset(
+        random.nextDouble() * size.width,
+        random.nextDouble() * size.height,
+      );
+      canvas.drawCircle(point, 0.35 + random.nextDouble() * 0.45, speckPaint);
+    }
+
+    for (var i = 0; i < 28; i++) {
+      final start = Offset(
+        random.nextDouble() * size.width,
+        random.nextDouble() * size.height,
+      );
+      canvas.drawLine(
+        start,
+        start + Offset(3 + random.nextDouble() * 7, random.nextDouble() - 0.5),
+        fiberPaint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

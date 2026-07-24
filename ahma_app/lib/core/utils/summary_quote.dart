@@ -122,12 +122,26 @@ const List<String> _empoweringSignals = [
 ];
 
 Iterable<String> _sentences(String summary) sync* {
-  final normalized = summary.replaceAll(RegExp(r'\s+'), ' ').trim();
+  final normalized = summary
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim()
+      // If a lowercase word or punctuation continues after the abbreviation,
+      // neither period ends the sentence.
+      .replaceAllMapped(
+        RegExp(r'\b([apAP])\.m\.(?=\s+[a-z]|[,;:])'),
+        (match) => '${match.group(1)}\u2024m\u2024',
+      )
+      // Keep the internal period in time abbreviations from looking like the
+      // end of a sentence. The final period is intentionally left intact.
+      .replaceAllMapped(
+        RegExp(r'\b([ap])\.m\.', caseSensitive: false),
+        (match) => '${match.group(1)}\u2024m.',
+      );
   if (normalized.isEmpty) return;
 
   final matches = RegExp(r'[^.!?]+(?:[.!?]+|$)').allMatches(normalized);
   for (final match in matches) {
-    final sentence = match.group(0)?.trim();
+    final sentence = match.group(0)?.replaceAll('\u2024', '.').trim();
     if (sentence != null && sentence.isNotEmpty) yield sentence;
   }
 }
