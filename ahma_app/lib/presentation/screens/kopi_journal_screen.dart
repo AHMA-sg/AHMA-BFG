@@ -463,36 +463,38 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
     double phoneScale, {
     required Key key,
   }) {
-    return Stack(
+    return SelectionContainer.disabled(
       key: key,
-      children: [
-        Positioned(
-          left: 4,
-          top: 10 * phoneScale,
-          bottom: 10 * phoneScale,
-          child: Container(
-            width: 1,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  AhmaTheme.sageGreen,
-                  AhmaTheme.palePink,
-                  AhmaTheme.mid,
-                ],
+      child: Stack(
+        children: [
+          Positioned(
+            left: 4,
+            top: 10 * phoneScale,
+            bottom: 10 * phoneScale,
+            child: Container(
+              width: 1,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    AhmaTheme.sageGreen,
+                    AhmaTheme.palePink,
+                    AhmaTheme.mid,
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-        ListView.separated(
-          padding: EdgeInsets.symmetric(vertical: 10 * phoneScale),
-          physics: const BouncingScrollPhysics(),
-          itemCount: trailItems.length,
-          separatorBuilder: (_, _) => SizedBox(height: 10 * phoneScale),
-          itemBuilder: (_, index) => _buildTrailItem(trailItems[index]),
-        ),
-      ],
+          ListView.separated(
+            padding: EdgeInsets.symmetric(vertical: 10 * phoneScale),
+            physics: const BouncingScrollPhysics(),
+            itemCount: trailItems.length,
+            separatorBuilder: (_, _) => SizedBox(height: 10 * phoneScale),
+            itemBuilder: (_, index) => _buildTrailItem(trailItems[index]),
+          ),
+        ],
+      ),
     );
   }
 
@@ -526,103 +528,111 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
         }
         _detailDragDistance = 0;
       },
-      child: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        padding: EdgeInsets.fromLTRB(
-          8 * phoneScale,
-          8 * phoneScale,
-          8 * phoneScale,
-          24 * phoneScale,
-        ),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(22 * phoneScale),
-              child: CustomPaint(
-                foregroundPainter: _PaperTexturePainter(),
-                child: Container(
-                  width: double.infinity,
-                  constraints: BoxConstraints(minHeight: 300 * phoneScale),
-                  padding: EdgeInsets.fromLTRB(
-                    30 * phoneScale,
-                    18 * phoneScale,
-                    18 * phoneScale,
-                    30 * phoneScale,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF7F0E4),
-                    borderRadius: BorderRadius.circular(22 * phoneScale),
-                    border: Border.all(
-                      color: AhmaTheme.mocha.withOpacity(0.11),
+      child: SelectionContainer.disabled(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: EdgeInsets.fromLTRB(
+            18 * phoneScale,
+            8 * phoneScale,
+            18 * phoneScale,
+            24 * phoneScale,
+          ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(22 * phoneScale),
+                child: CustomPaint(
+                  foregroundPainter: _PaperTexturePainter(),
+                  child: Container(
+                    width: double.infinity,
+                    constraints: BoxConstraints(minHeight: 300 * phoneScale),
+                    padding: EdgeInsets.fromLTRB(
+                      30 * phoneScale,
+                      18 * phoneScale,
+                      18 * phoneScale,
+                      24 * phoneScale,
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AhmaTheme.mocha.withOpacity(0.08),
-                        blurRadius: 18,
-                        offset: const Offset(0, 7),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF7F0E4),
+                      borderRadius: BorderRadius.circular(22 * phoneScale),
+                      border: Border.all(
+                        color: AhmaTheme.mocha.withOpacity(0.11),
                       ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              _formatJourneyDateTime(update.timestamp),
-                              style: AhmaTheme.labelTextStyle.copyWith(
-                                fontSize: 10.5 * phoneScale,
-                                color: AhmaTheme.sageGreen.withOpacity(0.86),
-                                letterSpacing: 0.7,
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            tooltip: 'Back to journeys',
-                            onPressed: _closeJourneyDetail,
-                            visualDensity: VisualDensity.compact,
-                            icon: Icon(
-                              Icons.close_rounded,
-                              size: 20 * phoneScale,
-                              color: AhmaTheme.mocha.withOpacity(0.6),
-                            ),
-                          ),
-                        ],
-                      ),
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 280),
-                        switchInCurve: Curves.easeOutCubic,
-                        switchOutCurve: Curves.easeInCubic,
-                        transitionBuilder: (child, animation) => FadeTransition(
-                          opacity: animation,
-                          child: SlideTransition(
-                            position: Tween<Offset>(
-                              begin: Offset(
-                                showJourneyNote ? -0.025 : 0.025,
-                                0,
-                              ),
-                              end: Offset.zero,
-                            ).animate(animation),
-                            child: child,
-                          ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AhmaTheme.mocha.withOpacity(0.08),
+                          blurRadius: 18,
+                          offset: const Offset(0, 7),
                         ),
-                        child: showJourneyNote
-                            ? _buildJourneyNoteContent(
-                                quote,
-                                phoneScale,
-                                key: const ValueKey('journey-note'),
-                              )
-                            : _buildFullSummaryContent(
-                                update.actionPlan.summary,
-                                phoneScale,
-                                hasJourneyNote: hasJourneyNote,
-                                key: const ValueKey('journey-full-summary'),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                _formatJourneyDateTime(update.timestamp),
+                                style: AhmaTheme.labelTextStyle.copyWith(
+                                  fontSize: 10.5 * phoneScale,
+                                  color: AhmaTheme.sageGreen.withOpacity(0.86),
+                                  letterSpacing: 0.7,
+                                ),
                               ),
-                      ),
-                    ],
+                            ),
+                            IconButton(
+                              tooltip: 'Back to journeys',
+                              onPressed: _closeJourneyDetail,
+                              visualDensity: VisualDensity.compact,
+                              icon: Icon(
+                                Icons.close_rounded,
+                                size: 20 * phoneScale,
+                                color: AhmaTheme.mocha.withOpacity(0.6),
+                              ),
+                            ),
+                          ],
+                        ),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 280),
+                          switchInCurve: Curves.easeOutCubic,
+                          switchOutCurve: Curves.easeInCubic,
+                          transitionBuilder: (child, animation) =>
+                              FadeTransition(
+                                opacity: animation,
+                                child: SlideTransition(
+                                  position: Tween<Offset>(
+                                    begin: Offset(
+                                      showJourneyNote ? -0.025 : 0.025,
+                                      0,
+                                    ),
+                                    end: Offset.zero,
+                                  ).animate(animation),
+                                  child: child,
+                                ),
+                              ),
+                          child: showJourneyNote
+                              ? _buildJourneyNoteContent(
+                                  quote,
+                                  phoneScale,
+                                  key: const ValueKey('journey-note'),
+                                )
+                              : _buildFullSummaryContent(
+                                  update.actionPlan.summary,
+                                  phoneScale,
+                                  key: const ValueKey('journey-full-summary'),
+                                ),
+                        ),
+                        SizedBox(height: 24 * phoneScale),
+                        _buildJourneyNavigation(
+                          phoneScale,
+                          hasJourneyNote: hasJourneyNote,
+                          showJourneyNote: showJourneyNote,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -658,15 +668,6 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
             color: AhmaTheme.mocha.withOpacity(0.92),
           ),
         ),
-        SizedBox(height: 30 * phoneScale),
-        Text(
-          'Swipe left for the full summary',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            fontSize: 10 * phoneScale,
-            color: AhmaTheme.mocha.withOpacity(0.42),
-            letterSpacing: 0.35,
-          ),
-        ),
       ],
     );
   }
@@ -674,7 +675,6 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
   Widget _buildFullSummaryContent(
     String summary,
     double phoneScale, {
-    required bool hasJourneyNote,
     required Key key,
   }) {
     return Column(
@@ -699,18 +699,77 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
             color: AhmaTheme.mocha.withOpacity(0.88),
           ),
         ),
-        SizedBox(height: 30 * phoneScale),
-        Text(
-          hasJourneyNote
-              ? 'Swipe right for your note'
-              : 'Swipe right to return',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            fontSize: 10 * phoneScale,
-            color: AhmaTheme.mocha.withOpacity(0.42),
-            letterSpacing: 0.35,
-          ),
-        ),
       ],
+    );
+  }
+
+  Widget _buildJourneyNavigation(
+    double phoneScale, {
+    required bool hasJourneyNote,
+    required bool showJourneyNote,
+  }) {
+    final backLabel = showJourneyNote
+        ? 'Journeys'
+        : hasJourneyNote
+        ? 'Your note'
+        : 'Journeys';
+
+    return SizedBox(
+      height: 38 * phoneScale,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _buildJourneyNavigationButton(
+            icon: Icons.arrow_back_rounded,
+            label: backLabel,
+            phoneScale: phoneScale,
+            onPressed: () {
+              if (!showJourneyNote && hasJourneyNote) {
+                setState(() => _selectedJourneyPage = 0);
+              } else {
+                _closeJourneyDetail();
+              }
+            },
+          ),
+          if (showJourneyNote)
+            _buildJourneyNavigationButton(
+              icon: Icons.arrow_forward_rounded,
+              label: 'Full summary',
+              phoneScale: phoneScale,
+              iconAfter: true,
+              onPressed: () => setState(() => _selectedJourneyPage = 1),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildJourneyNavigationButton({
+    required IconData icon,
+    required String label,
+    required double phoneScale,
+    required VoidCallback onPressed,
+    bool iconAfter = false,
+  }) {
+    return TextButton.icon(
+      onPressed: onPressed,
+      iconAlignment: iconAfter ? IconAlignment.end : IconAlignment.start,
+      icon: Icon(icon, size: 17 * phoneScale),
+      label: Text(label),
+      style: TextButton.styleFrom(
+        foregroundColor: AhmaTheme.mocha.withOpacity(0.72),
+        minimumSize: Size.zero,
+        padding: EdgeInsets.symmetric(
+          horizontal: 8 * phoneScale,
+          vertical: 7 * phoneScale,
+        ),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        visualDensity: VisualDensity.compact,
+        textStyle: Theme.of(context).textTheme.labelMedium?.copyWith(
+          fontSize: 10.5 * phoneScale,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
     );
   }
 

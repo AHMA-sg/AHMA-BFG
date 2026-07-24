@@ -81,15 +81,17 @@ class _AhmaCallScreenState extends ConsumerState<AhmaCallScreen>
     return Scaffold(
       backgroundColor:
           Colors.transparent, // Transparent to show watercolor background
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Top bar with logo and end button
-            _buildTopBar(),
+      body: SelectionContainer.disabled(
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Top bar with logo and end button
+              _buildTopBar(),
 
-            // Main content
-            Expanded(child: _buildMainContent(callState)),
-          ],
+              // Main content
+              Expanded(child: _buildMainContent(callState)),
+            ],
+          ),
         ),
       ),
     );

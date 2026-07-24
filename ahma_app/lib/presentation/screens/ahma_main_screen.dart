@@ -26,19 +26,24 @@ class _AhmaMainScreenState extends ConsumerState<AhmaMainScreen> {
   @override
   Widget build(BuildContext context) {
     return AhmaPhoneContainer(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: Column(
-          children: [
-            // Status bar
-            const AhmaStatusBar(),
+      child: SelectionContainer.disabled(
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Column(
+            children: [
+              // Status bar
+              const AhmaStatusBar(),
 
-            // Main content
-            Expanded(child: _buildCurrentScreen()),
+              // Main content
+              Expanded(child: _buildCurrentScreen()),
 
-            // Bottom navigation
-            AhmaBottomNav(currentTab: _currentTab, onTabChanged: _onTabChanged),
-          ],
+              // Bottom navigation
+              AhmaBottomNav(
+                currentTab: _currentTab,
+                onTabChanged: _onTabChanged,
+              ),
+            ],
+          ),
         ),
       ),
     );

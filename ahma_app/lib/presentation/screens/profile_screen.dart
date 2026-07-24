@@ -139,9 +139,11 @@ class ProfileScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: onOpenCallJourney == null && onOpenPastJourneys == null
-          ? SafeArea(child: content)
-          : content,
+      body: SelectionContainer.disabled(
+        child: onOpenCallJourney == null && onOpenPastJourneys == null
+            ? SafeArea(child: content)
+            : content,
+      ),
     );
   }
 
