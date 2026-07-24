@@ -10,16 +10,13 @@ class NavigateTool {
   /// Map agent's stage names to internal stage names
   static String _mapStageName(String agentStageName) {
     switch (agentStageName) {
+      case 'AHMA_RESOURCES':
       case 'RESOURCES':
-        return 'AHMA_RESOURCES';
-      case 'SCHEDULING':
-        return 'SCHEDULE';
-      case 'GREETING':
-        return 'GREETING';
-      case 'RESCHEDULE':
-        return 'RESCHEDULE';
+        return 'RESOURCES';
       case 'AHMA_GREETING':
-        return 'AHMA_GREETING';
+      case 'GREETING':
+      case 'MAIN':
+        return 'MAIN';
       default:
         return agentStageName;
     }
@@ -55,13 +52,7 @@ class NavigateTool {
     }
   }
 
-  static List<String> get _defaultAllowedStages => const [
-    'GREETING',
-    'SCHEDULE',
-    'RESCHEDULE',
-    'AHMA_GREETING',
-    'AHMA_RESOURCES',
-  ];
+  static List<String> get _defaultAllowedStages => const ['MAIN', 'RESOURCES'];
 
   /// Handle navigate tool calls from Ultravox agent
   static Future<ClientToolResult> handleNavigate(

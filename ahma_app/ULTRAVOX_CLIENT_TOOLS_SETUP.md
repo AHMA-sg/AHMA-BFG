@@ -54,8 +54,9 @@ started and explicitly forbids claiming success. Flutter later sends a
 `user_text_message` containing `<prior_tool_result ...>` with the real backend
 result. The agent should only confirm completion after that second message.
 
-The checked-in stage responses retain `scheduleEvent` in `SCHEDULE` and
-`contactSupport` in `AHMA_GREETING` and `AHMA_RESOURCES`.
+The checked-in stage responses contain only `MAIN` and `RESOURCES`.
+`contactSupport` and `scheduleEvent` remain available in `RESOURCES`; once
+resource guidance is complete, it navigates back to `MAIN`.
 
 ## 4. Smoke test
 
