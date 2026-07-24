@@ -82,6 +82,18 @@ class ProfileUnauthorizedException extends ProfileApiException {
     : super(code: 'unauthorized', message: 'Session expired. Sign in again.');
 }
 
+class ProfileCreateResult {
+  final UserProfile profile;
+  final String token;
+  final String? expiresAt;
+
+  const ProfileCreateResult({
+    required this.profile,
+    required this.token,
+    this.expiresAt,
+  });
+}
+
 /// Dio client for the AHMA profile API (backend_v2 on PROFILE_API_URL,
 /// default http://localhost:5002). Separate from the legacy :5001 backend.
 class ProfileApi {
@@ -151,12 +163,26 @@ class ProfileApi {
   }
 
   /// POST /api/profile (create-only; 201 on success).
-  Future<UserProfile> createProfile(ProfileCreateRequest request) async {
+  Future<ProfileCreateResult> createProfile(
+    ProfileCreateRequest request,
+  ) async {
     final data = await _request(
       () => _dio.post('/api/profile', data: request.toJson()),
       expectedStatus: 201,
     );
-    return _profileFrom(data);
+    final session = data['session'];
+    final token = session is Map<String, dynamic> ? session['token'] : null;
+    if (token is! String || token.isEmpty) {
+      throw const ProfileApiUnavailableException(
+        detail: 'Profile signup session was missing.',
+      );
+    }
+    final expiresAt = session!['expiresAt'];
+    return ProfileCreateResult(
+      profile: _profileFrom(data),
+      token: token,
+      expiresAt: expiresAt is String ? expiresAt : null,
+    );
   }
 
   /// GET /api/profile/me — the caller's own profile, resolved from the JWT

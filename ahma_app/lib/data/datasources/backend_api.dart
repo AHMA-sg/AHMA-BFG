@@ -6,10 +6,12 @@ import '../../core/utils/web_redirect.dart';
 import '../models/call_model.dart';
 import '../models/action_plan.dart';
 import 'google_services_store.dart';
+import 'local_identity_store.dart';
 
 class BackendApi {
   late final Dio _dio;
   final GoogleServicesStore _googleStore = GoogleServicesStore();
+  final LocalIdentityStore _identityStore = LocalIdentityStore();
 
   BackendApi() {
     final baseUrl = _resolveBaseUrl();
@@ -17,11 +19,21 @@ class BackendApi {
     _dio = Dio(
       BaseOptions(
         baseUrl: baseUrl,
-        headers: {
-          'Content-Type': 'application/json',
+        headers: {'Content-Type': 'application/json'},
+        connectTimeout: const Duration(seconds: 20),
+        receiveTimeout: const Duration(seconds: 75),
+      ),
+    );
+
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) async {
+          final token = await _identityStore.readToken();
+          if (token != null && token.isNotEmpty) {
+            options.headers['Authorization'] = 'Bearer $token';
+          }
+          handler.next(options);
         },
-        connectTimeout: const Duration(seconds: 30),
-        receiveTimeout: const Duration(seconds: 30),
       ),
     );
 

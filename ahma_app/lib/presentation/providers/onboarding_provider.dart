@@ -335,21 +335,27 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     );
 
     try {
-      UserProfile profile;
+      ProfileCreateResult result;
       try {
-        profile = await _api.createProfile(request);
+        result = await _api.createProfile(request);
       } on DuplicateUserIdException {
         // Practically impossible with a fresh UUID; regenerate and
         // resubmit the identical answers once, silently.
-        profile = await _api.createProfile(
+        result = await _api.createProfile(
           request.copyWith(userId: generateUuidV4()),
         );
       }
 
-      // Persist identity ONLY after the confirmed 201.
-      await _identity.saveUserId(profile.userId);
+      // Signup returns a JWT so new users (including phone-only profiles) can
+      // use authenticated summary/profile routes immediately.
+      await _identity.saveSession(
+        token: result.token,
+        userId: result.profile.userId,
+        email: result.profile.email ?? '',
+        expiresAt: result.expiresAt,
+      );
       if (!mounted) return;
-      _onCompleted(profile);
+      _onCompleted(result.profile);
     } on ProfileValidationException catch (e) {
       _handleFieldErrors(e.fieldErrors);
     } on ContactAlreadyExistsException {
