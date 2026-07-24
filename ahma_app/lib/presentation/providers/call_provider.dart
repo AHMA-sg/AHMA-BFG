@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/call_model.dart';
@@ -168,39 +170,70 @@ class CallNotifier extends StateNotifier<CallState> {
 
   /// End the call
   Future<void> endCall() async {
-    if (state.call == null) return;
+    final call = state.call;
+    if (call == null || state.status == CallStatus.ended) return;
 
+    _showCallEnded(call);
+    await _finalizeEndedCall(call, requestApiEnd: true);
+  }
+
+  /// Handle Ultravox ending the LiveKit room, including the built-in hangUp
+  /// tool. The UI changes immediately while transcript persistence continues.
+  void handleRemoteDisconnect() {
+    final call = state.call;
+    if (call == null ||
+        state.status == CallStatus.ended ||
+        state.status == CallStatus.idle) {
+      return;
+    }
+
+    print('[Call] Ultravox ended the call: ${call.callId}');
+    _showCallEnded(call);
+    unawaited(_finalizeEndedCall(call, requestApiEnd: false));
+  }
+
+  void _showCallEnded(CallModel call) {
+    state = state.copyWith(
+      status: CallStatus.ended,
+      call: call,
+      isMuted: true,
+      error: null,
+    );
+  }
+
+  Future<void> _finalizeEndedCall(
+    CallModel call, {
+    required bool requestApiEnd,
+  }) async {
     try {
-      // Get final transcript
       final messages = kIsWeb
-          ? await _backend.getUltravoxCallMessages(state.call!.callId)
-          : await _api.getCallMessages(state.call!.callId);
+          ? await _backend.getUltravoxCallMessages(call.callId)
+          : await _api.getCallMessages(call.callId);
 
-      // Disconnect WebRTC
       await _rtc.disconnect();
 
-      // End call via API
-      if (kIsWeb) {
-        await _backend.endUltravoxCall(state.call!.callId);
-      } else {
-        await _api.endCall(state.call!.callId);
+      if (requestApiEnd) {
+        if (kIsWeb) {
+          await _backend.endUltravoxCall(call.callId);
+        } else {
+          await _api.endCall(call.callId);
+        }
       }
 
-      // Update state
-      final updatedCall = state.call!.copyWith(transcript: messages);
-      state = state.copyWith(
-        status: CallStatus.ended,
-        call: updatedCall,
-        isMuted: true,
-      );
+      final updatedCall = call.copyWith(transcript: messages);
+      if (state.call?.callId == call.callId &&
+          state.status == CallStatus.ended) {
+        state = state.copyWith(call: updatedCall);
+      }
 
-      // TODO: Send transcript to Flask backend
-      await _sendTranscriptToBackend(updatedCall);
-
-      print('[Call] Ended call: ${state.call!.callId}');
+      if (messages.isNotEmpty) {
+        await _sendTranscriptToBackend(updatedCall);
+      }
+      print('[Call] Finalized call: ${call.callId}');
     } catch (e) {
-      state = state.copyWith(status: CallStatus.error, error: e.toString());
-      print('[Call] Error ending call: $e');
+      // The call is already over. Keep the ended UI even if transcript
+      // retrieval or persistence fails.
+      print('[Call] Error finalizing ended call ${call.callId}: $e');
     }
   }
 
@@ -289,21 +322,25 @@ class CallNotifier extends StateNotifier<CallState> {
 
 /// Provider
 final callProvider = StateNotifierProvider<CallNotifier, CallState>((ref) {
-  return CallNotifier(
+  late final CallNotifier notifier;
+  final rtc = UltravoxRtcManager(
+    onRemoteStream: (remoteTrack) {
+      print('[Call] 🔊 Remote audio track received from AHMA');
+      // Audio automatically plays through speakers via LiveKit
+      // RemoteAudioTrack handles playback automatically
+    },
+    onToolCall: (toolCallData) {
+      print('[Call] 🔧 Tool call handled by LiveKit');
+    },
+    onDisconnected: () => notifier.handleRemoteDisconnect(),
+  );
+  notifier = CallNotifier(
     UltravoxApi(),
-    UltravoxRtcManager(
-      onRemoteStream: (remoteTrack) {
-        print('[Call] 🔊 Remote audio track received from AHMA');
-        // Audio automatically plays through speakers via LiveKit
-        // RemoteAudioTrack handles playback automatically
-      },
-      onToolCall: (toolCallData) {
-        print('[Call] 🔧 Tool call handled by LiveKit');
-      },
-    ),
+    rtc,
     BackendApi(),
     resolveUserId: () => ref.read(localIdentityStoreProvider).readUserId(),
     onBackendUpdate: (update) =>
         ref.read(backendProvider.notifier).processUpdate(update),
   );
+  return notifier;
 });

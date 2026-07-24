@@ -24,12 +24,14 @@ class UltravoxRtcManager {
   final Function(String)? onMessage;
   final Function(RemoteAudioTrack)? onRemoteStream;
   final Function(Map<String, dynamic>)? onToolCall;
+  final void Function()? onDisconnected;
   late final BackendClientTools _backendClientTools;
 
   UltravoxRtcManager({
     this.onMessage,
     this.onRemoteStream,
     this.onToolCall,
+    this.onDisconnected,
     BackendClientTools? backendClientTools,
   }) {
     _backendClientTools = backendClientTools ?? BackendClientTools();
@@ -274,6 +276,7 @@ class UltravoxRtcManager {
     // Listen for disconnection
     _roomListener!.on<RoomDisconnectedEvent>((event) {
       print('[LiveKit] Room disconnected: ${event.reason}');
+      onDisconnected?.call();
     });
 
     // Listen for reconnection attempts

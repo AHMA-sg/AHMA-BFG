@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../core/theme/ahma_theme.dart';
 import '../../data/models/action_plan.dart';
 import '../providers/backend_provider.dart';
@@ -389,16 +390,11 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
         ); // Newest first
 
         for (final update in sortedActionPlans) {
-          final timestamp = update.timestamp;
-          final dateStr = '${timestamp.day}/${timestamp.month}';
-
-          // Calculate call duration (placeholder - you might need to store actual duration)
-          final callDuration =
-              '5 min'; // TODO: Get actual call duration from data
+          final dateTime = _formatJourneyDateTime(update.timestamp);
 
           final actionPlanWalk = WalkEntry(
-            title: dateStr, // Title is now the date
-            subtitle: 'Conversation summary · $callDuration',
+            title: dateTime,
+            subtitle: '',
             isActive: true,
             backendUpdate: update, // Store the update for expansion
           );
@@ -499,7 +495,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
               ? () => _toggleActionPlanExpansion(walk.backendUpdate!.callId)
               : null,
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 800),
+            duration: const Duration(milliseconds: 260),
             curve: Curves.easeInOutCubic,
             constraints: BoxConstraints(
               // Collapsed cards were capped at 150 and the title's Expanded
@@ -527,7 +523,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
               ),
             ),
             child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 400),
+              duration: const Duration(milliseconds: 180),
               child: isExpanded && isActionPlan
                   ? _buildExpandedActionPlan(walk.backendUpdate!)
                   : _buildNodeCard(walk, isActionPlan),
@@ -688,7 +684,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
           children: [
             Expanded(
               child: Text(
-                '${update.timestamp.day}/${update.timestamp.month}', // Date as title
+                _formatJourneyDateTime(update.timestamp),
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   fontSize: 12,
                   fontWeight: FontWeight.w300,
@@ -703,19 +699,6 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
               color: AhmaTheme.mocha.withOpacity(0.4),
             ),
           ],
-        ),
-        const SizedBox(height: 2),
-        // Topic with duration below date (exact match to collapsed subtitle)
-        Text(
-          'Conversation summary',
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            fontSize: 12, // Match collapsed subtitle readability
-            fontWeight: FontWeight.w300,
-            color: AhmaTheme.sageGreen, // Match collapsed subtitle color
-            letterSpacing: 0.0,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 8),
 
@@ -819,5 +802,9 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
         ],
       ],
     );
+  }
+
+  String _formatJourneyDateTime(DateTime timestamp) {
+    return DateFormat('d MMM yyyy · h:mm a').format(timestamp.toLocal());
   }
 }

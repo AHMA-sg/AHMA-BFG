@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/ahma_theme.dart';
+import '../../core/utils/summary_quote.dart';
 import '../providers/backend_provider.dart';
 import '../providers/profile_provider.dart';
 import '../widgets/house_animation.dart';
@@ -31,8 +32,10 @@ class ProfileScreen extends ConsumerWidget {
     // Profile-derived greeting (replaces the old hardcoded "Sam").
     final displayName =
         ref.watch(profileGateProvider).profile?.displayName ?? 'friend';
-    final journeyCount = ref.watch(
-      backendProvider.select((state) => state.updates.length),
+    final updates = ref.watch(backendProvider.select((state) => state.updates));
+    final journeyCount = updates.length;
+    final summaryQuote = selectEmpoweringSummaryQuote(
+      updates.take(20).map((update) => update.actionPlan.summary),
     );
 
     final content = LayoutBuilder(
@@ -61,6 +64,7 @@ class ProfileScreen extends ConsumerWidget {
           veryCompact: veryCompact,
           displayName: displayName,
           journeyCount: journeyCount,
+          summaryQuote: summaryQuote,
           onOpenCallJourney: () => _openCallJourney(context),
           onOpenPastJourneys: () => _openPastJourneys(context),
         );
@@ -104,6 +108,7 @@ class _ProfileContent extends StatelessWidget {
   final bool veryCompact;
   final String displayName;
   final int journeyCount;
+  final SummaryQuote summaryQuote;
   final VoidCallback onOpenCallJourney;
   final VoidCallback onOpenPastJourneys;
 
@@ -113,6 +118,7 @@ class _ProfileContent extends StatelessWidget {
     required this.veryCompact,
     required this.displayName,
     required this.journeyCount,
+    required this.summaryQuote,
     required this.onOpenCallJourney,
     required this.onOpenPastJourneys,
   });
@@ -145,9 +151,9 @@ class _ProfileContent extends StatelessWidget {
             onOpenCallJourney: onOpenCallJourney,
             onOpenPastJourneys: onOpenPastJourneys,
           ),
-          if (!compact && journeyCount == 0) ...[
+          if (!compact) ...[
             SizedBox(height: s(14)),
-            _AffirmationCard(scale: scale),
+            _AffirmationCard(scale: scale, summaryQuote: summaryQuote),
             Expanded(
               child: LayoutBuilder(
                 builder: (context, sectionConstraints) {
@@ -665,8 +671,9 @@ class _PastJourneysCard extends StatelessWidget {
 
 class _AffirmationCard extends StatelessWidget {
   final double scale;
+  final SummaryQuote summaryQuote;
 
-  const _AffirmationCard({required this.scale});
+  const _AffirmationCard({required this.scale, required this.summaryQuote});
 
   @override
   Widget build(BuildContext context) {
@@ -693,7 +700,9 @@ class _AffirmationCard extends StatelessWidget {
             ),
           ),
           SizedBox(width: s(12)),
-          Expanded(child: _AffirmationCopy(scale: scale)),
+          Expanded(
+            child: _AffirmationCopy(scale: scale, summaryQuote: summaryQuote),
+          ),
         ],
       ),
     );
@@ -702,8 +711,9 @@ class _AffirmationCard extends StatelessWidget {
 
 class _AffirmationCopy extends StatelessWidget {
   final double scale;
+  final SummaryQuote summaryQuote;
 
-  const _AffirmationCopy({required this.scale});
+  const _AffirmationCopy({required this.scale, required this.summaryQuote});
 
   @override
   Widget build(BuildContext context) {
@@ -720,7 +730,9 @@ class _AffirmationCopy extends StatelessWidget {
         ),
         SizedBox(height: s(4)),
         Text(
-          'TODAY\'S AFFIRMATION',
+          summaryQuote.isFromSummary
+              ? 'A NOTE FROM YOUR JOURNEYS'
+              : 'TODAY\'S AFFIRMATION',
           style: AhmaTheme.labelTextStyle.copyWith(
             fontSize: t(10),
             color: AhmaTheme.sageGreen.withOpacity(0.9),
@@ -729,7 +741,9 @@ class _AffirmationCopy extends StatelessWidget {
         ),
         SizedBox(height: s(10)),
         Text(
-          "You don't have to have it all figured out. Resting is also moving forward.",
+          summaryQuote.text,
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
             fontSize: t(17),
             color: Colors.black.withOpacity(0.92),
