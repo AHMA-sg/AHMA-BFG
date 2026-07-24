@@ -414,11 +414,12 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
             child: Text(
               backendState.isLoading
                   ? 'Loading your journeys…'
-                  : 'Your conversation summaries will appear here.',
+                  : 'Your conversations will be here whenever you’re ready.',
               textAlign: TextAlign.center,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: AhmaTheme.mochaMuted),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontSize: 13 * phoneScale,
+                color: AhmaTheme.mochaMuted,
+              ),
             ),
           );
         }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/ahma_theme.dart';
+import '../providers/backend_provider.dart';
 import '../providers/profile_provider.dart';
 import '../widgets/house_animation.dart';
 import 'account_screen.dart';
@@ -30,6 +31,9 @@ class ProfileScreen extends ConsumerWidget {
     // Profile-derived greeting (replaces the old hardcoded "Sam").
     final displayName =
         ref.watch(profileGateProvider).profile?.displayName ?? 'friend';
+    final journeyCount = ref.watch(
+      backendProvider.select((state) => state.updates.length),
+    );
 
     final content = LayoutBuilder(
       builder: (context, constraints) {
@@ -56,6 +60,7 @@ class ProfileScreen extends ConsumerWidget {
           compact: compact,
           veryCompact: veryCompact,
           displayName: displayName,
+          journeyCount: journeyCount,
           onOpenCallJourney: () => _openCallJourney(context),
           onOpenPastJourneys: () => _openPastJourneys(context),
         );
@@ -98,6 +103,7 @@ class _ProfileContent extends StatelessWidget {
   final bool compact;
   final bool veryCompact;
   final String displayName;
+  final int journeyCount;
   final VoidCallback onOpenCallJourney;
   final VoidCallback onOpenPastJourneys;
 
@@ -106,6 +112,7 @@ class _ProfileContent extends StatelessWidget {
     required this.compact,
     required this.veryCompact,
     required this.displayName,
+    required this.journeyCount,
     required this.onOpenCallJourney,
     required this.onOpenPastJourneys,
   });
@@ -134,10 +141,11 @@ class _ProfileContent extends StatelessWidget {
             compact: compact,
             veryCompact: veryCompact,
             displayName: displayName,
+            journeyCount: journeyCount,
             onOpenCallJourney: onOpenCallJourney,
             onOpenPastJourneys: onOpenPastJourneys,
           ),
-          if (!compact) ...[
+          if (!compact && journeyCount == 0) ...[
             SizedBox(height: s(14)),
             _AffirmationCard(scale: scale),
             Expanded(
@@ -317,6 +325,7 @@ class _ProfileHero extends StatelessWidget {
   final bool compact;
   final bool veryCompact;
   final String displayName;
+  final int journeyCount;
   final VoidCallback onOpenCallJourney;
   final VoidCallback onOpenPastJourneys;
 
@@ -325,6 +334,7 @@ class _ProfileHero extends StatelessWidget {
     required this.compact,
     required this.veryCompact,
     required this.displayName,
+    required this.journeyCount,
     required this.onOpenCallJourney,
     required this.onOpenPastJourneys,
   });
@@ -436,7 +446,9 @@ class _ProfileHero extends StatelessWidget {
         ),
         SizedBox(height: s(compact ? 8 : 14)),
         Text(
-          "You've been on 4 journeys.",
+          journeyCount == 1
+              ? "You've been on 1 journey."
+              : "You've been on $journeyCount journeys.",
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
             fontSize: t(15),
             color: AhmaTheme.mocha.withOpacity(0.88),
@@ -722,14 +734,6 @@ class _AffirmationCopy extends StatelessWidget {
             fontSize: t(17),
             color: Colors.black.withOpacity(0.92),
             height: 1.24,
-          ),
-        ),
-        SizedBox(height: s(12)),
-        Text(
-          'From your 3rd journey',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontSize: t(13),
-            color: AhmaTheme.mocha.withOpacity(0.74),
           ),
         ),
       ],
