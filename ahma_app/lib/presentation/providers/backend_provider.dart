@@ -7,27 +7,35 @@ import '../../data/datasources/local_identity_store.dart';
 
 /// Backend update state
 class BackendState {
+  static const Object _notProvided = Object();
+
   final List<BackendUpdate> updates;
   final BackendUpdate? latestUpdate;
+  final int journeyCount;
   final bool isLoading;
   final String? error;
 
   const BackendState({
     this.updates = const [],
     this.latestUpdate,
+    this.journeyCount = 0,
     this.isLoading = false,
     this.error,
   });
 
   BackendState copyWith({
     List<BackendUpdate>? updates,
-    BackendUpdate? latestUpdate,
+    Object? latestUpdate = _notProvided,
+    int? journeyCount,
     bool? isLoading,
     String? error,
   }) {
     return BackendState(
       updates: updates ?? this.updates,
-      latestUpdate: latestUpdate ?? this.latestUpdate,
+      latestUpdate: identical(latestUpdate, _notProvided)
+          ? this.latestUpdate
+          : latestUpdate as BackendUpdate?,
+      journeyCount: journeyCount ?? this.journeyCount,
       isLoading: isLoading ?? this.isLoading,
       error: error,
     );
@@ -55,11 +63,15 @@ class BackendNotifier extends StateNotifier<BackendState> {
     try {
       state = state.copyWith(isLoading: true);
 
-      final updates = await _localDb.getActionPlans();
+      final updates = await _localDb.getActionPlans(limit: 20);
 
       state = state.copyWith(
         updates: updates,
         latestUpdate: updates.isNotEmpty ? updates.first : null,
+        // Postgres replaces this provisional offline value on refresh.
+        journeyCount: state.journeyCount > 0
+            ? state.journeyCount
+            : updates.length,
         isLoading: false,
       );
 
@@ -81,19 +93,25 @@ class BackendNotifier extends StateNotifier<BackendState> {
     if (userId == null || userId.isEmpty) return;
 
     try {
-      final remoteUpdates = await _backendApi.getSummaries(userId: userId);
+      final result = await _backendApi.getSummaries(userId: userId, limit: 20);
+      final remoteUpdates = result.summaries;
+      final remoteIds = remoteUpdates.map((update) => update.callId).toSet();
+      final cachedUpdates = await _localDb.getActionPlans(userId: userId);
+      for (final cached in cachedUpdates) {
+        if (!remoteIds.contains(cached.callId)) {
+          await _localDb.deleteActionPlan(cached.callId);
+        }
+      }
       for (final update in remoteUpdates.reversed) {
         await _localDb.saveActionPlan(update);
       }
-      final localOnly = state.updates.where(
-        (local) =>
-            !remoteUpdates.any((remote) => remote.callId == local.callId),
-      );
-      final combined = [...remoteUpdates, ...localOnly]
+      await _localDb.pruneActionPlans(keep: 20, userId: userId);
+      final combined = List<BackendUpdate>.from(remoteUpdates)
         ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
       state = state.copyWith(
         updates: combined,
         latestUpdate: combined.isEmpty ? null : combined.first,
+        journeyCount: result.journeyCount,
         isLoading: false,
       );
       print('[Backend] Loaded ${remoteUpdates.length} summaries from backend');
@@ -123,9 +141,23 @@ class BackendNotifier extends StateNotifier<BackendState> {
           .toList();
 
       // Add new update to the beginning of the list
-      final updatedList = [update, ...filteredUpdates];
+      final isNewJourney = filteredUpdates.length == state.updates.length;
+      final updatedList = [update, ...filteredUpdates].take(20).toList();
+      final retainedIds = updatedList.map((item) => item.callId).toSet();
+      for (final oldUpdate in state.updates) {
+        if (!retainedIds.contains(oldUpdate.callId)) {
+          await _localDb.deleteActionPlan(oldUpdate.callId);
+        }
+      }
+      await _localDb.pruneActionPlans(keep: 20, userId: update.userId);
 
-      state = state.copyWith(updates: updatedList, latestUpdate: update);
+      state = state.copyWith(
+        updates: updatedList,
+        latestUpdate: update,
+        journeyCount: isNewJourney
+            ? state.journeyCount + 1
+            : state.journeyCount,
+      );
 
       print(
         '[Backend] Updated state with ${updatedList.length} total action plans',
@@ -134,6 +166,26 @@ class BackendNotifier extends StateNotifier<BackendState> {
       print('[Backend] Error saving action plan: $e');
       state = state.copyWith(error: 'Failed to save action plan');
     }
+  }
+
+  /// Delete a journal summary from Postgres, local cache, and in-memory state.
+  /// The lifetime journey count deliberately stays unchanged.
+  Future<void> deleteSummary(String callId) async {
+    final userId = await _identityStore.readUserId();
+    if (userId == null || userId.isEmpty) {
+      throw StateError('No signed-in user is available.');
+    }
+
+    await _backendApi.deleteSummary(userId: userId, callId: callId);
+    await _localDb.deleteActionPlan(callId);
+
+    final remaining = state.updates
+        .where((update) => update.callId != callId)
+        .toList();
+    state = state.copyWith(
+      updates: remaining,
+      latestUpdate: remaining.isEmpty ? null : remaining.first,
+    );
   }
 
   /// Get action plans grouped by date
@@ -176,7 +228,7 @@ class BackendNotifier extends StateNotifier<BackendState> {
   Future<void> clearUpdates() async {
     try {
       await _localDb.deleteAllActionPlans();
-      state = const BackendState();
+      state = BackendState(journeyCount: state.journeyCount);
       print('[Backend] Cleared all action plans');
     } catch (e) {
       print('[Backend] Error clearing action plans: $e');

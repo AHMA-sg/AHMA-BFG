@@ -33,6 +33,7 @@ enum AuthStatus {
 
 class AuthState {
   final AuthStatus status;
+  final int quoteSessionSeed;
 
   /// The email the code was sent to. Seeds onboarding's contact question and
   /// is the subject the code verifies against.
@@ -46,6 +47,7 @@ class AuthState {
 
   const AuthState({
     required this.status,
+    this.quoteSessionSeed = 0,
     this.email,
     this.errorMessage,
     this.infoMessage,
@@ -89,7 +91,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
     // against `/me` and signs out if the backend rejects it.
     final email = await _identity.readLoginEmail();
     if (!mounted) return;
-    state = AuthState(status: AuthStatus.loggedIn, email: email);
+    state = AuthState(
+      status: AuthStatus.loggedIn,
+      email: email,
+      quoteSessionSeed: token.hashCode,
+    );
   }
 
   /// Request a sign-in code for [rawEmail]. Moves to the code-entry screen on
@@ -189,7 +195,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
       if (!mounted) return;
       // Re-run the launch gate against the new session BEFORE revealing it.
       _ref.read(profileGateProvider.notifier).retry();
-      state = AuthState(status: AuthStatus.loggedIn, email: email);
+      state = AuthState(
+        status: AuthStatus.loggedIn,
+        email: email,
+        quoteSessionSeed: session.token.hashCode,
+      );
     } on InvalidCodeException {
       if (!mounted) return;
       state = AuthState(

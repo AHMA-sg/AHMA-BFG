@@ -260,6 +260,23 @@ class LocalDatabase {
     );
   }
 
+  /// Keep only the newest journal entries in the local offline cache.
+  Future<int> pruneActionPlans({int keep = 20, String? userId}) async {
+    final db = await database;
+    final userFilter = userId == null ? '' : 'WHERE user_id = ?';
+    final args = <Object?>[if (userId != null) userId, keep];
+    return db.rawDelete('''
+      DELETE FROM $_actionPlansTable
+      WHERE call_id IN (
+        SELECT call_id
+        FROM $_actionPlansTable
+        $userFilter
+        ORDER BY timestamp DESC
+        LIMIT -1 OFFSET ?
+      )
+      ''', args);
+  }
+
   /// Delete all action plans for a user
   Future<int> deleteAllActionPlans({String? userId}) async {
     final db = await database;

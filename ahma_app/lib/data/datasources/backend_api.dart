@@ -288,9 +288,9 @@ class BackendApi {
   }
 
   /// Fetch durable journal summaries from the backend Postgres store.
-  Future<List<BackendUpdate>> getSummaries({
+  Future<SummaryListResult> getSummaries({
     required String userId,
-    int limit = 50,
+    int limit = 20,
   }) async {
     final response = await _dio.get(
       '/api/summaries',
@@ -298,9 +298,31 @@ class BackendApi {
     );
     final data = response.data as Map<String, dynamic>;
     final summaries = data['summaries'] as List<dynamic>? ?? const [];
-    return summaries
+    final updates = summaries
         .map((item) => BackendUpdate.fromJson(item as Map<String, dynamic>))
         .toList();
+    return SummaryListResult(
+      summaries: updates,
+      journeyCount: data['journeyCount'] as int? ?? updates.length,
+    );
+  }
+
+  /// Delete one persisted journal entry. A missing entry is already deleted
+  /// and is therefore treated as success so local state can converge.
+  Future<void> deleteSummary({
+    required String userId,
+    required String callId,
+  }) async {
+    final response = await _dio.delete(
+      '/api/summaries/$callId',
+      queryParameters: {'userId': userId},
+      options: Options(validateStatus: (_) => true),
+    );
+    final status = response.statusCode ?? 0;
+    if ((status >= 200 && status < 300) || status == 404) return;
+
+    final detail = _detailFromResponse(response.data) ?? 'HTTP $status';
+    throw StateError('Could not delete summary: $detail');
   }
 
   /// Send tool request to backend during call
@@ -415,6 +437,16 @@ class BackendApi {
     );
     return response.data as Map<String, dynamic>;
   }
+}
+
+class SummaryListResult {
+  final List<BackendUpdate> summaries;
+  final int journeyCount;
+
+  const SummaryListResult({
+    required this.summaries,
+    required this.journeyCount,
+  });
 }
 
 class BackendHealthCheckResult {

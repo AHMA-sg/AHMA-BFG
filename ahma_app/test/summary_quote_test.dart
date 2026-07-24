@@ -34,4 +34,29 @@ void main() {
     expect(quote.text, defaultAffirmation);
     expect(quote.isFromSummary, isFalse);
   });
+
+  test('random selection is stable within a session and varies by session', () {
+    final summaries = [
+      'You showed real strength by asking for support.',
+      'You made meaningful progress by protecting time to rest.',
+      'You demonstrated courage when you reached out for help.',
+      'You deserve support while you continue caring for others.',
+    ];
+
+    final first = selectRandomEmpoweringSummaryQuote(
+      summaries,
+      sessionSeed: 42,
+    );
+    final repeated = selectRandomEmpoweringSummaryQuote(
+      summaries,
+      sessionSeed: 42,
+    );
+    final acrossSessions = {
+      for (var seed = 0; seed < 20; seed++)
+        selectRandomEmpoweringSummaryQuote(summaries, sessionSeed: seed).text,
+    };
+
+    expect(repeated.text, first.text);
+    expect(acrossSessions.length, greaterThan(1));
+  });
 }

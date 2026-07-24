@@ -1,3 +1,5 @@
+import 'dart:math';
+
 const String defaultAffirmation =
     "You don't have to have it all figured out. Resting is also moving forward.";
 
@@ -14,8 +16,39 @@ class SummaryQuote {
 /// The scoring also supports older summaries and lightly converts common
 /// third-person journal phrasing into second person without adding new facts.
 SummaryQuote selectEmpoweringSummaryQuote(Iterable<String> summaries) {
-  String? bestSentence;
-  var bestScore = -1;
+  final candidates = _empoweringCandidates(summaries);
+  if (candidates.isEmpty) return _fallbackQuote;
+
+  candidates.sort((a, b) => b.score.compareTo(a.score));
+  return _quoteFromSentence(candidates.first.sentence);
+}
+
+/// Randomly selects an empowering sentence using a stable per-session seed.
+SummaryQuote selectRandomEmpoweringSummaryQuote(
+  Iterable<String> summaries, {
+  required int sessionSeed,
+}) {
+  final candidates = _empoweringCandidates(summaries);
+  if (candidates.isEmpty) return _fallbackQuote;
+
+  final selected = candidates[Random(sessionSeed).nextInt(candidates.length)];
+  return _quoteFromSentence(selected.sentence);
+}
+
+const SummaryQuote _fallbackQuote = SummaryQuote(
+  text: defaultAffirmation,
+  isFromSummary: false,
+);
+
+SummaryQuote _quoteFromSentence(String sentence) {
+  return SummaryQuote(
+    text: _personalizeJournalSentence(sentence),
+    isFromSummary: true,
+  );
+}
+
+List<_QuoteCandidate> _empoweringCandidates(Iterable<String> summaries) {
+  final candidates = <_QuoteCandidate>[];
   var summaryIndex = 0;
 
   for (final summary in summaries) {
@@ -47,22 +80,21 @@ SummaryQuote selectEmpoweringSummaryQuote(Iterable<String> summaries) {
         if (lower.contains(signal)) score += 2;
       }
 
-      if (score > bestScore && score >= 5) {
-        bestScore = score;
-        bestSentence = sentence;
+      if (score >= 5) {
+        candidates.add(_QuoteCandidate(sentence: sentence, score: score));
       }
     }
     summaryIndex++;
   }
 
-  if (bestSentence == null) {
-    return const SummaryQuote(text: defaultAffirmation, isFromSummary: false);
-  }
+  return candidates;
+}
 
-  return SummaryQuote(
-    text: _personalizeJournalSentence(bestSentence),
-    isFromSummary: true,
-  );
+class _QuoteCandidate {
+  final String sentence;
+  final int score;
+
+  const _QuoteCandidate({required this.sentence, required this.score});
 }
 
 const List<String> _empoweringSignals = [

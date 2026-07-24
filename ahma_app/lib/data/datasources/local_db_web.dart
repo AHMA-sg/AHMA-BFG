@@ -73,6 +73,26 @@ class LocalDatabase {
     return plans.isEmpty ? null : plans.first;
   }
 
+  Future<int> deleteActionPlan(String callId) async {
+    final before = _updates.length;
+    _updates.removeWhere((update) => update.callId == callId);
+    return before - _updates.length;
+  }
+
+  Future<int> pruneActionPlans({int keep = 20, String? userId}) async {
+    final matching =
+        _updates
+            .where((update) => userId == null || update.userId == userId)
+            .toList()
+          ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    final removeIds = matching
+        .skip(keep)
+        .map((update) => update.callId)
+        .toSet();
+    _updates.removeWhere((update) => removeIds.contains(update.callId));
+    return removeIds.length;
+  }
+
   Future<int> deleteAllActionPlans({String? userId}) async {
     final before = _updates.length;
 

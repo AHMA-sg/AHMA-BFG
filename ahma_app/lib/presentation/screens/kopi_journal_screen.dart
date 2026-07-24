@@ -73,10 +73,9 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
 
   Widget _buildTopBar() {
     final summaryCount = ref.watch(
-      backendProvider.select((state) => state.updates.length),
+      backendProvider.select((state) => state.journeyCount),
     );
-    final walkCount =
-        summaryCount + _walks.where((walk) => !walk.isFuture).length;
+    final walkCount = summaryCount;
     final phoneScale = _phoneScale(context);
 
     return Padding(
@@ -502,7 +501,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
               // forced the card to that cap, ellipsizing subtitles like
               // "just talking · 22 min". Widen so realistic entries fit.
               minWidth: (isExpanded ? 200 : 130) * phoneScale,
-              maxWidth: (isExpanded ? 280 : 230) * phoneScale,
+              maxWidth: (isExpanded ? 300 : 270) * phoneScale,
             ),
             padding: EdgeInsets.symmetric(
               horizontal: (isExpanded ? 12 : 8) * phoneScale,
@@ -649,6 +648,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
                   size: 12 * phoneScale,
                   color: AhmaTheme.mocha.withOpacity(0.4),
                 ),
+                _buildDeleteMenu(walk.backendUpdate!, phoneScale),
               ],
             ],
           ),
@@ -698,6 +698,7 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
               size: 12,
               color: AhmaTheme.mocha.withOpacity(0.4),
             ),
+            _buildDeleteMenu(update, 1),
           ],
         ),
         const SizedBox(height: 8),
@@ -806,5 +807,74 @@ class _KopiJournalScreenState extends ConsumerState<KopiJournalScreen> {
 
   String _formatJourneyDateTime(DateTime timestamp) {
     return DateFormat('d MMM yyyy · h:mm a').format(timestamp.toLocal());
+  }
+
+  Widget _buildDeleteMenu(BackendUpdate update, double scale) {
+    return PopupMenuButton<String>(
+      tooltip: 'Journey options',
+      padding: EdgeInsets.zero,
+      iconSize: 17 * scale,
+      icon: Icon(
+        Icons.more_vert_rounded,
+        color: AhmaTheme.mocha.withOpacity(0.48),
+      ),
+      onSelected: (value) {
+        if (value == 'delete') {
+          _confirmDeleteSummary(update);
+        }
+      },
+      itemBuilder: (_) => const [
+        PopupMenuItem<String>(
+          value: 'delete',
+          child: Row(
+            children: [
+              Icon(Icons.delete_outline_rounded, size: 19),
+              SizedBox(width: 10),
+              Text('Delete summary'),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _confirmDeleteSummary(BackendUpdate update) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete this summary?'),
+        content: const Text(
+          'This removes the journal summary from AHMA and cannot be undone. '
+          'Your lifetime journey count will stay the same.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await ref.read(backendProvider.notifier).deleteSummary(update.callId);
+      if (!mounted) return;
+      setState(() {
+        _expandedPlans.remove(update.callId.hashCode);
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Summary deleted.')));
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not delete summary: $error')),
+      );
+    }
   }
 }

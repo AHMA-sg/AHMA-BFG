@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/ahma_theme.dart';
 import '../../core/utils/summary_quote.dart';
+import '../providers/auth_provider.dart';
 import '../providers/backend_provider.dart';
 import '../providers/profile_provider.dart';
 import '../widgets/house_animation.dart';
@@ -16,6 +17,27 @@ const double _profileDesignWidth = 457;
 const double _profileDesignHeight = 760;
 const double _profileCompactDesignHeight = 620;
 const double _profileTextScale = 0.96;
+
+final _sessionSummaryQuoteProvider =
+    StateNotifierProvider.family<
+      _SessionSummaryQuoteNotifier,
+      SummaryQuote?,
+      int
+    >((ref, sessionSeed) => _SessionSummaryQuoteNotifier(sessionSeed));
+
+class _SessionSummaryQuoteNotifier extends StateNotifier<SummaryQuote?> {
+  final int sessionSeed;
+
+  _SessionSummaryQuoteNotifier(this.sessionSeed) : super(null);
+
+  void selectOnce(Iterable<String> summaries) {
+    if (state != null) return;
+    state = selectRandomEmpoweringSummaryQuote(
+      summaries,
+      sessionSeed: sessionSeed,
+    );
+  }
+}
 
 class ProfileScreen extends ConsumerWidget {
   final VoidCallback? onOpenCallJourney;
@@ -33,10 +55,29 @@ class ProfileScreen extends ConsumerWidget {
     final displayName =
         ref.watch(profileGateProvider).profile?.displayName ?? 'friend';
     final updates = ref.watch(backendProvider.select((state) => state.updates));
-    final journeyCount = updates.length;
-    final summaryQuote = selectEmpoweringSummaryQuote(
-      updates.take(20).map((update) => update.actionPlan.summary),
+    final quoteSessionSeed = ref.watch(
+      authProvider.select((state) => state.quoteSessionSeed),
     );
+    final sessionQuote = ref.watch(
+      _sessionSummaryQuoteProvider(quoteSessionSeed),
+    );
+    final journeyCount = ref.watch(
+      backendProvider.select((state) => state.journeyCount),
+    );
+    final summaries = updates
+        .take(20)
+        .map((update) => update.actionPlan.summary)
+        .toList();
+    if (sessionQuote == null && summaries.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref
+            .read(_sessionSummaryQuoteProvider(quoteSessionSeed).notifier)
+            .selectOnce(summaries);
+      });
+    }
+    final summaryQuote =
+        sessionQuote ??
+        const SummaryQuote(text: defaultAffirmation, isFromSummary: false);
 
     final content = LayoutBuilder(
       builder: (context, constraints) {
