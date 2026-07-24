@@ -5,6 +5,7 @@ import 'package:livekit_client/livekit_client.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../core/config/audio_config.dart';
+import '../models/backend_client_tools.dart';
 import '../models/navigate_tool.dart';
 import '../models/client_tool_result.dart';
 
@@ -22,8 +23,16 @@ class UltravoxRtcManager {
   final Function(String)? onMessage;
   final Function(RemoteAudioTrack)? onRemoteStream;
   final Function(Map<String, dynamic>)? onToolCall;
+  late final BackendClientTools _backendClientTools;
 
-  UltravoxRtcManager({this.onMessage, this.onRemoteStream, this.onToolCall});
+  UltravoxRtcManager({
+    this.onMessage,
+    this.onRemoteStream,
+    this.onToolCall,
+    BackendClientTools? backendClientTools,
+  }) {
+    _backendClientTools = backendClientTools ?? BackendClientTools();
+  }
 
   /// Connect to Ultravox call via LiveKit
   Future<void> connect(String joinUrl) async {
@@ -306,7 +315,10 @@ class UltravoxRtcManager {
       print('[LiveKit] 🔧 _handleClientToolInvocation called with: $data');
 
       final toolName = data['toolName'] as String?;
-      final parameters = data['parameters'] as Map<String, dynamic>? ?? {};
+      final rawParameters = data['parameters'];
+      final parameters = rawParameters is Map
+          ? Map<String, dynamic>.from(rawParameters)
+          : <String, dynamic>{};
       final invocationId = data['invocationId'] as String?;
 
       print(
@@ -326,6 +338,16 @@ class UltravoxRtcManager {
         if (onToolCall != null) {
           onToolCall!(data);
         }
+      } else if (toolName == BackendClientTools.scheduleToolName ||
+          toolName == BackendClientTools.contactSupportToolName) {
+        print('[LiveKit] 🔧 Handling $toolName backend client tool');
+        final result = await _backendClientTools.handle(
+          toolName!,
+          parameters,
+          callId: data['callId']?.toString(),
+        );
+        _sendClientToolResult(result, invocationId, toolName: toolName);
+        onToolCall?.call(data);
       } else {
         print('[LiveKit] ⚠️  Unknown client tool: $toolName');
 
