@@ -13,8 +13,8 @@ import '../providers/profile_provider.dart';
 /// Account page, reached from the dashboard's top-right avatar.
 ///
 /// Renders the in-memory profile from the launch gate with human-readable
-/// option labels, supports editing every v1 field via a partial PATCH
-/// (only changed fields are sent), and hosts the log-out action.
+/// option labels, supports partial profile edits, and hosts the log-out action.
+/// Sign-in email changes require a separate verification flow and stay locked.
 class AccountScreen extends ConsumerStatefulWidget {
   const AccountScreen({super.key});
 
@@ -177,19 +177,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       patch.setDisplayName(name);
     }
 
-    final rawEmail = _emailController.text.trim();
     final rawPhone = _phoneController.text.trim();
-    if (rawEmail.isEmpty && rawPhone.isEmpty) {
-      errors['email'] =
-          'Keep at least one way to reach you — an email or a phone number.';
-    }
-    String? email;
-    if (rawEmail.isNotEmpty) {
-      email = normalizeEmail(rawEmail);
-      if (email == null) {
-        errors['email'] = "That email doesn't look right — mind checking it?";
-      }
-    }
     String? phone;
     if (rawPhone.isNotEmpty) {
       phone = normalizePhone(rawPhone);
@@ -213,7 +201,6 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       return;
     }
 
-    if (email != profile.email) patch.setEmail(email);
     if (phone != profile.phone) patch.setPhone(phone);
     if (recipientName != profile.careRecipient.displayName) {
       patch.setCareRecipientField('displayName', recipientName);
@@ -268,9 +255,9 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       _showBackendFieldErrors(e.fieldErrors);
     } on ContactAlreadyExistsException catch (e) {
       _showBackendFieldErrors(
-        e.fieldErrors.isEmpty ? const {'email': []} : e.fieldErrors,
+        e.fieldErrors.isEmpty ? const {'phone': []} : e.fieldErrors,
         fallbackMessage:
-            'That contact is already registered to another profile.',
+            'That phone number is already registered to another profile.',
       );
     } catch (_) {
       if (!mounted) return;
@@ -615,10 +602,10 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             _LabeledTextField(
               label: 'Email',
               controller: _emailController,
-              enabled: !_saving,
+              enabled: false,
               keyboardType: TextInputType.emailAddress,
               hint: 'you@example.com',
-              errorText: _fieldErrors['email'],
+              helperText: 'Your sign-in email cannot be changed yet.',
             ),
             _LabeledTextField(
               label: 'Phone',
@@ -793,6 +780,7 @@ class _LabeledTextField extends StatelessWidget {
   final TextInputType? keyboardType;
   final String? hint;
   final String? errorText;
+  final String? helperText;
 
   const _LabeledTextField({
     required this.label,
@@ -801,6 +789,7 @@ class _LabeledTextField extends StatelessWidget {
     this.keyboardType,
     this.hint,
     this.errorText,
+    this.helperText,
   });
 
   @override
@@ -830,6 +819,7 @@ class _LabeledTextField extends StatelessWidget {
             decoration: InputDecoration(
               hintText: hint,
               errorText: errorText,
+              helperText: helperText,
               errorMaxLines: 3,
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,

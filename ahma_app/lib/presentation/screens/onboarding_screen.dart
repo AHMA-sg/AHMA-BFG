@@ -3,14 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/ahma_theme.dart';
 import '../../data/models/profile_models.dart';
+import '../providers/auth_provider.dart';
 import '../providers/onboarding_provider.dart';
 
 /// Conversational profile onboarding (variant B).
 ///
-/// AHMA asks the 8 required questions one at a time with a warm
-/// care-companion tone: quick replies for option fields (labels rendered,
-/// values submitted), a lightweight text input for the free-text answers,
-/// a visible "Question N of 8" progress cue, and inline recoverable errors.
+/// AHMA asks 7 profile questions after email verification, using quick replies
+/// for option fields and lightweight text inputs for free-text answers.
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -69,6 +68,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               'minute. Please try again.',
           actionLabel: 'Try again',
           onAction: () => ref.read(onboardingProvider.notifier).loadOptions(),
+          secondaryActionLabel: 'Use a different email',
+          onSecondaryAction: () =>
+              ref.read(authProvider.notifier).backToLogin(),
         );
       case OnboardingPhase.submitting:
         return const _CenteredStatus(
@@ -83,6 +85,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               "Something went wrong — let's try that again.",
           actionLabel: 'Try again',
           onAction: () => ref.read(onboardingProvider.notifier).retrySubmit(),
+          secondaryActionLabel: 'Use a different email',
+          onSecondaryAction: () =>
+              ref.read(authProvider.notifier).backToLogin(),
         );
       case OnboardingPhase.question:
         return _buildQuestion(context, state);
@@ -123,9 +128,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   _TextAnswerField(
                     controller: _textController,
                     hint: question.hint,
-                    keyboardType: question.field == OnboardingField.contact
-                        ? TextInputType.emailAddress
-                        : TextInputType.name,
+                    keyboardType: TextInputType.name,
                     onSubmit: (value) =>
                         ref.read(onboardingProvider.notifier).submitText(value),
                   ),
@@ -133,22 +136,23 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ),
           ),
         ),
-        if (state.questionIndex > 0)
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              onPressed: () => ref.read(onboardingProvider.notifier).goBack(),
-              icon: const Icon(Icons.arrow_back_rounded, size: 20),
-              label: const Text('Back'),
-              style: TextButton.styleFrom(
-                foregroundColor: AhmaTheme.sageGreen,
-                minimumSize: const Size(48, 48),
-                textStyle: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontSize: 15),
-              ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            if (state.questionIndex > 0)
+              TextButton.icon(
+                onPressed: () => ref.read(onboardingProvider.notifier).goBack(),
+                icon: const Icon(Icons.arrow_back_rounded, size: 20),
+                label: const Text('Back'),
+              )
+            else
+              const SizedBox.shrink(),
+            TextButton(
+              onPressed: () => ref.read(authProvider.notifier).backToLogin(),
+              child: const Text('Use a different email'),
             ),
-          ),
+          ],
+        ),
       ],
     );
   }
@@ -395,6 +399,8 @@ class _CenteredStatus extends StatelessWidget {
   final String message;
   final String? actionLabel;
   final VoidCallback? onAction;
+  final String? secondaryActionLabel;
+  final VoidCallback? onSecondaryAction;
 
   const _CenteredStatus({
     this.spinner = false,
@@ -402,6 +408,8 @@ class _CenteredStatus extends StatelessWidget {
     required this.message,
     this.actionLabel,
     this.onAction,
+    this.secondaryActionLabel,
+    this.onSecondaryAction,
   });
 
   @override
@@ -443,6 +451,13 @@ class _CenteredStatus extends StatelessWidget {
                   minimumSize: const Size(160, 52),
                 ),
                 child: Text(actionLabel!),
+              ),
+            ],
+            if (secondaryActionLabel != null && onSecondaryAction != null) ...[
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: onSecondaryAction,
+                child: Text(secondaryActionLabel!),
               ),
             ],
           ],

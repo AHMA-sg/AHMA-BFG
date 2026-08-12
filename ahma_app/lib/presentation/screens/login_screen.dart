@@ -4,11 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/ahma_theme.dart';
 import '../providers/auth_provider.dart';
 
-/// Sign-in entry point: enter an email and we send a one-time code.
-///
-/// Returning users get a code straight away. New users tap "Create your
-/// profile" to onboard first (which provisions their account), then verify a
-/// code to finish signing in.
+/// Unified entry point: verify an email, then continue to its existing account
+/// or first-time profile onboarding.
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -35,10 +32,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   void _sendCode() {
     ref.read(authProvider.notifier).requestCode(_emailController.text);
-  }
-
-  void _createProfile() {
-    ref.read(authProvider.notifier).startSignup();
   }
 
   @override
@@ -79,8 +72,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: 40),
                   Text(
-                    "Sign in to continue — we'll email you a one-time code and "
-                    'bring you right back to your care profile.',
+                    "Enter your email to continue. We'll send a one-time code, "
+                    'then sign you in or help set up your profile.',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontSize: 18,
                       color: AhmaTheme.mocha,
@@ -133,19 +126,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                             ),
                           )
-                        : const Text('Email me a sign-in code'),
-                  ),
-                  const SizedBox(height: 24),
-                  TextButton(
-                    onPressed: busy ? null : _createProfile,
-                    child: Text(
-                      'New to AHMA? Create your profile',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontSize: 15,
-                        color: AhmaTheme.ahmaRed,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                        : const Text('Continue with email'),
                   ),
                   const SizedBox(height: 16),
                   Text(

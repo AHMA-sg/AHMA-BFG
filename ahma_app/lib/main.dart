@@ -106,9 +106,7 @@ class MyApp extends StatelessWidget {
           child: child ?? const SizedBox.shrink(),
         );
       },
-      // Auth sits above the profile gate: no session -> login screen;
-      // with a session, the gate verifies the identity against the profile
-      // backend (or runs onboarding) before the main AHMA experience.
+      // Email verification happens before auth chooses onboarding or a session.
       home: const RootGate(),
     );
   }

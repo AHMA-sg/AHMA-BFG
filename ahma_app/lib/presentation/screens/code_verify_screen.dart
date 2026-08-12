@@ -56,9 +56,7 @@ class _CodeVerifyScreenState extends ConsumerState<CodeVerifyScreen> {
                   const SizedBox(height: 12),
                   Text.rich(
                     TextSpan(
-                      text:
-                          'If an account exists for this email, enter the '
-                          '6-digit code sent to ',
+                      text: 'Enter the 6-digit code sent to ',
                       children: [
                         TextSpan(
                           text: email,
@@ -125,7 +123,7 @@ class _CodeVerifyScreenState extends ConsumerState<CodeVerifyScreen> {
                               ),
                             ),
                           )
-                        : const Text('Verify & sign in'),
+                        : const Text('Verify & continue'),
                   ),
                   const SizedBox(height: 16),
                   Row(

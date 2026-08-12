@@ -9,8 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 ///   restore when the token is already stale.
 /// - `profile_user_id`: the backend `userId` (== JWT `sub`). Written after a
 ///   confirmed verify (or a profile create), cleared on sign-out.
-/// - `login_email`: the email used to sign in. Seeds onboarding's contact
-///   question; cleared on sign-out.
+/// - `login_email`: the verified sign-in email; cleared on sign-out.
 class LocalIdentityStore {
   static const String userIdKey = 'profile_user_id';
   static const String loginEmailKey = 'login_email';
@@ -45,7 +44,8 @@ class LocalIdentityStore {
     required String email,
     String? expiresAt,
   }) async {
-    await saveToken(token);
+    // why: restore treats the token as the session commit marker. Write it
+    // last so a partial preferences failure cannot reveal a half-session.
     await saveUserId(userId);
     await saveLoginEmail(email);
     if (expiresAt != null && expiresAt.isNotEmpty) {
@@ -53,6 +53,7 @@ class LocalIdentityStore {
     } else {
       await _clear(tokenExpiresAtKey);
     }
+    await saveToken(token);
   }
 
   /// Wipe everything session-related. Used on sign-out and on a rejected token.
@@ -71,11 +72,14 @@ class LocalIdentityStore {
 
   Future<void> _write(String key, String value) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(key, value);
+    final stored = await prefs.setString(key, value);
+    if (!stored) throw StateError('Could not persist $key');
   }
 
   Future<void> _clear(String key) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(key);
+    if (!prefs.containsKey(key)) return;
+    final removed = await prefs.remove(key);
+    if (!removed) throw StateError('Could not clear $key');
   }
 }

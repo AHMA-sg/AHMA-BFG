@@ -24,7 +24,7 @@ void main() {
 
     expect(find.text('AHMA'), findsOneWidget);
     expect(find.text('Your AI care resource companion'), findsOneWidget);
-    expect(find.text('Email me a sign-in code'), findsOneWidget);
-    expect(find.text('New to AHMA? Create your profile'), findsOneWidget);
+    expect(find.text('Continue with email'), findsOneWidget);
+    expect(find.textContaining('Create your profile'), findsNothing);
   });
 }

@@ -239,14 +239,14 @@ class ProfileContextData {
   }
 }
 
-/// Body for PATCH /api/profile/:userId — a PARTIAL update.
+/// Body for PATCH /api/profile/me - a PARTIAL update.
 ///
 /// Only fields explicitly set here are sent; the backend leaves everything
 /// else untouched. `userId` is immutable and must never appear in the body
 /// (the backend errors `immutable` if it disagrees with the path).
 ///
-/// Contact rule (`require_one`): after the patch, at least one of
-/// email/phone must remain non-empty. Setting a contact to null clears it.
+/// The verified sign-in email is not patchable through this model. Phone can
+/// be changed or cleared without changing account identity.
 class ProfilePatchRequest {
   final Map<String, dynamic> _fields = {};
 
@@ -254,10 +254,7 @@ class ProfilePatchRequest {
 
   void setDisplayName(String value) => _fields['displayName'] = value;
 
-  /// null clears the email (subject to `require_one`).
-  void setEmail(String? value) => _fields['email'] = value;
-
-  /// null clears the phone (subject to `require_one`).
+  /// null clears the optional phone.
   void setPhone(String? value) => _fields['phone'] = value;
 
   /// `relationship` (option value) or `displayName`.
@@ -284,13 +281,10 @@ class ProfilePatchRequest {
   };
 }
 
-/// Body for POST /api/profile (create-only, v1 required fields exactly —
-/// optional profile fields are intentionally omitted so the backend applies
-/// its own defaults).
+/// Body for POST /api/profile. Identity and verified email come from the
+/// signup credential, not from client-authored fields.
 class ProfileCreateRequest {
-  final String userId;
   final String displayName;
-  final String? email;
   final String? phone;
   final String relationship;
   final String careRecipientName;
@@ -300,9 +294,7 @@ class ProfileCreateRequest {
   final String financialStrainSeverity;
 
   const ProfileCreateRequest({
-    required this.userId,
     required this.displayName,
-    this.email,
     this.phone,
     required this.relationship,
     required this.careRecipientName,
@@ -312,30 +304,9 @@ class ProfileCreateRequest {
     required this.financialStrainSeverity,
   });
 
-  ProfileCreateRequest copyWith({String? userId}) {
-    return ProfileCreateRequest(
-      userId: userId ?? this.userId,
-      displayName: displayName,
-      email: email,
-      phone: phone,
-      relationship: relationship,
-      careRecipientName: careRecipientName,
-      caregivingDuration: caregivingDuration,
-      primaryCaregivingChallenge: primaryCaregivingChallenge,
-      primarySupportNeed: primarySupportNeed,
-      financialStrainSeverity: financialStrainSeverity,
-    );
-  }
-
   Map<String, dynamic> toJson() {
     return {
-      'userId': userId,
       'displayName': displayName,
-      // Always send BOTH contact keys (null for the unused one): the
-      // backend repository binds :email/:phone unconditionally in its
-      // INSERT, so omitting a key entirely causes a 500. Explicit null
-      // stores the same state and validates the same way.
-      'email': email,
       'phone': phone,
       'careRecipient': {
         'relationship': relationship,
