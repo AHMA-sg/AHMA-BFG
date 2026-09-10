@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/utils/contact_format.dart';
 import '../../data/datasources/auth_api.dart';
 import '../../data/datasources/local_identity_store.dart';
+import '../../data/datasources/profile_api.dart';
 import 'profile_provider.dart';
 
 final authApiProvider = Provider<AuthApi>((ref) => AuthApi());
@@ -35,15 +36,17 @@ class AuthState {
   final AuthStatus status;
   final int quoteSessionSeed;
 
-  /// The email the code was sent to. Seeds onboarding's contact question and
-  /// is the subject the code verifies against.
+  /// The verified email that identifies the account or new profile.
   final String? email;
 
   /// Inline error for the current screen, or null.
   final String? errorMessage;
 
-  /// Neutral guidance (e.g. "profile created, enter your code"), or null.
+  /// Neutral guidance for the current verification attempt, or null.
   final String? infoMessage;
+
+  /// Short-lived authority to create a profile for [email]. Memory-only.
+  final String? signupToken;
 
   const AuthState({
     required this.status,
@@ -51,17 +54,18 @@ class AuthState {
     this.email,
     this.errorMessage,
     this.infoMessage,
+    this.signupToken,
   });
 
   const AuthState.restoring() : this(status: AuthStatus.restoring);
 }
 
-/// OTP email auth. The flow the backend forces:
+/// Unified OTP email auth:
 ///
-/// - Returning user: [requestCode] -> code emailed -> [verifyCode] -> JWT.
-/// - New user: [startSignup] -> onboarding creates the profile (open) ->
-///   [completeSignup] emails a code for that now-existing account ->
-///   [verifyCode] -> JWT whose `sub` matches the created profile.
+/// - Every user: [requestCode] -> [verifyCode].
+/// - Returning user: verification yields a session JWT.
+/// - New user: verification yields signup authority -> onboarding creates the
+///   profile -> [completeOnboarding] stores the returned session JWT.
 ///
 /// The verified JWT is the session; `/me` resolves identity from it, so there
 /// is no id-in-path and no IDOR surface.
@@ -98,8 +102,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
     );
   }
 
-  /// Request a sign-in code for [rawEmail]. Moves to the code-entry screen on
-  /// success. [infoMessage] carries neutral context (e.g. after signup).
+  /// Request a verification code for [rawEmail]. Moves to code entry on
+  /// success. [infoMessage] carries neutral context such as resend guidance.
   Future<void> requestCode(String rawEmail, {String? infoMessage}) async {
     final email = normalizeEmail(rawEmail);
     if (email == null) {
@@ -157,14 +161,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = const AuthState(status: AuthStatus.loggedOut);
       return;
     }
-    await requestCode(
-      email,
-      infoMessage:
-          'If an account exists for this email, a new code is on its way.',
-    );
+    await requestCode(email, infoMessage: 'A new code is on its way.');
   }
 
-  /// Exchange the entered [rawCode] for a session JWT.
+  /// Verify [rawCode], then route to an existing session or onboarding.
   Future<void> verifyCode(String rawCode) async {
     final email = state.email;
     if (email == null) {
@@ -185,21 +185,28 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = AuthState(status: AuthStatus.verifying, email: email);
 
     try {
-      final session = await _api.verifyCode(email, code);
-      await _identity.saveSession(
-        token: session.token,
-        userId: session.userId,
-        email: email,
-        expiresAt: session.expiresAt,
-      );
-      if (!mounted) return;
-      // Re-run the launch gate against the new session BEFORE revealing it.
-      _ref.read(profileGateProvider.notifier).retry();
-      state = AuthState(
-        status: AuthStatus.loggedIn,
-        email: email,
-        quoteSessionSeed: session.token.hashCode,
-      );
+      final verification = await _api.verifyCode(email, code);
+      if (verification is SignupAuthorization) {
+        if (!mounted) return;
+        state = AuthState(
+          status: AuthStatus.onboarding,
+          email: email,
+          signupToken: verification.token,
+        );
+      } else if (verification is AuthSession) {
+        try {
+          await _saveSession(verification, email);
+        } catch (_) {
+          if (!mounted) return;
+          state = AuthState(
+            status: AuthStatus.loggedOut,
+            email: email,
+            errorMessage:
+                "You're verified, but we couldn't save your session on this "
+                'device. Request a new code and try again.',
+          );
+        }
+      }
     } on InvalidCodeException {
       if (!mounted) return;
       state = AuthState(
@@ -219,50 +226,25 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  /// Enter the first-time signup flow (conversational onboarding). No session
-  /// exists yet — onboarding creates the profile, then [completeSignup] runs.
-  void startSignup() {
-    state = AuthState(status: AuthStatus.onboarding, email: state.email);
-  }
-
-  /// Called by onboarding after a confirmed profile create. The account now
-  /// exists, so a code CAN be emailed; route into verification.
-  Future<void> completeSignup(String? email) async {
-    if (email == null || email.trim().isEmpty) {
-      // Phone-only signup: OTP is email-based, so there is nothing to send.
-      state = const AuthState(
-        status: AuthStatus.loggedOut,
-        errorMessage:
-            'Add an email to your profile to receive a sign-in code. '
-            'Phone-only sign-in is coming soon.',
-      );
-      return;
-    }
-    await requestCode(
+  Future<void> completeOnboarding(ProfileCreationResult result) async {
+    final email = state.email;
+    if (email == null || state.status != AuthStatus.onboarding) return;
+    await _saveSession(
+      AuthSession(
+        token: result.token,
+        userId: result.userId,
+        expiresAt: result.expiresAt,
+      ),
       email,
-      infoMessage:
-          "Your profile is ready. Enter the code we just emailed to finish "
-          'signing in.',
     );
   }
 
-  /// The entered contact already has an account (create returned a conflict):
-  /// route them to sign in with a code instead of creating a duplicate.
-  Future<void> signInExisting(String? email) async {
-    if (email == null || email.trim().isEmpty) {
-      state = const AuthState(
-        status: AuthStatus.loggedOut,
-        errorMessage:
-            'That contact is already registered. Sign in with the email on '
-            'that account.',
-      );
-      return;
-    }
-    await requestCode(
-      email,
-      infoMessage:
-          "You already have an account. Enter the code we just emailed to "
-          'sign in.',
+  void signupExpired() {
+    state = AuthState(
+      status: AuthStatus.loggedOut,
+      email: state.email,
+      errorMessage:
+          'Your verification expired. Request a new code to continue.',
     );
   }
 
@@ -276,6 +258,23 @@ class AuthNotifier extends StateNotifier<AuthState> {
     await _identity.clearSession();
     if (!mounted) return;
     state = const AuthState(status: AuthStatus.loggedOut);
+  }
+
+  Future<void> _saveSession(AuthSession session, String email) async {
+    await _identity.saveSession(
+      token: session.token,
+      userId: session.userId,
+      email: email,
+      expiresAt: session.expiresAt,
+    );
+    if (!mounted) return;
+    // Re-run the launch gate against the new session BEFORE revealing it.
+    _ref.read(profileGateProvider.notifier).retry();
+    state = AuthState(
+      status: AuthStatus.loggedIn,
+      email: email,
+      quoteSessionSeed: session.token.hashCode,
+    );
   }
 
   static bool _isExpired(String? iso) {

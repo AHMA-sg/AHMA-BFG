@@ -1,19 +1,31 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 
 import '../../core/config/env_config.dart';
 
-/// A verified session returned by `POST /api/auth/verify`.
-class AuthSession {
+/// Result of proving ownership of an email address.
+sealed class AuthVerification {
+  final String? expiresAt;
+
+  const AuthVerification({this.expiresAt});
+}
+
+/// An existing account session returned by `POST /api/auth/verify`.
+class AuthSession extends AuthVerification {
   final String token;
   final String userId;
-  final String? expiresAt;
 
   const AuthSession({
     required this.token,
     required this.userId,
-    this.expiresAt,
+    super.expiresAt,
   });
+}
+
+/// Short-lived authority to create a profile for a newly verified email.
+class SignupAuthorization extends AuthVerification {
+  final String token;
+
+  const SignupAuthorization({required this.token, super.expiresAt});
 }
 
 /// Base error for the auth API.
@@ -32,10 +44,13 @@ class AuthApiException implements Exception {
   String toString() => 'AuthApiException($code, $statusCode): $message';
 }
 
-/// 401 `invalid_code` — wrong or expired sign-in code.
+/// 401 `invalid_code` - wrong or expired verification code.
 class InvalidCodeException extends AuthApiException {
   const InvalidCodeException({super.statusCode})
-    : super(code: 'invalid_code', message: 'Invalid or expired sign-in code.');
+    : super(
+        code: 'invalid_code',
+        message: 'Invalid or expired verification code.',
+      );
 }
 
 /// 400 `validation_error` — e.g. a malformed email.
@@ -49,7 +64,7 @@ class AuthRateLimitedException extends AuthApiException {
   const AuthRateLimitedException({super.statusCode})
     : super(
         code: 'rate_limited',
-        message: 'Too many sign-in codes requested. Try again in a bit.',
+        message: 'Too many verification codes requested. Try again in a bit.',
       );
 }
 
@@ -82,20 +97,11 @@ class AuthApi {
           ),
         );
 
-    if (kDebugMode) {
-      _dio.interceptors.add(
-        LogInterceptor(
-          requestBody: true,
-          responseBody: true,
-          logPrint: (obj) => debugPrint('[Auth API] $obj'),
-        ),
-      );
-    }
+    // why: auth requests and responses contain OTPs and bearer credentials;
+    // logging them would make debug output sufficient to replay a session.
   }
 
-  /// POST /api/auth/request-code — emails a 6-digit code IF an account exists
-  /// for [email]. Returns normally either way (the backend does not reveal
-  /// whether the account exists).
+  /// POST /api/auth/request-code — emails a 6-digit code to any valid [email].
   Future<void> requestCode(String email) async {
     await _request(
       () => _dio.post('/api/auth/request-code', data: {'email': email}),
@@ -103,30 +109,43 @@ class AuthApi {
     );
   }
 
-  /// POST /api/auth/verify — exchanges [email] + [code] for a session JWT.
+  /// POST /api/auth/verify — proves email ownership, then returns either an
+  /// existing-account session or authority to finish first-time onboarding.
   ///
   /// Throws [InvalidCodeException] on a wrong/expired code.
-  Future<AuthSession> verifyCode(String email, String code) async {
+  Future<AuthVerification> verifyCode(String email, String code) async {
     final data = await _request(
       () => _dio.post('/api/auth/verify', data: {'email': email, 'code': code}),
       expectedStatus: 200,
     );
 
-    final token = data['token'];
-    final userId = data['userId'];
-    if (token is! String ||
-        token.isEmpty ||
-        userId is! String ||
-        userId.isEmpty) {
-      throw const AuthApiUnavailableException(
-        detail: 'Sign-in response was malformed.',
-      );
-    }
+    final next = data['next'];
     final expiresAt = data['expiresAt'];
-    return AuthSession(
-      token: token,
-      userId: userId,
-      expiresAt: expiresAt is String ? expiresAt : null,
+    if (next == 'onboarding') {
+      final signupToken = data['signupToken'];
+      if (signupToken is String && signupToken.isNotEmpty) {
+        return SignupAuthorization(
+          token: signupToken,
+          expiresAt: expiresAt is String ? expiresAt : null,
+        );
+      }
+    } else if (next == 'session') {
+      final token = data['token'];
+      final userId = data['userId'];
+      if (token is String &&
+          token.isNotEmpty &&
+          userId is String &&
+          userId.isNotEmpty) {
+        return AuthSession(
+          token: token,
+          userId: userId,
+          expiresAt: expiresAt is String ? expiresAt : null,
+        );
+      }
+    }
+
+    throw const AuthApiUnavailableException(
+      detail: 'Verification response was malformed.',
     );
   }
 

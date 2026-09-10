@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 
 import '../../core/config/env_config.dart';
 import '../models/profile_models.dart';
@@ -82,14 +81,16 @@ class ProfileUnauthorizedException extends ProfileApiException {
     : super(code: 'unauthorized', message: 'Session expired. Sign in again.');
 }
 
-class ProfileCreateResult {
+class ProfileCreationResult {
   final UserProfile profile;
   final String token;
+  final String userId;
   final String? expiresAt;
 
-  const ProfileCreateResult({
+  const ProfileCreationResult({
     required this.profile,
     required this.token,
+    required this.userId,
     this.expiresAt,
   });
 }
@@ -99,9 +100,8 @@ class ProfileCreateResult {
 class ProfileApi {
   late final Dio _dio;
 
-  /// Session-token source. When it yields a value, every request carries
-  /// `Authorization: Bearer <token>`. The `/me` routes require it; `create`
-  /// and `options` are open and tolerate its absence.
+  /// Session-token source for `/me` requests. Profile creation supplies its
+  /// own signup credential, while options remain open.
   final Future<String?> Function()? _bearerToken;
 
   ProfileApi({Dio? dio, Future<String?> Function()? bearerToken})
@@ -127,7 +127,10 @@ class ProfileApi {
           onRequest: (options, handler) async {
             final token = await _bearerToken();
             if (token != null && token.isNotEmpty) {
-              options.headers['Authorization'] = 'Bearer $token';
+              options.headers.putIfAbsent(
+                'Authorization',
+                () => 'Bearer $token',
+              );
             }
             handler.next(options);
           },
@@ -135,15 +138,8 @@ class ProfileApi {
       );
     }
 
-    if (kDebugMode) {
-      _dio.interceptors.add(
-        LogInterceptor(
-          requestBody: true,
-          responseBody: true,
-          logPrint: (obj) => debugPrint('[Profile API] $obj'),
-        ),
-      );
-    }
+    // why: profile creation carries a signup bearer and returns a session
+    // bearer, so generic debug logging would expose replayable credentials.
   }
 
   /// GET /api/profile/options
@@ -162,25 +158,34 @@ class ProfileApi {
     return ProfileOptions.fromJson(options);
   }
 
-  /// POST /api/profile (create-only; 201 on success).
-  Future<ProfileCreateResult> createProfile(
-    ProfileCreateRequest request,
-  ) async {
+  /// POST /api/profile (create-only; requires verified signup authority).
+  Future<ProfileCreationResult> createProfile(
+    ProfileCreateRequest request, {
+    required String signupToken,
+  }) async {
     final data = await _request(
-      () => _dio.post('/api/profile', data: request.toJson()),
+      () => _dio.post(
+        '/api/profile',
+        data: request.toJson(),
+        options: Options(headers: {'Authorization': 'Bearer $signupToken'}),
+      ),
       expectedStatus: 201,
     );
-    final session = data['session'];
-    final token = session is Map<String, dynamic> ? session['token'] : null;
-    if (token is! String || token.isEmpty) {
+    final token = data['token'];
+    final userId = data['userId'];
+    final expiresAt = data['expiresAt'];
+    if (token is! String ||
+        token.isEmpty ||
+        userId is! String ||
+        userId.isEmpty) {
       throw const ProfileApiUnavailableException(
-        detail: 'Profile signup session was missing.',
+        detail: 'Profile creation response was malformed.',
       );
     }
-    final expiresAt = session!['expiresAt'];
-    return ProfileCreateResult(
+    return ProfileCreationResult(
       profile: _profileFrom(data),
       token: token,
+      userId: userId,
       expiresAt: expiresAt is String ? expiresAt : null,
     );
   }

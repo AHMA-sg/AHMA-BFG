@@ -12,8 +12,8 @@ final localIdentityStoreProvider = Provider<LocalIdentityStore>(
 final profileApiProvider = Provider<ProfileApi>((ref) {
   final identity = ref.watch(localIdentityStoreProvider);
   return ProfileApi(
-    // The OTP-issued JWT authenticates every `/me` request. `create` and
-    // `options` are open and tolerate a null token (pre-signup onboarding).
+    // The session JWT authenticates `/me`; profile create supplies its own
+    // verified-email signup token on the request.
     bearerToken: () async => identity.readToken(),
   );
 });
